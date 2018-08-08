@@ -26,13 +26,16 @@ Or install it yourself as:
 
     $ gem install jekyll-openui5
 
-## Usage
+## Use Cases
 
-TODO: Write usage instructions here. Describe your available layouts, includes, sass and/or assets.
+1. quick creation of customer demos to impress them with the quotation. No SAP Hana interaction necessary, but with demo data in the YAML front matter
+2. living documentation during and after the project in form of a static site with the same look and feed as the app
+
+The result can be browsed with a standard browser, either after it has been put on a webserver (Apache, Nginx, but any other HTTP server will do fine as well). Or it can even be consumed from a USB stick, file share in the local network or at CD or DVD, if you fancy it.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/hello. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/jekyll-openui5/jekyll-openui5. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 ## Development
 
