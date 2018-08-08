@@ -28,8 +28,8 @@ Or install it yourself as:
 
 ## Use Cases
 
-1. quick creation of customer demos to impress them alongside the offer submission. No SAP Hana interaction necessary, but with demo data in the YAML front matter
-2. living documentation during and after the project in form of a static site with the same look and feed as the app
+1. Quick creation of customer demos attached to the offer submission. No SAP Hana interaction necessary, but with demo data in the YAML front matter
+2. Living documentation during and after the project in form of a static site with the same look and feed as the app
 
 The result can be browsed with a standard browser, either after it has been put on a webserver (Apache, Nginx, but any other HTTP server will do fine as well). Or it can even be consumed from a USB stick, file share in the local network or at CD or DVD, if you fancy it.
 
