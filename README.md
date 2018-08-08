@@ -1,11 +1,8 @@
 # jekyll-openui5
 
-Welcome to your new Jekyll theme! In this directory, you'll find the files you need to be able to package up your theme into a gem. Put your layouts in `_layouts`, your includes in `_includes`, your sass files in `_sass` and any other assets in `assets`.
+OpenUI5 Theme for Jekyll.
 
-To experiment with this code, add some sample content and run `bundle exec jekyll serve` – this directory is setup just like a Jekyll site!
-
-TODO: Delete this and the text above, and describe your gem
-
+See the [OpenUI5 Website](https://openui5.org/) for details on OpenUI5.
 
 ## Installation
 
@@ -49,4 +46,3 @@ To add a custom directory to your theme-gem, please edit the regexp in `jekyll-o
 ## License
 
 The theme is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
-
