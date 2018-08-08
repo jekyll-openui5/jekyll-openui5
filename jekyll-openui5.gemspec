@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Stefan Haslinger"]
   spec.email         = ["stefan.haslinger@informatom.com"]
 
-  spec.summary       = "Jekyll Theme including SAP's OpenUI5 JavaScript and CSS UI library"
+  spec.summary       = "Jekyll Theme including SAP's JavaScript UI library OpenUI5"
   spec.homepage      = "https://github.com/haslinger/jekyll-openui5"
   spec.license       = "MIT"
 
