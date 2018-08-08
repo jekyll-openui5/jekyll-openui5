@@ -45,4 +45,4 @@ To add a custom directory to your theme-gem, please edit the regexp in `jekyll-o
 
 ## License
 
-The theme is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+The theme is available as open source under the terms of the Apache 2.0 License.
