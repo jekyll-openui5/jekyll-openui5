@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -8,20 +8,14 @@
  * The IssueManager interface stores, groups and converts issues from the Core Object to a usable model by the Support Assistant.
  * Issues can be added only through the IssueManager using <code>addIssue</code> method.
  */
-sap.ui.define(["jquery.sap.global", "sap/ui/base/Object", "sap/ui/support/supportRules/Constants"],
-	function (jQuery, BaseObject, constants) {
+sap.ui.define(["jquery.sap.global", "sap/ui/base/Object", "sap/ui/support/library", "sap/ui/support/supportRules/Constants"],
+	function (jQuery, BaseObject, library, constants) {
 		"use strict";
 		/**
 		 * @type {object[]} _aIssues Issues stored in the IssueManager
 		 * @private
 		 */
 		var _aIssues = [];
-
-		/**
-		 * @type {object[]} _aHistory Array of history objects which contain issues key that has an array of issues.
-		 * @private
-		 */
-		var _aHistory = [];
 
 		/**
 		 * Converts Issue Object to a ViewModel that can be used by the IssueManager.
@@ -106,54 +100,9 @@ sap.ui.define(["jquery.sap.global", "sap/ui/base/Object", "sap/ui/support/suppor
 				_aIssues = [];
 			},
 
-			/**
-			 * Saves a new history object with the current issues.
-			 * @public
-			 * @method
-			 * @name sap.ui.support.IssueManager.saveHistory
-			 * @returns {void}
-			 */
-			saveHistory: function () {
-				_aHistory.push({
-					issues: _aIssues.slice()
-				});
+			getIssues: function () {
+				return _aIssues.slice();
 			},
-
-			/**
-			 * Gets history objects with current issues. Each history object has an issues key that contains an array of issues.
-			 * @public
-			 * @method
-			 * @name sap.ui.support.IssueManager.getHistory
-			 * @returns {object[]} Current history in the IssueManager.
-			 */
-			getHistory: function () {
-				// Copy and return history
-				return _aHistory.slice();
-			},
-
-			/**
-			 * Gets grouped history containing <code>ViewModel</code>. Each history object has an issues key that contains the issues grouped by library and rule in ViewModel format.
-			 * @public
-			 * @method
-			 * @name sap.ui.support.IssueManager.getConvertedHistory
-			 * @returns {object[]} convertedHistory Grouped issue history object containing converted issues to ViewModel format.
-			 */
-			getConvertedHistory: function () {
-				var that = this,
-					issueHistory = that.getHistory(),
-					convertedHistory = [],
-					issues = null;
-
-				issueHistory.forEach(function (run) {
-					issues = that.groupIssues(
-						that.convertToViewModel(run.issues)
-					);
-					convertedHistory.push({ issues: issues });
-				});
-
-				return convertedHistory;
-			},
-
 			/**
 			 * Converts the issues inside the IssueManager.
 			 * @public
@@ -258,34 +207,37 @@ sap.ui.define(["jquery.sap.global", "sap/ui/base/Object", "sap/ui/support/suppor
 			 */
 			getTreeTableViewModel: function(oRules) {
 				var index = 0,
-					innerIndex = 0,
 					treeTableModel = {},
 					rulesViewModel,
-					rule;
+					rule,
+					rules = [];
 
 				rulesViewModel = this.getRulesViewModel(oRules, [], []);
 				for (var libraryName in rulesViewModel) {
 					treeTableModel[index] = {
 						name: libraryName,
+						id: libraryName + " " + index,
+						selected: true,
 						type: "lib",
-						rules: []
+						nodes: rules
 					};
 
 					for (var ruleName in rulesViewModel[libraryName]) {
 						rule = rulesViewModel[libraryName][ruleName];
-						treeTableModel[index][innerIndex] = {
+						rules.push({
 							name: rule.title,
 							description: rule.description,
 							id: rule.id,
-							audiences: rule.audiences,
-							categories: rule.categories,
+							audiences: rule.audiences.toString(),
+							categories: rule.categories.toString(),
 							minversion: rule.minversion,
 							resolution: rule.resolution,
 							title:  rule.title,
-							libName: libraryName
-						};
-						innerIndex++;
+							libName: libraryName,
+							selected: true
+						});
 					}
+					rules = [];
 					index++;
 				}
 				return treeTableModel;
@@ -385,26 +337,26 @@ sap.ui.define(["jquery.sap.global", "sap/ui/base/Object", "sap/ui/support/suppor
 			 * @returns {string} String containing the formatted name.
 			 */
 			_getFormattedName: function(oValues) {
-				var sHighColor = "",
-					sMediumColor = "",
-					sLowColor = "";
+				var sHighClass = "",
+					sMediumClass = "",
+					sLowClass = "";
 
 				if (oValues.highCount > 0) {
-					sHighColor = "color: " + constants.SUPPORT_ASSISTANT_SEVERITY_HIGH_COLOR + ";";
+					sHighClass = "issueSeverityHigh";
 				}
 
 				if (oValues.mediumCount > 0) {
-					sMediumColor = "color: " + constants.SUPPORT_ASSISTANT_SEVERITY_MEDIUM_COLOR + ";";
+					sMediumClass = "issueSeverityMedium";
 				}
 
 				if (oValues.lowCount > 0) {
-					sLowColor = "color: " + constants.SUPPORT_ASSISTANT_SEVERITY_LOW_COLOR + ";";
+					sLowClass = "issueSeverityLow";
 				}
 
 				return oValues.name +
-					" (<span style=\"" + sHighColor + "\"> " + oValues.highCount + " " + oValues.highName + ", </span> " +
-					"<span style=\"" + sMediumColor + "\"> " + oValues.mediumCount + " " + oValues.mediumName + ", </span> " +
-					"<span style=\"" + sLowColor + "\"> " + oValues.lowCount + " " + oValues.lowName + "</span> )";
+					" (<span class=\"" + sHighClass + "\"> " + oValues.highCount + " " + oValues.highName + ", </span> " +
+					"<span class=\"" + sMediumClass + "\"> " + oValues.mediumCount + " " + oValues.mediumName + ", </span> " +
+					"<span class=\"" + sLowClass + "\"> " + oValues.lowCount + " " + oValues.lowName + "</span> )";
 			},
 
 			/**
@@ -433,17 +385,6 @@ sap.ui.define(["jquery.sap.global", "sap/ui/base/Object", "sap/ui/support/suppor
 				});
 
 				return {high: iHighIssues, medium: iMediumIssues, low: iLowIssues};
-			},
-
-			/**
-			 * Clears the history object within the IssueManager.
-			 * @public
-			 * @method
-			 * @name sap.ui.support.IssueManager.clearHistory
-			 * @returns {void}
-			 */
-			clearHistory: function () {
-				_aHistory = [];
 			},
 
 			/**
@@ -529,7 +470,7 @@ sap.ui.define(["jquery.sap.global", "sap/ui/base/Object", "sap/ui/support/suppor
 		IssueManagerFacade.prototype.addIssue = function (oIssue) {
 			oIssue.rule = this.oRule;
 
-			if (!sap.ui.support.Severity[oIssue.severity]) {
+			if (!library.Severity[oIssue.severity]) {
 				throw "The issue from rule " + this.oRule.title + " does not have proper severity defined. Allowed values can be found" +
 						"in sap.ui.support.Severity";
 			}

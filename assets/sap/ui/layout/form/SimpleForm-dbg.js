@@ -1,15 +1,35 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.layout.form.SimpleForm.
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
-               './Form', './FormContainer', './FormElement', './FormLayout',
-               'sap/ui/base/ManagedObjectObserver', 'sap/ui/layout/library', 'sap/ui/core/ResizeHandler', './SimpleFormRenderer'],
-	function(jQuery, Control, Form, FormContainer, FormElement, FormLayout,
-	         ManagedObjectObserver, library, ResizeHandler, SimpleFormRenderer) {
+sap.ui.define([
+	'sap/ui/core/Control',
+	'sap/ui/base/ManagedObjectObserver',
+	'sap/ui/core/ResizeHandler',
+	'sap/ui/layout/library',
+	'./Form',
+	'./FormContainer',
+	'./FormElement',
+	'./FormLayout',
+	'./SimpleFormRenderer',
+	"sap/base/Log",
+	"sap/ui/thirdparty/jquery"
+], function(
+	Control,
+	ManagedObjectObserver,
+	ResizeHandler,
+	library,
+	Form,
+	FormContainer,
+	FormElement,
+	FormLayout,
+	SimpleFormRenderer,
+	Log,
+	jQuery
+) {
 	"use strict";
 
 	// shortcut for sap.ui.layout.BackgroundDesign
@@ -33,20 +53,21 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 	 * @param {object} [mSettings] Initial settings for the new control
 	 *
 	 * @class
-	 * The <code>SimpleForm</code> provides an easy-to-use API to create simple forms.
-	 * Inside a <code>SimpleForm</code>, a <code>Form</code> control is created along with its
-	 * <code>FormContainers</code> and <code>FormElements</code>, but the complexity in the API is removed.
+	 * The <code>SimpleForm</code> control provides an easy-to-use API to create simple forms.
+	 * Inside a <code>SimpleForm</code> control, a <code>{@link sap.ui.layout.form.Form Form}</code> control is created along with its
+	 * <code>{@link sap.ui.layout.form.FormContainer FormContainer}</code> elements and <code>{@link sap.ui.layout.form.FormElement FormElement}</code> elements,
+	 * but the complexity in the API is not exposed to the user.
 	 * <ul>
-	 * <li>A new <code>Title</code> or <code>Toolbar</code> starts a new group (<code>FormContainer</code>) in the form.</li>
-	 * <li>A new <code>Label</code> starts a new row (<code>FormElement</code>) in the form.</li>
-	 * <li>All other controls will be assigned to the row (<code>FormElement</code>) that started with the last label.</li>
+	 * <li>A new <code>sap.ui.core.Title</code> element or <code>Toolbar</code> control starts a new group (<code>{@link sap.ui.layout.form.FormContainer FormContainer}</code>) in the form.</li>
+	 * <li>A new <code>Label</code> control starts a new row (<code>{@link sap.ui.layout.form.FormElement FormElement}</code>) in the form.</li>
+	 * <li>All other controls will be assigned to the row (<code>{@link sap.ui.layout.form.FormElement FormElement}</code>) that started with the last label.</li>
 	 * </ul>
 	 * Use <code>LayoutData</code> to influence the layout for special cases in the Input/Display controls.
 	 *
-	 * <b>Note:</b> If a more complex form is needed, use <code>Form</code> instead.
+	 * <b>Note:</b> If a more complex form is needed, use the <code>{@link sap.ui.layout.form.Form Form}</code> control instead.
 	 *
 	 * @extends sap.ui.core.Control
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -60,9 +81,9 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 		properties : {
 
 			/**
-			 * The maximum amount of groups (<code>FormContainers</code>) per row that is used before a new row is started.
+			 * The maximum amount of groups (<code>{@link sap.ui.layout.form.FormContainer FormContainers}</code>) per row that is used before a new row is started.
 			 *
-			 * <b>Note:</b> If a <code>ResponsiveGridLayout</code> is used as a <code>layout</code>, this property is not used.
+			 * <b>Note:</b> If <code>{@link sap.ui.layout.form.SimpleFormLayout.ResponsiveGridLayout}</code> is used as <code>layout</code>, this property is not used.
 			 * Please use the properties <code>ColumnsL</code> and <code>ColumnsM</code> in this case.
 			 */
 			maxContainerCols : {type : "int", group : "Appearance", defaultValue : 2},
@@ -70,8 +91,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 			/**
 			 * The overall minimum width in pixels that is used for the <code>SimpleForm</code>.
 			 *
-			 * If the available width is below the given <code>minWidth</code> the <code>SimpleForm</code> will create a new row for the next group (<code>FormContainer</code>).
-			 * The default value is -1, meaning that inner groups (<code>FormContainers</code>) will be stacked until <code>maxContainerCols</code> is reached,
+			 * If the available width is below the given <code>minWidth</code> the <code>SimpleForm</code> will create a new row for the next group (<code>{@link sap.ui.layout.form.FormContainer FormContainer}</code>).
+			 * The default value is -1, meaning that inner groups (<code>{@link sap.ui.layout.form.FormContainer FormContainers}</code>) will be stacked until <code>maxContainerCols</code> is reached,
 			 * irrespective of whether a <code>width</code> is reached or the available parents width is reached.
 			 *
 			 * <b>Note:</b> This property is only used if a <code>ResponsiveLayout</code> is used as a layout.
@@ -110,10 +131,12 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 			/**
 			 * The <code>FormLayout</code> that is used to render the <code>SimpleForm</code>.
 			 *
-			 * We recommend using the <code>ResponsiveGridLayout</code> for rendering a <code>SimpleForm</code>,
+			 * We recommend using the <code>ColumnLayout</code> for rendering a <code>SimpleForm</code>,
 			 * as its responsiveness uses the space available in the best way possible.
 			 *
 			 * <b>Note</b> If possible, set the <code>layout</code> before adding content to prevent calculations for the default layout.
+			 *
+			 * <b>Note</b> The <code>ResponsiveLayout</code> has been deprecated and must no longer be used. For compatibility reasons the default could not be changed.
 			 */
 			layout : {type : "sap.ui.layout.form.SimpleFormLayout", group : "Misc", defaultValue : SimpleFormLayout.ResponsiveLayout},
 
@@ -129,7 +152,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 			/**
 			 * Default span for labels in large size.
 			 *
-			 * <b>Note:</b> If <code>adjustLabelSpanThis</code> is set, this property is only used if more than 1 <code>FormContainer</code> is in one line.
+			 * <b>Note:</b> If <code>adjustLabelSpan</code> is set, this property is only used if more than 1 <code>FormContainer</code> is in one line.
 			 * If only 1 <code>FormContainer</code> is in the line, then the <code>labelSpanM</code> value is used.
 			 *
 			 * <b>Note:</b> This property is only used if <code>ResponsiveGridLayout</code> or <code>ColumnLayout</code> is used as a layout.
@@ -141,7 +164,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 			/**
 			 * Default span for labels in medium size.
 			 *
-			 * <b>Note:</b> If <code>adjustLabelSpanThis</code> is set, this property is used for full-size <code>FormContainers</code>.
+			 * <b>Note:</b> If <code>adjustLabelSpan</code> is set, this property is used for full-size <code>FormContainers</code>.
 			 * If more than one <code>FormContainer</code> is in one line, <code>labelSpanL</code> is used.
 			 *
 			 * <b>Note:</b> This property is only used if a <code>ResponsiveGridLayout</code> is used as a layout.
@@ -284,23 +307,23 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 			/**
 			 * The content of the form is structured in the following way:
 			 * <ul>
-			 * <li>Add a <code>Title</code> or <code>Toolbar</code> control to start a new group (<code>FormContainer</code>).</li>
-			 * <li>Add a <code>Label</code> control to start a new row (<code>FormElement</code>).</li>
+			 * <li>Add a <code>sap.ui.core.Title</code> element or <code>Toolbar</code> control to start a new group (<code>{@link sap.ui.layout.form.FormContainer FormContainer}</code>).</li>
+			 * <li>Add a <code>Label</code> control to start a new row (<code>{@link sap.ui.layout.form.FormElement FormElement}</code>).</li>
 			 * <li>Add controls as input fields, text fields or other as needed.</li>
 			 * <li>Use <code>LayoutData</code> to influence the layout for special cases in the single controls.
-			 * For example, if a <code>ResponsiveLayout</code> is used as a layout,
-			 * the form content is weighted using weight 3 for the labels and weight 5 for the fields part.
-			 * By default the label column is 192 pixels wide.
-			 * If your input controls should influence their width, you can add <code>sap.ui.layout.ResponsiveFlowLayoutData</code>
+			 * For example, if a <code>ColumnLayout</code> is used as a layout,
+			 * the form content is weighted using 4 cells for the labels and 8 cells for the field part, for large size.
+			 * If there is only little space, the labels are above the fields and each field uses 12 cells.
+			 * If your input controls should influence their width, you can add <code>sap.ui.layout.ColumnElementData</code>
 			 * to them via <code>setLayoutData</code> method.
-			 * Ensure that the sum of the weights in the <code>ResponsiveFlowLayoutData</code> is not more than 5,
+			 * Ensure that the sum of the weights in the <code>ColumnElementData</code> is not more than 12,
 			 * as this is the total width of the input control part of each form row.</li>
 			 * </ul>
-			 * Example for a row where the <code>Input</code> weight 4 and the second <code>Input</code> weight 1 (using <code>ResponsiveLayout</code>):
+			 * Example for a row where the <code>Input</code> uses 6 cells and the second <code>Input</code> uses 2 cells (using <code>ColumnElementData</code>):
 			 * <pre>
 			 * new sap.m.Label({text:"Label"});
-			 * new sap.m.Input({value:"Weight 4", layoutData: new sap.ui.layout.ResponsiveFlowLayoutData({weight:4})}),
-			 * new sap.m.Input({value:"Weight 1", layoutData: new sap.ui.layout.ResponsiveFlowLayoutData({weight:1})}),
+			 * new sap.m.Input({value:"6 cells", layoutData: new sap.ui.layout.ColumnElementData({cellsLarge: 6, cellsSmall: 8})}),
+			 * new sap.m.Input({value:"2 cells", layoutData: new sap.ui.layout.ColumnElementData({cellsLarge: 2, cellsSmall: 4})}),
 			 * </pre>
 			 *
 			 * For example, if a <code>ResponsiveGridLayout</code> is used as a layout, there are 12 cells in one row.
@@ -389,7 +412,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 			var oSimpleForm = this.getParent();
 			if (oSimpleForm) {
 				return oSimpleForm.getAriaLabelledBy();
-			}else {
+			} else  {
 				return null;
 			}
 		};
@@ -445,8 +468,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 		_removeResize.call(this);
 
 		var oForm = this.getAggregation("form");
-		if (!this._bResponsiveLayoutRequested && !this._bGridLayoutRequested &&
-				!this._bResponsiveGridLayoutRequested && !this._bColumnLayoutRequested) {
+		var sLayout = this.getLayout();
+		if ((!this._bResponsiveLayoutRequested && sLayout === SimpleFormLayout.ResponsiveLayout) ||
+				(!this._bGridLayoutRequested && sLayout === SimpleFormLayout.GridLayout) ||
+				(!this._bResponsiveGridLayoutRequested && sLayout === SimpleFormLayout.ResponsiveGridLayout) ||
+				(!this._bColumnLayoutRequested && sLayout === SimpleFormLayout.ColumnLayout)) {
 			// if Layout is still loaded do it after it is loaded
 			var bLayout = true;
 			if (!oForm.getLayout()) {
@@ -562,7 +588,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 
 		if (this.indexOfContent(oElement) >= 0) {
 			// element is already there, remove before adding it
-			jQuery.sap.log.warning("SimpleForm.addContent: Content element '" + oElement + "' already assigned. Please remove before adding!", this);
+			Log.warning("SimpleForm.addContent: Content element '" + oElement + "' already assigned. Please remove before adding!", this);
 			this.removeContent(oElement);
 		}
 
@@ -649,7 +675,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 
 		if (this.indexOfContent(oElement) >= 0) {
 			// element is already there, remove before insert it
-			jQuery.sap.log.warning("SimpleForm.insertContent: Content element '" + oElement + "' already assigned. Please remove before insert!", this);
+			Log.warning("SimpleForm.insertContent: Content element '" + oElement + "' already assigned. Please remove before insert!", this);
 			this.removeContent(oElement);
 		}
 
@@ -667,7 +693,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 			iNewIndex = iIndex;
 		}
 		if (iNewIndex !== iIndex) {
-			jQuery.sap.log.warning("SimpleForm.insertContent: index '" + iIndex + "' out of range [0," + iLength + "], forced to " + iNewIndex);
+			Log.warning("SimpleForm.insertContent: index '" + iIndex + "' out of range [0," + iLength + "], forced to " + iNewIndex);
 		}
 
 		if (iNewIndex == iLength) {
@@ -892,7 +918,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 
 			if (typeof (vElement) == "number") { // "vElement" is the index now
 				if (vElement < 0 || vElement >= this._aElements.length) {
-					jQuery.sap.log.warning("Element.removeAggregation called with invalid index: Items, " + vElement);
+					Log.warning("Element.removeAggregation called with invalid index: Items, " + vElement);
 				} else {
 					iIndex = vElement;
 					oElement = this._aElements[iIndex];
@@ -1459,8 +1485,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 
 	function _checkLayoutDataReady() {
 
-		if (this._bResponsiveLayoutRequested || this._bGridLayoutRequested ||
-				this._bResponsiveGridLayoutRequested || this._bColumnLayoutRequested) {
+		var sLayout = this.getLayout();
+		if ((sLayout === SimpleFormLayout.ResponsiveLayout && this._bResponsiveLayoutRequested) ||
+				(sLayout === SimpleFormLayout.GridLayout && this._bGridLayoutRequested) ||
+				(sLayout === SimpleFormLayout.ResponsiveGridLayout && this._bResponsiveGridLayoutRequested) ||
+				(sLayout === SimpleFormLayout.ColumnLayout && this._bColumnLayoutRequested)) {
 			// LayoutData waiting to be loaded -> are set after they are loaded
 			return false;
 		}
@@ -1501,7 +1530,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 			} else if (!oLayoutData) {
 				oField.setLayoutData(_createRFLayoutData.call(this, iWeight, bLinebreak, bLinebreakable, iMinWidth));
 			} else {
-				jQuery.sap.log.warning("ResponsiveFlowLayoutData can not be set on Field " + oField.getId(), "_createFieldLayoutData", "SimpleForm");
+				Log.warning("ResponsiveFlowLayoutData can not be set on Field " + oField.getId(), "_createFieldLayoutData", "SimpleForm");
 			}
 		}
 
@@ -1950,6 +1979,23 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Control',
 				// no default
 			}
 		}
+
+	};
+
+	/**
+	 * Method used to propagate the <code>Title</code> control ID of a container control
+	 * (like a <code>Dialog</code> control) to use it as aria-label in the <code>SimpleForm</code>.
+	 * So the <code>SimpleForm</code> must not have an own title.
+	 * @param {string} sTitleID <code>Title</code> control ID
+	 * @private
+	 * @return {this} Reference to <code>this</code> to allow method chaining
+	 */
+	SimpleForm.prototype._suggestTitleId = function (sTitleID) {
+
+		var oForm = this.getAggregation("form");
+		oForm._suggestTitleId(sTitleID);
+
+		return this;
 
 	};
 

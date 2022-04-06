@@ -1,13 +1,13 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 //Provides control sap.ui.unified.CalendarWeekInterval.
 sap.ui.define(['sap/ui/unified/calendar/CalendarUtils', 'sap/ui/unified/calendar/CalendarDate', './library',
-		'sap/ui/unified/CalendarDateInterval', 'sap/ui/unified/CalendarDateIntervalRenderer'],
-	function (CalendarUtils, CalendarDate, library, CalendarDateInterval, CalendarDateIntervalRenderer) {
+		'sap/ui/unified/CalendarDateInterval', 'sap/ui/unified/CalendarDateIntervalRenderer', "sap/ui/unified/DateRange"],
+	function (CalendarUtils, CalendarDate, library, CalendarDateInterval, CalendarDateIntervalRenderer, DateRange) {
 		"use strict";
 
 		/*
@@ -39,7 +39,7 @@ sap.ui.define(['sap/ui/unified/calendar/CalendarUtils', 'sap/ui/unified/calendar
 		 * its start date to the first date of the same week as the date the user chose.
 		 *
 		 * @extends sap.ui.unified.CalendarDateInterval
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 *
 		 * @constructor
 		 * @private
@@ -139,8 +139,8 @@ sap.ui.define(['sap/ui/unified/calendar/CalendarUtils', 'sap/ui/unified/calendar
 		CalendarWeekInterval.prototype._showCalendarPicker = function() {
 			var oCalNewFocusDate = this._getFocusedDate(),
 				oCalFirstWeekDate = this._getStartDate(),
-				oCalPicker = this._getCalendarPicker(),
-				oSelectedRange = new sap.ui.unified.DateRange(),
+				oCalPicker = this._getCalendar(),
+				oSelectedRange = new DateRange(),
 				oCalEndDate;
 
 			oCalEndDate = new CalendarDate(oCalFirstWeekDate);
@@ -156,22 +156,22 @@ sap.ui.define(['sap/ui/unified/calendar/CalendarUtils', 'sap/ui/unified/calendar
 			oCalPicker.setMaxDate(this.getMaxDate());
 
 			this._openPickerPopup(oCalPicker);
-			this._showOverlay();
 		};
 
 		CalendarWeekInterval.prototype._handleCalendarPickerDateSelect = function(oEvent) {
-			var oCalPicker = this._getCalendarPicker(),
-				oFocusedDate = oCalPicker._getFocusedDate(),
+			var oCalPicker = this._getCalendar(),
+				oSelectedDate = oCalPicker.getSelectedDates()[0].getStartDate(),
+				oFocusedDate = CalendarDate.fromLocalJSDate(oSelectedDate),
 				oFirstWeekDate;
 
 			if (this._dateMatchesVisibleRange(oFocusedDate.toLocalJSDate())) {
-				this._oFocusDateWeek = oCalPicker._getFocusedDate();
+				this._oFocusDateWeek = oFocusedDate;
 				this._focusDate(this._oFocusDateWeek, false, true); // true means no fire startDateChange event (no start date change)
 			} else {
 				oFirstWeekDate = CalendarUtils._getFirstDateOfWeek(oFocusedDate);
 
 				this._setStartDate(oFirstWeekDate);
-				this._oFocusDateWeek = oCalPicker._getFocusedDate();
+				this._oFocusDateWeek = oFocusedDate;
 				this._focusDate(this._oFocusDateWeek, false, true); // true means no fire startDateChange event (we already did it in _setStartDate)
 			}
 

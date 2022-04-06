@@ -1,18 +1,19 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.layout.MatrixLayout.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/ui/thirdparty/jquery',
     './MatrixLayoutCell',
     './MatrixLayoutRow',
     'sap/ui/commons/library',
     'sap/ui/core/Control',
     'sap/ui/core/EnabledPropagator',
-    "./MatrixLayoutRenderer"
+    './MatrixLayoutRenderer',
+    'sap/ui/commons/TextView'
 ],
 	function(
 	    jQuery,
@@ -21,7 +22,8 @@ sap.ui.define([
 		library,
 		Control,
 		EnabledPropagator,
-		MatrixLayoutRenderer
+		MatrixLayoutRenderer,
+		TextView
 	) {
 	"use strict";
 
@@ -55,7 +57,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -65,6 +67,7 @@ sap.ui.define([
 	 */
 	var MatrixLayout = Control.extend("sap.ui.commons.layout.MatrixLayout", /** @lends sap.ui.commons.layout.MatrixLayout.prototype */ { metadata : {
 
+		deprecated: true,
 		library : "sap.ui.commons",
 		properties : {
 			/**
@@ -118,7 +121,7 @@ sap.ui.define([
 	 * "as is", or an arbitrary content control, which is wrapped with a new
 	 * (default) matrix layout cell first and then added to the row.
 	 *
-	 * @return {sap.ui.commons.layout.MatrixLayout} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -141,7 +144,7 @@ sap.ui.define([
 				// any string(?) given, display it
 				var sText = oContent ? oContent.toString() : "";
 				oCell = new MatrixLayoutCell({
-					content : new sap.ui.commons.TextView({text : sText})});
+					content : new TextView({text : sText})});
 			}
 			oRow.addCell(oCell);
 		}
@@ -154,14 +157,14 @@ sap.ui.define([
 	 * Sets the widths of the columns. The values must be stored in an array to be used in renderer.
 	 * to be compatible with previous version also allow list of values.
 	 * @param {sap.ui.core.CSSSize[]} aWidths new value for property <code>widths</code>
-	 * @return {sap.ui.commons.layout.MatrixLayout} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	MatrixLayout.prototype.setWidths = function( aWidths ) {
 
 		var aSetWidths;
 
-		if (!jQuery.isArray(aWidths)) {
+		if (!Array.isArray(aWidths)) {
 			// a list of values is used instead of an array -> use this as array
 			aSetWidths = jQuery.makeArray(arguments);
 		} else {
@@ -183,4 +186,4 @@ sap.ui.define([
 
 	return MatrixLayout;
 
-}, /* bExport= */ true);
+});

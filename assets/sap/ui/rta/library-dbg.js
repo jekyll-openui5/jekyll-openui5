@@ -1,14 +1,20 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 /**
  * Initialization Code and shared classes of library sap.ui.rta.
  */
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/Core', 'sap/ui/core/library'],
-	function(jQuery, Core, coreLibrary) {
+sap.ui.define([
+	"sap/ui/core/Core",
+	"sap/ui/core/library",
+	"sap/m/library",
+	"sap/ui/fl/library",
+	"sap/ui/dt/library"
+],
+function() {
 	"use strict";
 
 	/**
@@ -17,7 +23,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Core', 'sap/ui/core/library'],
 	 * @namespace
 	 * @name sap.ui.rta
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
+	 * @since 1.50
 	 * @private
 	 * @experimental This class is experimental and provides only limited functionality. Also the API might be changed in future.
 	 */
@@ -25,17 +32,16 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Core', 'sap/ui/core/library'],
 
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
-		name : "sap.ui.rta",
-		version: "1.56.5",
-		dependencies : ["sap.ui.core","sap.m", "sap.ui.fl", "sap.ui.dt"],
-		types: [
-		],
+		name: "sap.ui.rta",
+		version: "1.96.7",
+		dependencies: ["sap.ui.core", "sap.m", "sap.ui.fl", "sap.ui.dt"],
+		types: [],
 		interfaces: [],
 		controls: [],
-		elements: [
-		]
+		elements: []
 	});
 
-	return sap.ui.rta;
+	sap.ui.rta.GENERATOR_NAME = "sap.ui.rta.command";
 
+	return sap.ui.rta;
 });

@@ -1,11 +1,27 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/library', 'sap/ui/Global', 'sap/ui/core/Core', 'sap/ui/core/ElementMetadata'],
-	function (jQuery, library, Global, Core, ElementMetadata) {
+sap.ui.define([
+	'sap/ui/core/library',
+	'sap/ui/Global',
+	'sap/ui/core/Core',
+	'sap/ui/core/ElementMetadata',
+	"sap/base/util/LoaderExtensions",
+	"sap/base/util/UriParameters",
+	"jquery.sap.global"
+],
+	function(
+		library,
+		Global,
+		Core,
+		ElementMetadata,
+		LoaderExtensions,
+		UriParameters,
+		jQuery
+	) {
 		'use strict';
 
 		var configurationInfo = sap.ui.getCore().getConfiguration();
@@ -13,31 +29,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/library', 'sap/ui/Global', 'sap
 		// ================================================================================
 		// Technical Information
 		// ================================================================================
-
-		/**
-		 * Returns the framework name.
-		 * @returns {string}
-		 * @private
-		 */
-		function _getFrameworkName() {
-			var versionInfo;
-			var frameworkInfo;
-
-			try {
-				versionInfo = sap.ui.getVersionInfo();
-			} catch (e) {
-				versionInfo = undefined;
-			}
-
-			if (versionInfo) {
-				// Use group artifact version for maven builds or name for other builds (like SAPUI5-on-ABAP)
-				frameworkInfo = versionInfo.gav ? versionInfo.gav : versionInfo.name;
-
-				return frameworkInfo.indexOf('openui5') !== -1 ? 'OpenUI5' : 'SAPUI5';
-			} else {
-				return '';
-			}
-		}
 
 		/**
 		 * Creates an object with the libraries and their version from the version info file.
@@ -74,6 +65,18 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/library', 'sap/ui/Global', 'sap
 		}
 
 		/**
+		 * Creates a simple object with all URL parameters.
+		 * @returns {Object<string,string[]>} Map of parameter value arrays keyed by parameter names
+		 */
+		function getURLParameters() {
+			var oParams = UriParameters.fromQuery(window.location.search);
+			return Array.from(oParams.keys()).reduce(function(oResult, sKey) {
+				oResult[sKey] = oParams.getAll(sKey);
+				return oResult;
+			}, {});
+		}
+
+		/**
 		 * Gets all the relevant information for the framework.
 		 * @returns {Object}
 		 * @private
@@ -81,7 +84,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/library', 'sap/ui/Global', 'sap
 		function _getFrameworkInformation() {
 			return {
 				commonInformation: {
-					frameworkName: _getFrameworkName(),
 					version: Global.version,
 					buildTime: Global.buildinfo.buildtime,
 					lastChange: Global.buildinfo.lastchange,
@@ -113,9 +115,9 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/library', 'sap/ui/Global', 'sap
 
 				loadedLibraries: _getLoadedLibraries(),
 
-				loadedModules: jQuery.sap.getAllDeclaredModules().sort(),
+				loadedModules: LoaderExtensions.getAllRequiredModules().sort(),
 
-				URLParameters: jQuery.sap.getUriParameters().mParams
+				URLParameters: getURLParameters()
 			};
 		}
 

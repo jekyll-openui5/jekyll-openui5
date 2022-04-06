@@ -1,17 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.FileUploader.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/base/Log',
     './library',
     'sap/ui/unified/FileUploader',
-    "./FileUploaderRenderer"
+    './FileUploaderRenderer',
+    'sap/ui/core/Core' // sap.ui.getCore()
 ],
-	function(jQuery, library, UnifiedFileUploader, FileUploaderRenderer) {
+	function(Log, library, UnifiedFileUploader, FileUploaderRenderer, Core) {
 	"use strict";
 
 	/**
@@ -25,7 +26,7 @@ sap.ui.define([
 	 * @extends sap.ui.unified.FileUploader
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -43,10 +44,10 @@ sap.ui.define([
 	try {
 		sap.ui.getCore().loadLibrary("sap.ui.unified");
 	} catch (e) {
-		jQuery.sap.log.error("The control 'sap.ui.commons.FileUploader' needs library 'sap.ui.unified'.");
+		Log.error("The control 'sap.ui.commons.FileUploader' needs library 'sap.ui.unified'.");
 		throw (e);
 	}
 
 	return FileUploader;
 
-}, /* bExport= */ true);
+});

@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.ux3.NavigationItem.
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/Item', './library'],
-	function(jQuery, Item, library) {
+sap.ui.define(['sap/ui/core/Item', './library'],
+	function(Item, library) {
 	"use strict";
 
 
@@ -22,7 +22,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Item', './library'],
 	 * @extends sap.ui.core.Item
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -32,6 +32,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Item', './library'],
 	 */
 	var NavigationItem = Item.extend("sap.ui.ux3.NavigationItem", /** @lends sap.ui.ux3.NavigationItem.prototype */ { metadata : {
 
+		deprecated: true,
 		library : "sap.ui.ux3",
 		properties : {
 
@@ -61,4 +62,4 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Item', './library'],
 
 	return NavigationItem;
 
-}, /* bExport= */ true);
+});

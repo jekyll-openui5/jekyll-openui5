@@ -1,13 +1,13 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 /*
  * Provides constants for key codes. Useful in the implementation of keypress/keydown event handlers.
  */
-sap.ui.define(['jquery.sap.global', 'sap/base/events/KeyCodes'],
+sap.ui.define(['jquery.sap.global', 'sap/ui/events/KeyCodes'],
 	function(jQuery, KeyCodes) {
 	"use strict";
 
@@ -17,6 +17,7 @@ sap.ui.define(['jquery.sap.global', 'sap/base/events/KeyCodes'],
 	 * @enum {int}
 	 * @public
 	 * @since 0.9.0
+	 * @deprecated since 1.58 use {@link module:sap/ui/events/KeyCodes} instead
 	 */
 	jQuery.sap.KeyCodes = KeyCodes;
 

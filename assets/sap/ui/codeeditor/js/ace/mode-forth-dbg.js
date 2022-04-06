@@ -1,4 +1,4 @@
-ace.define("ace/mode/forth_highlight_rules",["require","exports","module","ace/lib/oop","ace/mode/text_highlight_rules"], function(require, exports, module) {
+ace.define("ace/mode/forth_highlight_rules",[], function(require, exports, module) {
 "use strict";
 
 var oop = require("../lib/oop");
@@ -107,7 +107,7 @@ var ForthHighlightRules = function() {
               { include: '#word' },
               { include: '#variable' },
               { include: '#storage' },
-              { defaultToken: 'meta.block.forth' } ] } ] }
+              { defaultToken: 'meta.block.forth' } ] } ] };
     
     this.normalizeRules();
 };
@@ -117,7 +117,7 @@ ForthHighlightRules.metaData = { fileTypes: [ 'frt', 'fs', 'ldr', 'fth', '4th' ]
       foldingStopMarker: '\\*\\*/|^\\s*\\}',
       keyEquivalent: '^~F',
       name: 'Forth',
-      scopeName: 'source.forth' }
+      scopeName: 'source.forth' };
 
 
 oop.inherits(ForthHighlightRules, TextHighlightRules);
@@ -125,7 +125,7 @@ oop.inherits(ForthHighlightRules, TextHighlightRules);
 exports.ForthHighlightRules = ForthHighlightRules;
 });
 
-ace.define("ace/mode/folding/cstyle",["require","exports","module","ace/lib/oop","ace/range","ace/mode/folding/fold_mode"], function(require, exports, module) {
+ace.define("ace/mode/folding/cstyle",[], function(require, exports, module) {
 "use strict";
 
 var oop = require("../../lib/oop");
@@ -146,8 +146,8 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 (function() {
     
-    this.foldingStartMarker = /(\{|\[)[^\}\]]*$|^\s*(\/\*)/;
-    this.foldingStopMarker = /^[^\[\{]*(\}|\])|^[\s\*]*(\*\/)/;
+    this.foldingStartMarker = /([\{\[\(])[^\}\]\)]*$|^\s*(\/\*)/;
+    this.foldingStopMarker = /^[^\[\{\(]*([\}\]\)])|^[\s\*]*(\*\/)/;
     this.singleLineBlockCommentRe= /^\s*(\/\*).*\*\/\s*$/;
     this.tripleStarBlockCommentRe = /^\s*(\/\*\*\*).*\*\/\s*$/;
     this.startRegionRe = /^\s*(\/\*|\/\/)#?region\b/;
@@ -265,7 +265,7 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 });
 
-ace.define("ace/mode/forth",["require","exports","module","ace/lib/oop","ace/mode/text","ace/mode/forth_highlight_rules","ace/mode/folding/cstyle"], function(require, exports, module) {
+ace.define("ace/mode/forth",[], function(require, exports, module) {
 "use strict";
 
 var oop = require("../lib/oop");
@@ -287,4 +287,11 @@ oop.inherits(Mode, TextMode);
 }).call(Mode.prototype);
 
 exports.Mode = Mode;
-});
+});                (function() {
+                    ace.require(["ace/mode/forth"], function(m) {
+                        if (typeof module == "object" && typeof exports == "object" && module) {
+                            module.exports = m;
+                        }
+                    });
+                })();
+            

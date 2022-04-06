@@ -1,18 +1,25 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.HorizontalDivider.
 sap.ui.define([
-	'jquery.sap.global',
 	'./library',
 	'sap/ui/core/Control',
-	"./HorizontalDividerRenderer"
+	'./HorizontalDividerRenderer'
 ],
-	function(jQuery, library, Control, HorizontalDividerRenderer) {
+	function(library, Control, HorizontalDividerRenderer) {
 	"use strict";
+
+
+
+	// shortcut for sap.ui.commons.HorizontalDividerHeight
+	var HorizontalDividerHeight = library.HorizontalDividerHeight;
+
+	// shortcut for sap.ui.commons.HorizontalDividerType
+	var HorizontalDividerType = library.HorizontalDividerType;
 
 
 
@@ -25,7 +32,7 @@ sap.ui.define([
 	 * @class
 	 * Divides the screen in visual areas.
 	 * @extends sap.ui.core.Control
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -36,6 +43,7 @@ sap.ui.define([
 	var HorizontalDivider = Control.extend("sap.ui.commons.HorizontalDivider", /** @lends sap.ui.commons.HorizontalDivider.prototype */ { metadata : {
 
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 			/**
 			 * Defines the width of the divider.
@@ -45,12 +53,12 @@ sap.ui.define([
 			/**
 			 * Defines the type of the divider.
 			 */
-			type : {type : "sap.ui.commons.HorizontalDividerType", group : "Appearance", defaultValue : sap.ui.commons.HorizontalDividerType.Area},
+			type : {type : "sap.ui.commons.HorizontalDividerType", group : "Appearance", defaultValue : HorizontalDividerType.Area},
 
 			/**
 			 * Defines the height of the divider.
 			 */
-			height : {type : "sap.ui.commons.HorizontalDividerHeight", group : "Appearance", defaultValue : sap.ui.commons.HorizontalDividerHeight.Medium}
+			height : {type : "sap.ui.commons.HorizontalDividerHeight", group : "Appearance", defaultValue : HorizontalDividerHeight.Medium}
 		}
 	}});
 
@@ -58,4 +66,4 @@ sap.ui.define([
 
 	return HorizontalDivider;
 
-}, /* bExport= */ true);
+});

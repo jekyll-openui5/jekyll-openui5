@@ -1,18 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.m.PagingButton.
 sap.ui.define([
-	'jquery.sap.global',
 	'./Button',
 	'sap/ui/core/Control',
 	'sap/ui/core/IconPool',
-	'./PagingButtonRenderer'
+	'./PagingButtonRenderer',
+	"sap/base/Log"
 ],
-	function(jQuery, Button, Control, IconPool, PagingButtonRenderer) {
+	function(Button, Control, IconPool, PagingButtonRenderer, Log) {
 		"use strict";
 
 		/**
@@ -26,7 +26,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 *
 		 * @constructor
 		 * @public
@@ -150,7 +150,7 @@ sap.ui.define([
 		/**
 		 * Handles the position change.
 		 * @param {boolean} bIncrease Indicates the direction of the change of position
-		 * @returns {sap.m.PagingButton} Reference to the control instance for chaining
+		 * @returns {this} Reference to the control instance for chaining
 		 */
 		PagingButton.prototype._handlePositionChange = function (bIncrease) {
 			var iOldPosition = this.getPosition(),
@@ -164,7 +164,7 @@ sap.ui.define([
 
 		/**
 		 * Sets the appropriate state (enabled/disabled) for the buttons based on the total count / position.
-		 * @returns {sap.m.PagingButton} Reference to the control instance for chaining
+		 * @returns {this} Reference to the control instance for chaining
 		 */
 		PagingButton.prototype._updateButtonState = function () {
 			var iTotalCount = this.getCount(),
@@ -198,11 +198,11 @@ sap.ui.define([
 		 * properties and ensures they are correct.
 		 * @param {string} sProperty The property to be checked
 		 * @param {number} iValue 	The value to be checked
-		 * @returns {sap.m.PagingButton} Reference to the control instance for chaining
+		 * @returns {this} Reference to the control instance for chaining
 		 */
 		PagingButton.prototype._validateProperty = function (sProperty, iValue) {
 			if (iValue < 1) {
-				jQuery.sap.log.warning("Property '" + sProperty + "' must be greater or equal to 1", this);
+				Log.warning("Property '" + sProperty + "' must be greater or equal to 1", this);
 				return this;
 			}
 
@@ -213,13 +213,13 @@ sap.ui.define([
 		 * Validates the position property to ensure that it's not set higher than the total count.
 		 * @private
 		 * @param {number} iPosition
-		 * @returns {sap.m.PagingButton} Reference to the control instance for chaining
+		 * @returns {this} Reference to the control instance for chaining
 		 */
 		PagingButton.prototype._enforceValidPosition = function (iPosition) {
 			var iCount = this.getCount();
 
 			if (iPosition > iCount) {
-				jQuery.sap.log.warning("Property position must be less or equal to the total count");
+				Log.warning("Property position must be less or equal to the total count");
 				this.setPosition(iCount);
 			}
 

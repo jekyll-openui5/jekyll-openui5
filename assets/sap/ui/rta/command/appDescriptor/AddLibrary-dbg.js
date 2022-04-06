@@ -1,10 +1,10 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
-	'sap/ui/rta/command/AppDescriptorCommand'
+	"sap/ui/rta/command/AppDescriptorCommand"
 ], function(
 	AppDescriptorCommand
 ) {
@@ -17,7 +17,7 @@ sap.ui.define([
 	 * @extends sap.ui.rta.command.AppDescriptorCommand
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @private
@@ -27,9 +27,9 @@ sap.ui.define([
 	 *               changed in future.
 	 */
 	var AddLibrary = AppDescriptorCommand.extend("sap.ui.rta.command.appDescriptor.AddLibrary", {
-		metadata : {
-			library : "sap.ui.rta",
-			events : {}
+		metadata: {
+			library: "sap.ui.rta",
+			events: {}
 		}
 	});
 
@@ -41,12 +41,12 @@ sap.ui.define([
 	 * Execute the change (load the required libraries)
 	 * @return {Promise} resolved if libraries could be loaded; rejected if not
 	 */
-	AddLibrary.prototype.execute = function(){
+	AddLibrary.prototype.execute = function() {
 		var aPromises = [];
 
-		if (this.getParameters().libraries){
+		if (this.getParameters().libraries) {
 			var aLibraries = Object.keys(this.getParameters().libraries);
-			aLibraries.forEach(function(sLibrary){
+			aLibraries.forEach(function(sLibrary) {
 				aPromises.push(sap.ui.getCore().loadLibrary(sLibrary, true));
 			});
 		}
@@ -55,5 +55,4 @@ sap.ui.define([
 	};
 
 	return AddLibrary;
-
 }, /* bExport= */true);

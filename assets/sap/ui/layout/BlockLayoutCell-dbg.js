@@ -1,11 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(['sap/ui/core/Control', './library', "./BlockLayoutCellRenderer"],
-	function(Control, library, BlockLayoutCellRenderer) {
+sap.ui.define([
+	'sap/ui/core/Control',
+	'./library',
+	"./BlockLayoutCellRenderer",
+	"sap/base/Log",
+	"./BlockLayoutCellData",
+	"sap/ui/thirdparty/jquery"
+],
+	function(Control, library, BlockLayoutCellRenderer, Log, BlockLayoutCellData, jQuery) {
 		"use strict";
 
 		/**
@@ -20,7 +27,7 @@ sap.ui.define(['sap/ui/core/Control', './library', "./BlockLayoutCellRenderer"],
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 *
 		 * @constructor
 		 * @public
@@ -106,20 +113,37 @@ sap.ui.define(['sap/ui/core/Control', './library', "./BlockLayoutCellRenderer"],
 				oRow._handleEvent(oEvent);
 			}
 			//Check if current cell has defined width
-			if (this.getWidth() != 0) {
+			if (oLayoutData && this.getWidth() != 0) {
 				this.getLayoutData().setSize(this.getWidth());
 			}
 
 			return this;
 		};
 
-		BlockLayoutCell.prototype.setTitleLink = function(oObject) {
-				if (oObject && oObject.getMetadata().getName() !== "sap.m.Link") {
-					jQuery.sap.log.warning("sap.ui.layout.BlockLayoutCell " + this.getId() + ": Can't add value for titleLink aggregation different than sap.m.Link.");
-					return;
-				}
+		/**
+		 * Sets the Width.
+		 *
+		 * @public
+		 * @param {number} iWidth value.
+		 * @returns {this} this BlockLayoutCell reference for chaining.
+		 */
+		BlockLayoutCell.prototype.setWidth = function (iWidth) {
+			this.setProperty("width", iWidth);
 
-				this.setAggregation("titleLink", oObject);
+			if (this.getLayoutData() && (this.getLayoutData().isA("sap.ui.layout.BlockLayoutCellData"))) {
+				this.getLayoutData().setSize(iWidth);
+			}
+
+			return this;
+		};
+
+		BlockLayoutCell.prototype.setTitleLink = function(oObject) {
+			if (oObject && oObject.getMetadata().getName() !== "sap.m.Link") {
+				Log.warning("sap.ui.layout.BlockLayoutCell " + this.getId() + ": Can't add value for titleLink aggregation different than sap.m.Link.");
+				return this;
+			}
+
+			this.setAggregation("titleLink", oObject);
 
 			return this;
 		};

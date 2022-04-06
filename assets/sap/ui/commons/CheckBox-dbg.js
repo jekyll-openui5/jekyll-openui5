@@ -1,18 +1,27 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.CheckBox.
 sap.ui.define([
- 'jquery.sap.global',
  './library',
  'sap/ui/core/Control',
- "./CheckBoxRenderer"
+ './CheckBoxRenderer',
+ 'sap/ui/core/library',
+ 'sap/ui/Device'
 ],
-	function(jQuery, library, Control, CheckBoxRenderer) {
+	function(library, Control, CheckBoxRenderer, coreLibrary, Device) {
 	"use strict";
+
+
+
+	 // shortcut for sap.ui.core.TextDirection
+	 var TextDirection = coreLibrary.TextDirection;
+
+	 // shortcut for sap.ui.core.ValueState
+	 var ValueState = coreLibrary.ValueState;
 
 
 
@@ -29,7 +38,7 @@ sap.ui.define([
 	 * @implements sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -40,6 +49,7 @@ sap.ui.define([
 	var CheckBox = Control.extend("sap.ui.commons.CheckBox", /** @lends sap.ui.commons.CheckBox.prototype */ { metadata : {
 
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -65,7 +75,7 @@ sap.ui.define([
 			/**
 			 * Accepts the core enumeration ValueState.type that supports 'None', 'Error', 'Warning' and 'Success'.
 			 */
-			valueState : {type : "sap.ui.core.ValueState", group : "Data", defaultValue : sap.ui.core.ValueState.None},
+			valueState : {type : "sap.ui.core.ValueState", group : "Data", defaultValue : ValueState.None},
 
 			/**
 			 * The width can be set to an absolute value. If no value is set, the control width results from the text length.
@@ -75,7 +85,7 @@ sap.ui.define([
 			/**
 			 * The value can be set to LTR or RTL. Otherwise, the control inherits the text direction from its parent control.
 			 */
-			textDirection : {type : "sap.ui.core.TextDirection", group : "Appearance", defaultValue : sap.ui.core.TextDirection.Inherit},
+			textDirection : {type : "sap.ui.core.TextDirection", group : "Appearance", defaultValue : TextDirection.Inherit},
 
 			/**
 			 * The 'name' property to be used in the HTML code, for example for HTML forms that send data to the server via submit.
@@ -127,7 +137,7 @@ sap.ui.define([
 		// End of 2013 is have to be again in the tabchain.
 		// But not in the Form. But this is handled in the FromLayout control
 		// Let's see what happens 2014... ;-)
-		if (!!sap.ui.Device.browser.internet_explorer && !this.getEnabled()) {
+		if (Device.browser.msie && !this.getEnabled()) {
 			// in IE tabindex = -1 hides focus, so in readOnly/disabled case tabindex must be temporarily set to 0
 			// as long as CheckBox is focused
 			this.$().attr("tabindex", 0).addClass("sapUiCbFoc"); // the CSS class itself is not used, but IE only draws the standard focus outline when it is added
@@ -147,7 +157,7 @@ sap.ui.define([
 		// End of 2013 is have to be again in the tabchain.
 		// But not in the Form. But this is handled in the FromLayout control
 		// Let's see what happens 2014... ;-)
-		if (!!sap.ui.Device.browser.internet_explorer && !this.getEnabled()) {
+		if (Device.browser.msie && !this.getEnabled()) {
 			// in IE tabindex = -1 hides focus, so in readOnly/disabled case tabindex must be temporarily set to 0
 			// as long as CheckBox is focused - now unset this again
 			this.$().attr("tabindex", -1).removeClass("sapUiCbFoc");
@@ -188,7 +198,7 @@ sap.ui.define([
 	 *
 	 * Inverts the current value of the control.
 	 *
-	 * @type sap.ui.commons.CheckBox
+	 * @type this
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -199,6 +209,7 @@ sap.ui.define([
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
+	 * @returns {object} The accessibility info
 	 * @protected
 	 */
 	CheckBox.prototype.getAccessibilityInfo = function() {
@@ -216,4 +227,4 @@ sap.ui.define([
 
 	return CheckBox;
 
-}, /* bExport= */ true);
+});

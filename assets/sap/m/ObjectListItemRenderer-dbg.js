@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -18,6 +18,7 @@ sap.ui.define(['./ListItemBaseRenderer', 'sap/ui/core/Renderer', 'sap/ui/core/li
 		 * @namespace
 		 */
 		var ObjectListItemRenderer = Renderer.extend(ListItemBaseRenderer);
+		ObjectListItemRenderer.apiVersion = 2;
 
 		/**
 		 * Renders the HTML for single line of Attribute and Status.
@@ -26,43 +27,65 @@ sap.ui.define(['./ListItemBaseRenderer', 'sap/ui/core/Renderer', 'sap/ui/core/li
 		 *            rm The RenderManager that can be used for writing to the render output buffer
 		 * @param {sap.m.ObjectListItem}
 		 *            oLI An object to be rendered
-		 * @param {sap.m.ObjectAttribute[]}
-		 *            aAttributes Attributes to be rendered
-		 * @param {sap.m.ObjectStatus[]}
-		 *            aStatuses Statuses to be rendered
+		 * @param {sap.m.ObjectAttribute}
+		 *            oAttribute An attribute to be rendered
+		 * @param {sap.m.ObjectStatus}
+		 *            oStatus A status to be rendered
 		 */
-		ObjectListItemRenderer.renderAttributesStatuses = function(rm, oLI, aAttributes, aStatuses) {
-			var i;
-			rm.write("<div"); // Start attribute row container
-			rm.addClass("sapMObjLAttrRow");
-			rm.writeClasses();
-			rm.write(">");
+		ObjectListItemRenderer.renderAttributeStatus = function(rm, oLI, oAttribute, oStatus) {
 
-			rm.write("<div"); // Start render attribute
-			rm.addClass("sapMObjLAttrDiv");
-			rm.writeClasses();
-			rm.write(">");
-			for (i = 0; i < aAttributes.length; i++) {
-				rm.renderControl(aAttributes[i]);
+			if (!oAttribute && !oStatus || (oAttribute && oAttribute._isEmpty() && oStatus && oStatus._isEmpty())) {
+				return; // nothing to render
 			}
-			rm.write("</div>"); // End render attribute
 
-			rm.write("<div"); // Start render status
-			rm.addClass("sapMObjLStatusDiv");
-			rm.writeClasses();
-			rm.write(">");
-			for (i = 0; i < aStatuses.length; i++) {
-				if (aStatuses[i] instanceof Array) {
-					while (aStatuses[i].length > 0) {
-						rm.renderControl(aStatuses[i].shift());
+			rm.openStart("div"); // Start attribute row container
+			rm.class("sapMObjLAttrRow");
+			rm.openEnd();
+
+			if (oAttribute && !oAttribute._isEmpty()) {
+				rm.openStart("div");
+				rm.class("sapMObjLAttrDiv");
+
+				// Add padding to push attribute text down since it will be raised up due
+				// to markers height
+				if (oStatus && (!oStatus._isEmpty())) {
+					if (oStatus instanceof Array) {
+						rm.class("sapMObjAttrWithMarker");
+					}
+				}
+
+				if (!oStatus || oStatus._isEmpty()) {
+					rm.style("width", "100%");
+				}
+				rm.openEnd();
+				rm.renderControl(oAttribute);
+				rm.close("div");
+			}
+
+			if (oStatus && !oStatus._isEmpty()) {
+				rm.openStart("div");
+				rm.class("sapMObjLStatusDiv");
+
+				// Object marker icons (flag, favorite) are passed as an array
+				if (oStatus instanceof Array && oStatus.length > 0) {
+					rm.class("sapMObjStatusMarker");
+				}
+
+				if (!oAttribute || oAttribute._isEmpty()) {
+					rm.style("width", "100%");
+				}
+				rm.openEnd();
+				if (oStatus instanceof Array) {
+					while (oStatus.length > 0) {
+						rm.renderControl(oStatus.shift());
 					}
 				} else {
-					rm.renderControl(aStatuses[i]);
+					rm.renderControl(oStatus);
 				}
+				rm.close("div");
 			}
-			rm.write("</div>"); // End render status
 
-			rm.write("</div>"); // End attribute row container
+			rm.close("div"); // Start attribute row container
 		};
 
 		/**
@@ -75,8 +98,8 @@ sap.ui.define(['./ListItemBaseRenderer', 'sap/ui/core/Renderer', 'sap/ui/core/li
 		 *          rendered
 		 */
 		ObjectListItemRenderer.renderLIAttributes = function(rm, oLI) {
-			rm.addClass("sapMObjLItem");
-			rm.addClass("sapMObjLListModeDiv");
+			rm.class("sapMObjLItem");
+			rm.class("sapMObjLListModeDiv");
 		};
 
 		ObjectListItemRenderer.renderLIContent = function(rm, oLI) {
@@ -86,59 +109,56 @@ sap.ui.define(['./ListItemBaseRenderer', 'sap/ui/core/Renderer', 'sap/ui/core/li
 
 			// Introductory text at the top of the item, like "On behalf of Julie..."
 			if (oLI.getIntro()) {
-				rm.write("<div");
-				rm.addClass("sapMObjLIntro");
-				rm.writeClasses();
-				rm.writeAttribute("id", oLI.getId() + "-intro");
-				rm.write(">");
-				rm.write("<span");
+				rm.openStart("div", oLI.getId() + "-intro");
+				rm.class("sapMObjLIntro");
+				rm.openEnd();
+				rm.openStart("span");
 				//sets the dir attribute to "rtl" or "ltr" if a direction
 				//for the intro text is provided explicitly
 				if (sIntroDir !== TextDirection.Inherit) {
-					rm.writeAttribute("dir", sIntroDir.toLowerCase());
+					rm.attr("dir", sIntroDir.toLowerCase());
 				}
-				rm.write(">");
-				rm.writeEscaped(oLI.getIntro());
-				rm.write("</span>");
-				rm.write("</div>");
+				rm.openEnd();
+				rm.text(oLI.getIntro());
+				rm.close("span");
+				rm.close("div");
 			}
 
 
 			// Container for fields placed on the top half of the item, below the intro. This
 			// includes title, number, and number units.
-			rm.write("<div"); // Start Top row container
-			rm.addClass("sapMObjLTopRow");
-			rm.writeClasses();
-			rm.write(">");
+			rm.openStart("div"); // Start Top row container
+			rm.class("sapMObjLTopRow");
 
-			if (!!oLI.getIcon()) {
-				rm.write("<div");
-				rm.addClass("sapMObjLIconDiv");
-				rm.writeClasses();
-				rm.write(">");
+			rm.openEnd();
+
+			if (oLI.getIcon()) {
+				rm.openStart("div");
+				rm.class("sapMObjLIconDiv");
+
+				rm.openEnd();
 				rm.renderControl(oLI._getImageControl());
-				rm.write("</div>");
+				rm.close("div");
 			}
 
 			// Container for a number and a units qualifier.
-			rm.write("<div"); // Start Number/units container
-			rm.addClass("sapMObjLNumberDiv");
-			rm.writeClasses();
-			rm.write(">");
+			rm.openStart("div"); // Start Number/units container
+			rm.class("sapMObjLNumberDiv");
+
+			rm.openEnd();
 
 			if (oObjectNumberAggregation && oObjectNumberAggregation.getNumber()) {
 				oObjectNumberAggregation.setTextDirection(oLI.getNumberTextDirection());
 				rm.renderControl(oObjectNumberAggregation);
 			}
 
-			rm.write("</div>"); // End Number/units container
+			rm.close("div"); // End Number/units container
 
 			// Title container displayed to the left of the number and number units container.
-			rm.write("<div"); // Start Title container
-			rm.addStyle("display","-webkit-box");
-			rm.addStyle("overflow","hidden");
-			rm.writeStyles();
-			rm.write(">");
+			rm.openStart("div"); // Start Title container
+			rm.style("display", "-webkit-box");
+			rm.style("overflow", "hidden");
+			rm.openEnd();
 			var oTitleText = oLI._getTitleText();
 			if (oTitleText) {
 				//sets the text direction of the title,
@@ -149,24 +169,24 @@ sap.ui.define(['./ListItemBaseRenderer', 'sap/ui/core/Renderer', 'sap/ui/core/li
 				rm.renderControl(oTitleText);
 			}
 
-			rm.write("</div>"); // End Title container
+			rm.close("div"); // End Title container
 
-			rm.write("</div>"); // End Top row container
+			rm.close("div"); // End Top row container
 
-			if (!(Device.browser.internet_explorer && Device.browser.version < 10)) {
-				rm.write("<div style=\"clear: both;\"></div>");
-			}
+			rm.openStart("div");
+			rm.style("clear", "both");
+			rm.openEnd();
+			rm.close("div");
 
 			// Bottom row container.
 			if (oLI._hasBottomContent()) {
-				rm.write("<div"); // Start Bottom row container
-				rm.addClass("sapMObjLBottomRow");
-				rm.writeClasses();
-				rm.write(">");
+				rm.openStart("div"); // Start Bottom row container
+				rm.class("sapMObjLBottomRow");
+				rm.openEnd();
 
-				var aAttribs = oLI.getAttributes();
+				var aAttribs = oLI._getVisibleAttributes();
 				var statuses = [];
-				var markers = oLI.getMarkers();
+				var markers = oLI._getVisibleMarkers();
 
 				markers._isEmpty = function() {
 					return !(markers.length);
@@ -176,12 +196,18 @@ sap.ui.define(['./ListItemBaseRenderer', 'sap/ui/core/Renderer', 'sap/ui/core/li
 					statuses.push(markers);
 				}
 
-				oLI.getFirstStatus() && statuses.push(oLI.getFirstStatus());
-				oLI.getSecondStatus() && statuses.push(oLI.getSecondStatus());
+				statuses.push(oLI.getFirstStatus());
+				statuses.push(oLI.getSecondStatus());
 
-				this.renderAttributesStatuses(rm, oLI, aAttribs, statuses);
+				while (aAttribs.length > 0) {
+					this.renderAttributeStatus(rm, oLI, aAttribs.shift(), statuses.shift());
+				}
 
-				rm.write("</div>"); // End Bottom row container
+				while (statuses.length > 0) {
+					this.renderAttributeStatus(rm, oLI, null, statuses.shift());
+				}
+
+				rm.close("div"); // End Bottom row container
 			}
 		};
 

@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.Image.
-sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Control', "./ImageRenderer"],
-	function(jQuery, library, Control, ImageRenderer) {
+sap.ui.define(['./library', 'sap/ui/core/Control', './ImageRenderer'],
+	function(library, Control, ImageRenderer) {
 	"use strict";
 
 
@@ -24,7 +24,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Control', "./Image
 	 * @implements sap.ui.commons.ToolbarItem,sap.ui.commons.FormattedTextViewControl, sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -40,6 +40,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Control', "./Image
 			"sap.ui.core.IFormContent"
 		],
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -109,4 +110,4 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Control', "./Image
 
 	return Image;
 
-}, /* bExport= */ true);
+});

@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -24,8 +24,10 @@ sap.ui.define(['sap/m/Button', 'sap/m/ButtonRenderer'],
 	 * to have buttons that show only an icon in the toolbar, but icon and text in the overflow menu.
 	 * @extends sap.m.Button
 	 *
+	 * @implements sap.f.IShellBar
+	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -34,7 +36,13 @@ sap.ui.define(['sap/m/Button', 'sap/m/ButtonRenderer'],
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */
 	var OverflowToolbarButton = Button.extend("sap.m.OverflowToolbarButton", /** @lends sap.m.OverflowToolbarButton.prototype */ {
-		renderer: ButtonRenderer.render
+		metadata: {
+			interfaces: [
+				"sap.f.IShellBar",
+				"sap.m.IOverflowToolbarContent"
+			]
+		},
+		renderer: ButtonRenderer
 	});
 
 	OverflowToolbarButton.prototype._getText = function() {
@@ -44,6 +52,36 @@ sap.ui.define(['sap/m/Button', 'sap/m/ButtonRenderer'],
 
 			return "";
 	};
+
+	OverflowToolbarButton.prototype._getTooltip = function() {
+			var sTooltip = Button.prototype._getTooltip.call(this);
+
+			if (this._bInOverflow) {
+				return this._getText() === sTooltip ? "" : sTooltip;
+			}
+
+			return sTooltip;
+	};
+
+		/**
+		 * OVERFLOW TOOLBAR settings
+		 */
+		OverflowToolbarButton.prototype._onBeforeEnterOverflow = function () {this._bInOverflow = true;};
+
+		OverflowToolbarButton.prototype._onAfterExitOverflow = function () {this._bInOverflow = false;};
+
+		OverflowToolbarButton.prototype.getOverflowToolbarConfig = function () {
+			var oConfig = {
+				canOverflow: true,
+				propsUnrelatedToSize: ["enabled", "type"],
+				autoCloseEvents: ["press"]
+			};
+
+			oConfig.onBeforeEnterOverflow = this._onBeforeEnterOverflow.bind(this);
+			oConfig.onAfterExitOverflow = this._onAfterExitOverflow.bind(this);
+
+			return oConfig;
+		};
 
 	return OverflowToolbarButton;
 

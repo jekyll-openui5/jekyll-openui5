@@ -1,18 +1,33 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.RowRepeater.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/ui/thirdparty/jquery',
     './library',
     'sap/ui/core/Control',
-    "./RowRepeaterRenderer"
+    './RowRepeaterRenderer',
+    './Toolbar',
+    './Paginator',
+    './Button',
+    'sap/ui/model/FilterType'
 ],
-	function(jQuery, library, Control, RowRepeaterRenderer) {
+	function(jQuery, library, Control, RowRepeaterRenderer, Toolbar, Paginator, Button, FilterType) {
 	"use strict";
+
+
+
+	// shortcut for sap.ui.commons.PaginatorEvent
+	var PaginatorEvent = library.PaginatorEvent;
+
+	// shortcut for sap.ui.commons.ToolbarDesign
+	var ToolbarDesign = library.ToolbarDesign;
+
+	// shortcut for sap.ui.commons.RowRepeaterDesign
+	var RowRepeaterDesign = library.RowRepeaterDesign;
 
 
 
@@ -27,7 +42,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -38,6 +53,7 @@ sap.ui.define([
 	var RowRepeater = Control.extend("sap.ui.commons.RowRepeater", /** @lends sap.ui.commons.RowRepeater.prototype */ { metadata : {
 
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 			/**
 			 * Number of rows displayed.
@@ -62,7 +78,7 @@ sap.ui.define([
 			/**
 			 * The visual design of the control.
 			 */
-			design : {type : "sap.ui.commons.RowRepeaterDesign", group : "Appearance", defaultValue : sap.ui.commons.RowRepeaterDesign.Standard},
+			design : {type : "sap.ui.commons.RowRepeaterDesign", group : "Appearance", defaultValue : RowRepeaterDesign.Standard},
 
 			/**
 			 * Threshold to fetch the next chunk of data. The minimal threshold can be the numberOfRows of the RR.
@@ -234,26 +250,26 @@ sap.ui.define([
 		this.iPreviousNumberOfRows = this.getNumberOfRows();
 
 		// create filter and sorter toolbar control and add as aggregation
-		this.setAggregation("filterToolbar", new sap.ui.commons.Toolbar(sId + "-ftb", {
+		this.setAggregation("filterToolbar", new Toolbar(sId + "-ftb", {
 			standalone: false,
-			design: sap.ui.commons.ToolbarDesign.Transparent
+			design: ToolbarDesign.Transparent
 		}));
-		this.setAggregation("sorterToolbar", new sap.ui.commons.Toolbar(sId + "-stb", {
+		this.setAggregation("sorterToolbar", new Toolbar(sId + "-stb", {
 			standalone: false
 		}));
 
 		// create pager controls and their event handlers, add them as aggregations
-		var oPager = new sap.ui.commons.Paginator(sId + "-fp",{page:[this.paging,this]});
+		var oPager = new Paginator(sId + "-fp",{page:[this.paging,this]});
 		this.setAggregation("footerPager",oPager);
 
 		// create show more buttons and add them as aggregation
 		var sShowMoreText = this.oResourceBundle.getText("SHOW_MORE");
-		this.setAggregation("headerShowMoreButton", new sap.ui.commons.Button(sId + "-hsm", {
+		this.setAggregation("headerShowMoreButton", new Button(sId + "-hsm", {
 			text: sShowMoreText,
 			tooltip: sShowMoreText,
 			press: [this.triggerShowMore, this]
 		}));
-		this.setAggregation("footerShowMoreButton", new sap.ui.commons.Button(sId + "-fsm", {
+		this.setAggregation("footerShowMoreButton", new Button(sId + "-fsm", {
 			text: sShowMoreText,
 			tooltip: sShowMoreText,
 			press: [this.triggerShowMore, this]
@@ -273,7 +289,7 @@ sap.ui.define([
 	 *
 	 * This method will only trigger a showMore if the property showMoreSteps is set.
 	 *
-	 * @return {sap.ui.commons.RowRepeater} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -422,7 +438,7 @@ sap.ui.define([
 		if (oFilter) {
 
 			// apply the filter assigned to filter item
-			oListBinding.filter(oFilter.getFilters(), sap.ui.model.FilterType.Control);
+			oListBinding.filter(oFilter.getFilters(), FilterType.Control);
 
 			// fire the filter
 			this.fireFilter({filterId:id});
@@ -799,7 +815,7 @@ sap.ui.define([
 	 * Default value is <code>5</code>
 	 *
 	 * @param {int} iNumberOfRows  new value for property <code>numberOfRows</code>
-	 * @return {sap.ui.commons.RowRepeater} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	RowRepeater.prototype.setNumberOfRows = function(iNumberOfRows) {
@@ -824,7 +840,7 @@ sap.ui.define([
 	 * Setter for property <code>currentPage</code>.
 	 *
 	 * @param {int} iCurrentPage  new value for property <code>currentPage</code>
-	 * @return {sap.ui.commons.RowRepeater} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	RowRepeater.prototype.setCurrentPage = function(iCurrentPage) {
@@ -853,7 +869,7 @@ sap.ui.define([
 	 * page being set to the first page.
 	 *
 	 * @param {int} iShowMoreSteps  new value for property <code>showMoreSteps</code>
-	 * @return {sap.ui.commons.RowRepeater} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	RowRepeater.prototype.setShowMoreSteps = function(iShowMoreSteps) {
@@ -933,7 +949,7 @@ sap.ui.define([
 		// insert a button into the filter toolbar's aggregation
 		var oToolbar = this.getAggregation("filterToolbar");
 		var sFilterId = oFilter.getId();
-		var oButton = new sap.ui.commons.Button({text:oFilter.getText(),icon:oFilter.getIcon(),tooltip:oFilter.getTooltip(),press:[function(){this.applyFilter(sFilterId);},this]});
+		var oButton = new Button({text:oFilter.getText(),icon:oFilter.getIcon(),tooltip:oFilter.getTooltip(),press:[function(){this.applyFilter(sFilterId);},this]});
 		oToolbar.insertItem(oButton,iIndex);
 
 		this.insertAggregation("filters", oFilter, iIndex);
@@ -948,7 +964,7 @@ sap.ui.define([
 		// add a button to the filter toolbar's aggregation
 		var oToolbar = this.getAggregation("filterToolbar");
 		var sFilterId = oFilter.getId();
-		var oButton = new sap.ui.commons.Button({text:oFilter.getText(),icon:oFilter.getIcon(),tooltip:oFilter.getTooltip(),press:[function(){this.applyFilter(sFilterId);},this]});
+		var oButton = new Button({text:oFilter.getText(),icon:oFilter.getIcon(),tooltip:oFilter.getTooltip(),press:[function(){this.applyFilter(sFilterId);},this]});
 		oToolbar.addItem(oButton);
 
 		this.addAggregation("filters", oFilter);
@@ -996,7 +1012,7 @@ sap.ui.define([
 		// add a button to the sorter toolbar's aggregation
 		var oToolbar = this.getAggregation("sorterToolbar");
 		var sSorterId = oSorter.getId();
-		var oButton = new sap.ui.commons.Button({text:oSorter.getText(),icon:oSorter.getIcon(),tooltip:oSorter.getTooltip(),press:[function(){this.triggerSort(sSorterId);},this]});
+		var oButton = new Button({text:oSorter.getText(),icon:oSorter.getIcon(),tooltip:oSorter.getTooltip(),press:[function(){this.triggerSort(sSorterId);},this]});
 		oToolbar.insertItem(oButton,iIndex);
 
 		this.insertAggregation("sorters", oSorter, iIndex);
@@ -1010,7 +1026,7 @@ sap.ui.define([
 		// add a button to the sorter toolbar's aggregation
 		var oToolbar = this.getAggregation("sorterToolbar");
 		var sSorterId = oSorter.getId();
-		var oButton = new sap.ui.commons.Button({text:oSorter.getText(),icon:oSorter.getIcon(),tooltip:oSorter.getTooltip(),press:[function(){this.triggerSort(sSorterId);},this]});
+		var oButton = new Button({text:oSorter.getText(),icon:oSorter.getIcon(),tooltip:oSorter.getTooltip(),press:[function(){this.triggerSort(sSorterId);},this]});
 		oToolbar.addItem(oButton);
 
 		this.addAggregation("sorters", oSorter);
@@ -1099,11 +1115,11 @@ sap.ui.define([
 
 		// create the rows where we navigate to in the DOM
 		var sStyleString = "\"top:-" + oJQDomULFrom.outerHeight(true) + "px;" + sDirection + ":" + oJQDomULFrom.outerWidth(true) + "px;\"";
-		jQuery("<ul id=\"" + sId + "-page_" + iPageTo + "\" class=\"sapUiRrPage\" style=" + sStyleString + "/>").appendTo(oDomBodyDIV);
+		jQuery("<ul id=\"" + sId + "-page_" + iPageTo + "\" class=\"sapUiRrPage\" style=" + sStyleString + "></ul>").appendTo(oDomBodyDIV);
 		var oDomULTo = oDomBodyDIV.lastChild;
 		var oJQDomULTo = jQuery(oDomULTo);
 		for ( n = iStartIndex; n < iStartIndex + iCurrentVisibleRows; n++ ) {
-			jQuery("<li id=\"" + sId + "-row_" + n + "\" class=\"sapUiRrRow\"/>").appendTo(oDomULTo);
+			jQuery("<li id=\"" + sId + "-row_" + n + "\" class=\"sapUiRrRow\"></li>").appendTo(oDomULTo);
 			oDomCurrentLI =  oDomULTo.lastChild;
 			oRenderManager.render(aRows[n], oDomCurrentLI);
 		}
@@ -1188,7 +1204,7 @@ sap.ui.define([
 
 			// create all newly visible child elements, if size grows
 			for (var n = iOldNumberOfRows; n < iNewNumberOfRows; n++) {
-				jQuery("<li id=\"" + sId + "-row_" + n + "\" class=\"sapUiRrRow\"/>").appendTo(oDomPageUL);
+				jQuery("<li id=\"" + sId + "-row_" + n + "\" class=\"sapUiRrRow\"></li>").appendTo(oDomPageUL);
 				oDomCurrentLI = oDomPageUL.lastChild;
 				oRenderManager.render(aRows[n], oDomCurrentLI);
 			}
@@ -1317,30 +1333,30 @@ sap.ui.define([
 	 RowRepeater.prototype.paging = function(oEvent) {
 
 		 switch (oEvent.getParameter("type")) {
-			 case sap.ui.commons.PaginatorEvent.First:
+			 case PaginatorEvent.First:
 				 this.firstPage();
 				 break;
-			 case sap.ui.commons.PaginatorEvent.Last:
+			 case PaginatorEvent.Last:
 				 this.lastPage();
 				 break;
-			 case sap.ui.commons.PaginatorEvent.Previous:
+			 case PaginatorEvent.Previous:
 				 this.previousPage();
 				 break;
-			 case sap.ui.commons.PaginatorEvent.Next:
+			 case PaginatorEvent.Next:
 				 this.nextPage();
 				 break;
-			 case sap.ui.commons.PaginatorEvent.Goto:
+			 case PaginatorEvent.Goto:
 				 this.gotoPage(oEvent.getParameter("targetPage"));
 				 break;
 		 }
 
-	 }
+	 };
 
 	/**
 	 * Update the state of aggregated child controls inside this row repeater.
 	 *
 	 * @private
-	 */;
+	 */
 	RowRepeater.prototype.updateChildControls = function() {
 
 		// local referenced to controls
@@ -1392,7 +1408,7 @@ sap.ui.define([
 	 * Verify if the rows aggregation of this control is bound.
 	 */
 	RowRepeater.prototype.isBound = function(sName) {
-		return sap.ui.core.Element.prototype.isBound.call(this, sName || "rows");
+		return Control.prototype.isBound.call(this, sName || "rows");
 	};
 
 	/**
@@ -1414,7 +1430,7 @@ sap.ui.define([
 	 * @private
 	 */
 	RowRepeater.prototype.unbindAggregation = function(sName) {
-		sap.ui.core.Element.prototype.unbindAggregation.apply(this, arguments);
+		Control.prototype.unbindAggregation.apply(this, arguments);
 		if (sName === "rows") {
 			this.destroyRows();
 		}
@@ -1547,4 +1563,4 @@ sap.ui.define([
 
 	return RowRepeater;
 
-}, /* bExport= */ true);
+});

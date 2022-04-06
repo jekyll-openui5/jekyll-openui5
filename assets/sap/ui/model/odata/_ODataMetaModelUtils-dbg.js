@@ -1,15 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	"jquery.sap.global", "./_AnnotationHelperBasics"
-], function (jQuery, _AnnotationHelperBasics) {
+	"./_AnnotationHelperBasics",
+	"sap/base/Log",
+	"sap/base/util/deepExtend",
+	"sap/base/util/extend"
+], function (_AnnotationHelperBasics, Log, deepExtend, extend) {
 	"use strict";
-
-	/*global Promise */
 
 	var oBoolFalse = { "Bool" : "false" },
 		oBoolTrue = { "Bool" : "true" },
@@ -152,7 +153,7 @@ sap.ui.define([
 				"NonSortableProperties" ]
 		},
 		rValueList = /^com\.sap\.vocabularies\.Common\.v1\.ValueList(#.*)?$/,
-		iWARNING = jQuery.sap.log.Level.WARNING,
+		iWARNING = Log.Level.WARNING,
 		Utils;
 
 
@@ -184,10 +185,10 @@ sap.ui.define([
 			if (sTypeClass === "EntitySet" && oExtension.value === sNonDefaultValue) {
 				// potentially nested structure so do deep copy
 				if (bDeepCopy) {
-					jQuery.extend(true, o, mV2ToV4[oExtension.name]);
+					deepExtend(o, mV2ToV4[oExtension.name]);
 				} else {
 					// Warning: Passing false for the first argument is not supported!
-					jQuery.extend(o, mV2ToV4[oExtension.name]);
+					extend(o, mV2ToV4[oExtension.name]);
 				}
 			}
 		},
@@ -206,8 +207,8 @@ sap.ui.define([
 				sFilterRestrictionValue = mFilterRestrictions[oProperty["sap:filter-restriction"]];
 
 			if (!sFilterRestrictionValue) {
-				if (jQuery.sap.log.isLoggable(iWARNING, sLoggingModule)) {
-					jQuery.sap.log.warning("Unsupported sap:filter-restriction: "
+				if (Log.isLoggable(iWARNING, sLoggingModule)) {
+					Log.warning("Unsupported sap:filter-restriction: "
 							+ oProperty["sap:filter-restriction"],
 						oEntitySet.entityType + "." + oProperty.name, sLoggingModule);
 				}
@@ -319,8 +320,8 @@ sap.ui.define([
 					}
 					aMatches = rSemanticsWithTypes.exec(sV2Semantics);
 					if (!aMatches) {
-						if (jQuery.sap.log.isLoggable(iWARNING, sLoggingModule)) {
-							jQuery.sap.log.warning("Unsupported sap:semantics: " + sV2Semantics,
+						if (Log.isLoggable(iWARNING, sLoggingModule)) {
+							Log.warning("Unsupported sap:semantics: " + sV2Semantics,
 								oType.name + "." + oProperty.name, sLoggingModule);
 						}
 						return;
@@ -395,6 +396,7 @@ sap.ui.define([
 				(aTypes || []).forEach(function (oType) {
 					(oType.property || []).forEach(function (oProperty) {
 						var sAnnotationName,
+							oInterface,
 							sSemantics,
 							oTarget,
 							oUnitPath,
@@ -402,11 +404,16 @@ sap.ui.define([
 							oUnitProperty;
 
 						if (sUnitPath) {
+							oInterface = {
+								getModel : function () {
+									return oMetaModel;
+								},
+								getPath : function () {
+									return oType.$path;
+								}
+							};
 							oUnitPath = {"Path" : sUnitPath};
-							oTarget = _AnnotationHelperBasics.followPath({
-								getModel : function () { return oMetaModel; },
-								getPath : function () { return oType.$path; }
-							}, oUnitPath);
+							oTarget = _AnnotationHelperBasics.followPath(oInterface, oUnitPath);
 							if (oTarget && oTarget.resolvedPath) {
 								oUnitProperty = oMetaModel.getProperty(oTarget.resolvedPath);
 								sSemantics = oUnitProperty["sap:semantics"];
@@ -414,8 +421,8 @@ sap.ui.define([
 									sAnnotationName = "Org.OData.Measures.V1.Unit";
 								} else if (sSemantics === "currency-code") {
 									sAnnotationName = "Org.OData.Measures.V1.ISOCurrency";
-								} else if (jQuery.sap.log.isLoggable(iWARNING, sLoggingModule)) {
-									jQuery.sap.log.warning("Unsupported sap:semantics='"
+								} else if (Log.isLoggable(iWARNING, sLoggingModule)) {
+									Log.warning("Unsupported sap:semantics='"
 											+ sSemantics + "' at sap:unit='" + sUnitPath + "'; "
 											+ "expected 'currency-code' or 'unit-of-measure'",
 										oType.namespace + "." + oType.name + "/" + oProperty.name,
@@ -425,8 +432,8 @@ sap.ui.define([
 								if (sAnnotationName && !(sAnnotationName in oProperty)) {
 									oProperty[sAnnotationName] = oUnitPath;
 								}
-							} else if (jQuery.sap.log.isLoggable(iWARNING, sLoggingModule)) {
-								jQuery.sap.log.warning("Path '" + sUnitPath
+							} else if (Log.isLoggable(iWARNING, sLoggingModule)) {
+								Log.warning("Path '" + sUnitPath
 										+ "' for sap:unit cannot be resolved",
 									oType.namespace + "." + oType.name + "/" + oProperty.name,
 									sLoggingModule);
@@ -584,7 +591,7 @@ sap.ui.define([
 
 			sPropertyName = sPropertyName || "name";
 			if (aArray) {
-				for (i = 0, n = aArray.length; i < n; i++) {
+				for (i = 0, n = aArray.length; i < n; i += 1) {
 					if (aArray[i][sPropertyName] === vExpectedPropertyValue) {
 						return i;
 					}
@@ -763,8 +770,8 @@ sap.ui.define([
 					var sTargetType = oV4TypeInfo.typeMapping[sType];
 					if (sTargetType) {
 						aResult.push(oV4TypeInfo.v4EnumType + "/" + sTargetType);
-					} else if (jQuery.sap.log.isLoggable(iWARNING, sLoggingModule)) {
-						jQuery.sap.log.warning("Unsupported type for sap:semantics: " + sType,
+					} else if (Log.isLoggable(iWARNING, sLoggingModule)) {
+						Log.warning("Unsupported type for sap:semantics: " + sType,
 							oType.name + "." + oProperty.name, sLoggingModule);
 					}
 				});
@@ -819,7 +826,7 @@ sap.ui.define([
 
 			if (sCreatable && sCreatablePath) {
 				// inconsistent service if both v2 annotations are set
-				jQuery.sap.log.warning("Inconsistent service",
+				Log.warning("Inconsistent service",
 					"Use either 'sap:creatable' or 'sap:creatable-path' at navigation property "
 						+ "'" + oEntitySet.entityType + "/" + oNavigationProperty.name + "'",
 					sLoggingModule);
@@ -876,7 +883,7 @@ sap.ui.define([
 				// only if a second extension (sap:xable-path or sap:xable) is processed,
 				// the warning is logged and the entity set is marked as non-deletable or
 				// non-updatable
-				jQuery.sap.log.warning("Inconsistent service",
+				Log.warning("Inconsistent service",
 					"Use either 'sap:" + sV2Annotation + "' or 'sap:" + sV2Annotation + "-path'"
 						+ " at entity set '" + o.name + "'", sLoggingModule);
 				oValue = oBoolFalse;
@@ -967,7 +974,7 @@ sap.ui.define([
 						String : sSchemaVersion
 					};
 				}
-				jQuery.extend(oSchema, oAnnotations[oSchema.namespace]);
+				extend(oSchema, oAnnotations[oSchema.namespace]);
 
 				Utils.visitParents(oSchema, oAnnotations, "association",
 					function (oAssociation, mChildAnnotations) {
@@ -984,7 +991,10 @@ sap.ui.define([
 				// annotations are already lifted up and can be used for calculating entity
 				// set annotations which are based on V2 annotations on entity properties
 				Utils.visitParents(oSchema, oAnnotations, "entityType", Utils.visitEntityType);
+			});
 
+			aSchemas.forEach(function (oSchema) {
+				// visit entity container after all entity types of all schemas are visited
 				Utils.visitParents(oSchema, oAnnotations, "entityContainer",
 					function (oEntityContainer, mChildAnnotations) {
 						Utils.visitChildren(oEntityContainer.associationSet, mChildAnnotations);
@@ -1042,7 +1052,7 @@ sap.ui.define([
 					fnCallback(oChild);
 				}
 				// merge V4 annotations after child annotations are processed
-				jQuery.extend(oChild, mChildAnnotations[oChild.name || oChild.role]);
+				extend(oChild, mChildAnnotations[oChild.name || oChild.role]);
 			});
 		},
 
@@ -1083,8 +1093,7 @@ sap.ui.define([
 			oFunctionImport.parameter.forEach(
 				function (oParam) {
 					Utils.liftSAPData(oParam);
-					jQuery.extend(oParam,
-						mAnnotations[oFunctionImport.name + "/" + oParam.name]);
+					extend(oParam, mAnnotations[oFunctionImport.name + "/" + oParam.name]);
 				}
 			);
 		},
@@ -1120,7 +1129,7 @@ sap.ui.define([
 
 				fnCallback(oParent, mChildAnnotations);
 				// merge V4 annotations after child annotations are processed
-				jQuery.extend(oParent, oAnnotations[sQualifiedName]);
+				extend(oParent, oAnnotations[sQualifiedName]);
 			}
 
 			if (!aParents) {

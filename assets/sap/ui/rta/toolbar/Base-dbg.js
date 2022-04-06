@@ -1,23 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	'jquery.sap.global',
-	'sap/ui/rta/library',
-	'sap/ui/core/Popup',
-	'sap/m/Toolbar',
-	'sap/ui/core/BusyIndicator',
-	'sap/ui/rta/util/Animation'
-],
-function(
-	jQuery,
-	library,
-	Popup,
-	Toolbar,
-	BusyIndicator,
+	"sap/m/HBox",
+	"sap/ui/dt/util/ZIndexManager",
+	"sap/ui/model/resource/ResourceModel",
+	"sap/ui/rta/util/Animation"
+], function(
+	HBox,
+	ZIndexManager,
+	ResourceModel,
 	Animation
 ) {
 	"use strict";
@@ -27,10 +22,10 @@ function(
 	 *
 	 * @class
 	 * Base class for Toolbar control
-	 * @extends sap.m.Toolbar
+	 * @extends sap.m.HBox
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @private
@@ -39,32 +34,44 @@ function(
 	 * @experimental Since 1.48. This class is experimental. The API might be changed in future.
 	 */
 
-	var Base = Toolbar.extend("sap.ui.rta.toolbar.Base", {
+	var Base = HBox.extend("sap.ui.rta.toolbar.Base", {
 		metadata: {
 			library: "sap.ui.rta",
 			properties: {
 				/** Color in the toolbar */
-				"color": {
+				color: {
 					type: "string",
 					defaultValue: "default"
 				},
 
 				/** z-index of the toolbar on the page. Please consider of using bringToFront() function */
-				"zIndex": {
+				zIndex: {
 					type: "int"
 				},
 
+				/**
+				 * information from the rta instance needed for some Toolbar extensions.
+				 * Includes the flexSettings, command stack and the root control from the RuntimeAuthoring instance
+				 */
+				rtaInformation: {
+					type: "object",
+					defaultValue: {
+						flexSettings: {}
+					}
+				},
+
 				/** i18n bundle */
-				"textResources": "object"
+				textResources: "object"
 			}
 		},
 		constructor: function() {
 			// call parent constructor
-			Toolbar.apply(this, arguments);
+			HBox.apply(this, arguments);
 
+			this._oExtensions = {};
+			this.setAlignItems("Center");
 			this.setVisible(false);
 			this.placeToContainer();
-			this.buildContent();
 		},
 
 		/**
@@ -85,23 +92,61 @@ function(
 	 * @override
 	 */
 	Base.prototype.init = function() {
-		Toolbar.prototype.init.apply(this, arguments);
+		this._oResourceModel = new ResourceModel({
+			bundle: sap.ui.getCore().getLibraryResourceBundle("sap.ui.rta")
+		});
+		HBox.prototype.init.apply(this, arguments);
+		// Assign the model object to the SAPUI5 core using the name "i18n"
+		this.setModel(this._oResourceModel, "i18n");
+		return this.buildContent();
+	};
+
+	Base.prototype.exit = function() {
+		Object.values(this._oExtensions).forEach(function(oExtension) {
+			oExtension.destroy();
+		});
+		this._oExtensions = {};
+
+		HBox.prototype.exit.apply(this, arguments);
 	};
 
 	/**
-	 * Event handler for onBeforeRendering
-	 * @protected
+	 * Adds an extension to the toolbar, if it is not already registered.
+	 * The new extension gets created with the toolbar itself as property 'context'.
+	 *
+	 * @param {string} sName - Name of the extension
+	 * @param {sap.ui.base.ManagedObject} Extension - Extension Class to be instantiated
+	 * @returns {sap.ui.base.ManagedObject} Returns the newly created module.
 	 */
-	Base.prototype.onBeforeRendering = function () {
-		Toolbar.prototype.onBeforeRendering.apply(this, arguments);
+	Base.prototype.addExtension = function(sName, Extension) {
+		if (!Object.keys(this._oExtensions).includes(sName)) {
+			this._oExtensions[sName] = new Extension({context: this});
+		}
+		return this._oExtensions[sName];
 	};
 
 	/**
-	 * Event handler for onAfterRendering
-	 * @protected
+	 * Returns the extension with the passed name
+	 *
+	 * @param {string} sName - Name of the extension
+	 * @returns {sap.ui.base.ManagedObject|undefined} Returns the extension or undefined if it does not exist
 	 */
-	Base.prototype.onAfterRendering = function () {
-		Toolbar.prototype.onAfterRendering.apply(this, arguments);
+	Base.prototype.getExtension = function(sName) {
+		return this._oExtensions[sName];
+	};
+
+	/**
+	 * @override
+	 */
+	Base.prototype.setTextResources = function(oTextResource) {
+		this.setProperty("textResources", oTextResource);
+		this._oResourceModel = new ResourceModel({
+			bundle: sap.ui.getCore().getLibraryResourceBundle("sap.ui.rta")
+		});
+	};
+
+	Base.prototype.onFragmentLoaded = function() {
+		return Promise.resolve();
 	};
 
 	/**
@@ -110,17 +155,17 @@ function(
 	 * @param {sap.ui.base.Event} oEvent - Event object
 	 */
 	Base.prototype.eventHandler = function (sEventName, oEvent) {
-		this['fire' + sEventName](oEvent.getParameters());
+		this["fire" + sEventName](oEvent.getParameters());
 	};
 
 	/**
 	 * Function provides controls which should be rendered into the Toolbar. Controls are going to be rendered
 	 * in the same order as provided in returned array.
-	 * @return {Array.<sap.ui.core.Control>} - returns an array of controls
+	 * @returns {Array.<sap.ui.core.Control>} An array of controls
 	 * @protected
 	 */
 	Base.prototype.buildControls = function () {
-		return [];
+		return Promise.resolve([]);
 	};
 
 	/**
@@ -135,14 +180,17 @@ function(
 	/**
 	 * Adds content into the Toolbar
 	 * @protected
+	 * @returns {Promise} An empty Promise
 	 */
 	Base.prototype.buildContent = function () {
-		this.buildControls().forEach(this.addContent, this);
+		return this.buildControls().then(function (aControls) {
+			aControls.forEach(this.addItem, this);
+		}.bind(this));
 	};
 
 	/**
 	 * Makes the Toolbar visible
-	 * @return {Promise} - returns Promise which resolves after animation has been completed
+	 * @returns {Promise} A Promise which resolves after animation has been completed
 	 * @public
 	 */
 	Base.prototype.show = function() {
@@ -161,7 +209,7 @@ function(
 		// 2) animate DomRef
 		.then(function () {
 			return this.animation
-				? Animation.waitTransition(this.$(), this.addStyleClass.bind(this, 'is_visible'))
+				? Animation.waitTransition(this.$(), this.addStyleClass.bind(this, "is_visible"))
 				: Promise.resolve();
 		}.bind(this))
 		// 3) focus on Toolbar
@@ -172,35 +220,36 @@ function(
 
 	/**
 	 * Makes the Toolbar invisible
-	 * @return {Promise} - returns Promise which resolves after animation has been completed
+	 * @param {boolean} bSkipTransition - skips the transition for cases like page reloads - where the animation won't be visible and can cause timing issues
+	 * @returns {Promise} A Promise which resolves after animation has been completed
 	 * @public
 	 */
-	Base.prototype.hide = function() {
+	Base.prototype.hide = function(bSkipTransition) {
+		var oPromise = Promise.resolve();
 		// 1) animate DomRef
-		return (
-			this.animation
-			? Animation.waitTransition(this.$(), this.removeStyleClass.bind(this, 'is_visible'))
-			: Promise.resolve()
-		)
+		if (this.animation) {
+			if (bSkipTransition) {
+				this.removeStyleClass("is_visible");
+			} else {
+				oPromise = Animation.waitTransition(this.$(), this.removeStyleClass.bind(this, "is_visible"));
+			}
+		}
+		return oPromise
 		// 2) hide DomRef
-		.then(function () {
-			this.setVisible(false);
-		}.bind(this));
+			.then(function () {
+				this.setVisible(false);
+			}.bind(this));
 	};
 
 	/**
 	 * Getter for inner controls
+	 *
 	 * @param {string} sName - Name of the control
-	 * @return {sap.ui.core.Control|undefined} - returns control or undefined if there is no control with provided name
+	 * @returns {sap.ui.core.Control|undefined} A control or undefined if there is no control with provided name
 	 * @public
 	 */
 	Base.prototype.getControl = function(sName) {
-		return this
-			.getAggregation('content')
-			.filter(function (oControl) {
-				return oControl.data('name') === sName;
-			})
-			.pop();
+		return sap.ui.getCore().byId("sapUiRta_" + sName);
 	};
 
 	/**
@@ -208,26 +257,8 @@ function(
 	 * @public
 	 */
 	Base.prototype.bringToFront = function () {
-		var iNextZIndex;
-		var oBusyIndicatorPopup = BusyIndicator.oPopup;
-
-		if (oBusyIndicatorPopup && oBusyIndicatorPopup.isOpen() && oBusyIndicatorPopup.getModal()) {
-			// '-3' because overlay is on the '-2' level, see implementation of the sap.ui.core.Popup
-			iNextZIndex = oBusyIndicatorPopup._iZIndex - 3;
-		} else {
-			iNextZIndex = Popup.getNextZIndex();
-		}
-
-		this.setZIndex(iNextZIndex);
+		this.setZIndex(ZIndexManager.getNextZIndex());
 	};
 
-	/**
-	 * Backwards compatibility
-	 */
-	Base.prototype.setUndoRedoEnabled = function () {};
-	Base.prototype.setPublishEnabled = function () {};
-	Base.prototype.setRestoreEnabled = function () {};
-
 	return Base;
-
-}, true);
+});

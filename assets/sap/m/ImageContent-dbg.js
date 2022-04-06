@@ -1,19 +1,26 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	'jquery.sap.global',
 	'./library',
 	'sap/ui/core/Control',
 	'sap/m/Image',
 	'sap/ui/core/IconPool',
 	'sap/ui/Device',
 	'./ImageContentRenderer',
-	'jquery.sap.keycodes'
-], function (jQuery, library, Control, Image, IconPool, Device, ImageContentRenderer) {
+	"sap/ui/events/KeyCodes"
+], function(
+	library,
+	Control,
+	Image,
+	IconPool,
+	Device,
+	ImageContentRenderer,
+	KeyCodes
+) {
 	"use strict";
 
 	/**
@@ -26,7 +33,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @since 1.38
 	 *
 	 * @public
@@ -113,7 +120,7 @@ sap.ui.define([
 	 */
 	ImageContent.prototype.ontap = function (oEvent) {
 		if (Device.browser.msie) {
-			this.$().focus();
+			this.$().trigger("focus");
 		}
 		this.firePress();
 	};
@@ -124,7 +131,7 @@ sap.ui.define([
 	 * @param {sap.ui.base.Event} oEvent which was triggered
 	 */
 	ImageContent.prototype.onkeydown = function (oEvent) {
-		if (oEvent.which === jQuery.sap.KeyCodes.ENTER || oEvent.which === jQuery.sap.KeyCodes.SPACE) {
+		if (oEvent.which === KeyCodes.ENTER || oEvent.which === KeyCodes.SPACE) {
 			this.firePress();
 			oEvent.preventDefault();
 		}

@@ -1,6 +1,6 @@
 /*
- * ! UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * ! OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -17,7 +17,7 @@ sap.ui.define([
 	 * @param {object} [mSettings] initial settings for the new control
 	 * @class An abstract base type for <code>panels</code> aggregation in <code>P13nDialog</code> control.
 	 * @extends sap.ui.core.Control
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @constructor
 	 * @public
 	 * @abstract
@@ -116,14 +116,14 @@ sap.ui.define([
 				beforeNavigationTo: {}
 			}
 		},
-		renderer: function(oRm, oControl) {
-			// write the HTML into the render manager
-			oRm.write("<span");
-			oRm.writeControlData(oControl);
-			oRm.addClass("sapMP13nPanel");
-			oRm.writeClasses();
-			oRm.write(">"); // span element
-			oRm.write("</span>");
+		renderer: {
+			apiVersion: 2,
+			render:function(oRm, oControl) {
+				oRm.openStart("span", oControl);
+				oRm.class("sapMP13nPanel");
+				oRm.openEnd();
+				oRm.close("span");
+			}
 		}
 	});
 
@@ -132,7 +132,7 @@ sap.ui.define([
 	 *
 	 * @returns {object} Object which describes the state after Ok has been pressed
 	 * @deprecated As of version 1.50, replaced by the event of the respective inherited
-	 * control, for example {@link sap.m.P13nColumnsPanel.html#changeColumnsItems} of
+	 * control, for example {@link sap.m.P13nColumnsPanel#event:changeColumnsItems} of
 	 * <code>P13nColumnsPanel</code> control.
 	 * @public
 	 * @since 1.26.7

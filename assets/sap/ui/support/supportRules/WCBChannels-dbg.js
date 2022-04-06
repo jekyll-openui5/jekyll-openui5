@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -98,7 +98,7 @@ function () {
 		VERIFY_CREATE_RULE:         "VERIFY_CREATE_RULE",
 
 		/**
-		 * Verifies rule creation after its finished.
+		 * Verifies rule creation after it's finished.
 		 * @type {string}
 		 * @const
 		 */
@@ -112,11 +112,25 @@ function () {
 		VERIFY_UPDATE_RULE:         "VERIFY_UPDATE_RULE",
 
 		/**
-		 * Verifies rule update after its finished.
+		 * Verifies rule update after it's finished.
 		 * @type {string}
 		 * @const
 		 */
 		VERIFY_RULE_UPDATE_RESULT:  "VERIFY_RULE_UPDATE_RESULT",
+
+		/**
+		 * Posts information about which rule to be deleted.
+		 * @type {string}
+		 * @const
+		 */
+		DELETE_RULE: 				"DELETE_RULE",
+
+		/**
+		 * Posts information about the application under test.
+		 * @type {string}
+		 * @const
+		 */
+		POST_APPLICATION_INFORMATION: "POST_APPLICATION_INFORMATION",
 
 		/**
 		 * Posts available libraries.

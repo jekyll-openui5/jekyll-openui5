@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.table.AnalyticalColumnMenu.
-sap.ui.define(['jquery.sap.global', './ColumnMenu', './library'],
-	function(jQuery, ColumnMenu, library) {
+sap.ui.define(['./ColumnMenu', "sap/ui/unified/MenuRenderer", './library', "sap/ui/thirdparty/jquery"],
+	function(ColumnMenu, MenuRenderer, library, jQuery) {
 	"use strict";
 
 	// shortcut
@@ -23,7 +23,7 @@ sap.ui.define(['jquery.sap.global', './ColumnMenu', './library'],
 	 * @extends sap.ui.table.ColumnMenu
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -36,7 +36,7 @@ sap.ui.define(['jquery.sap.global', './ColumnMenu', './library'],
 		metadata : {
 			library : "sap.ui.table"
 		},
-		renderer: "sap.ui.table.ColumnMenuRenderer"
+		renderer: "sap.ui.unified.MenuRenderer"
 	});
 
 	/**
@@ -85,7 +85,7 @@ sap.ui.define(['jquery.sap.global', './ColumnMenu', './library'],
 	AnalyticalColumnMenu.prototype._addSumMenuItem = function() {
 		var oColumn = this._oColumn,
 			oTable = this._oTable,
-			oBinding = oTable.getBinding("rows"),
+			oBinding = oTable.getBinding(),
 			oResultSet = oBinding && oBinding.getAnalyticalQueryResult();
 
 		if (oTable && oResultSet && oResultSet.findMeasureByPropertyName(oColumn.getLeadingProperty())) {

@@ -1,14 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
-	'sap/ui/rta/command/FlexCommand',
-	"sap/ui/rta/Utils"
+	"sap/ui/rta/command/FlexCommand"
 ], function(
-	FlexCommand,
-	Utils
+	FlexCommand
 ) {
 	"use strict";
 
@@ -18,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.FlexCommand
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @constructor
 	 * @private
 	 * @since 1.34
@@ -27,25 +25,25 @@ sap.ui.define([
 	 *               changed in future.
 	 */
 	var Property = FlexCommand.extend("sap.ui.rta.command.Property", {
-		metadata : {
-			library : "sap.ui.rta",
-			properties : {
-				propertyName : {
-					type : "string"
+		metadata: {
+			library: "sap.ui.rta",
+			properties: {
+				propertyName: {
+					type: "string"
 				},
-				newValue : {
-					type : "any"
+				newValue: {
+					type: "any"
 				},
-				semanticMeaning : {
-					type : "string"
+				semanticMeaning: {
+					type: "string"
 				},
-				changeType : {
-					type : "string",
-					defaultValue : "propertyChange"
+				changeType: {
+					type: "string",
+					defaultValue: "propertyChange"
 				}
 			},
-			associations : {},
-			events : {}
+			associations: {},
+			events: {}
 		}
 	});
 
@@ -53,19 +51,18 @@ sap.ui.define([
 		var oElement = this.getElement();
 		// general format
 		return {
-			changeType : this.getChangeType(),
-			selector : {
-				id : oElement.getId(),
-				type : oElement.getMetadata().getName()
+			changeType: this.getChangeType(),
+			selector: {
+				id: oElement.getId(),
+				type: oElement.getMetadata().getName()
 			},
-			content : {
-				property : this.getPropertyName(),
-				newValue : this.getNewValue(),
-				semantic : this.getSemanticMeaning()
+			content: {
+				property: this.getPropertyName(),
+				newValue: this.getNewValue(),
+				semantic: this.getSemanticMeaning()
 			}
 		};
 	};
 
 	return Property;
-
-}, /* bExport= */true);
+});

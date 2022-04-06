@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.layout.MatrixLayoutCell.
-sap.ui.define(['jquery.sap.global', 'sap/ui/commons/library', 'sap/ui/core/CustomStyleClassSupport', 'sap/ui/core/Element'],
-	function(jQuery, library, CustomStyleClassSupport, Element) {
+sap.ui.define(['sap/ui/commons/library', 'sap/ui/core/CustomStyleClassSupport', 'sap/ui/core/Element'],
+	function(library, CustomStyleClassSupport, Element) {
 	"use strict";
 
 
@@ -23,7 +23,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/commons/library', 'sap/ui/core/Custo
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -33,6 +33,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/commons/library', 'sap/ui/core/Custo
 	 */
 	var MatrixLayoutCell = Element.extend("sap.ui.commons.layout.MatrixLayoutCell", /** @lends sap.ui.commons.layout.MatrixLayoutCell.prototype */ { metadata : {
 
+		deprecated: true,
 		library : "sap.ui.commons",
 		aggregatingType : "MatrixLayoutRow",
 		properties : {
@@ -132,7 +133,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/commons/library', 'sap/ui/core/Custo
 	 * @function
 	 * @param {string} sStyleClass
 	 *         the CSS class name to be added
-	 * @type sap.ui.commons.layout.MatrixLayoutCell
+	 * @type this
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -148,7 +149,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/commons/library', 'sap/ui/core/Custo
 	 * @function
 	 * @param {string} sStyleClass
 	 *         the style to be removed
-	 * @type sap.ui.commons.layout.MatrixLayoutCell
+	 * @type this
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -170,4 +171,4 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/commons/library', 'sap/ui/core/Custo
 
 	return MatrixLayoutCell;
 
-}, /* bExport= */ true);
+});

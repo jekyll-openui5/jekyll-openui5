@@ -1,17 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.uxap.HierarchicalSelect.
 sap.ui.define([
-    "jquery.sap.global",
-    "sap/m/Select",
-    "sap/ui/Device",
-    "./library",
-    "./HierarchicalSelectRenderer"
-], function(jQuery, Select, Device, library, HierarchicalSelectRenderer) {
+	"sap/m/Select",
+	"sap/ui/Device",
+	"sap/ui/thirdparty/jquery",
+	"./library",
+	"./HierarchicalSelectRenderer",
+	"sap/ui/thirdparty/jqueryui/jquery-ui-position"
+], function(Select, Device, jQuery, library, HierarchicalSelectRenderer /*jqueryUiPosition,*/) {
 	"use strict";
 
 	/**
@@ -156,7 +157,7 @@ sap.ui.define([
 			oPopoverDomRef = oPopover.getDomRef("cont"),
 			sMinWidth = oPopoverDomRef.style.minWidth;
 
-		if (jQuery.sap.endsWith(sMinWidth, "rem")) {
+		if (sMinWidth.endsWith("rem")) {
 			sMinWidth = sMinWidth.substring(0, sMinWidth.length - 3);
 			var iMinWidth = parseFloat(sMinWidth);
 			if (iMinWidth < HierarchicalSelect.POPOVER_MIN_WIDTH_REM && oPopoverDomRef) {

@@ -1,22 +1,22 @@
 /*
- * ! UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * ! OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides class sap.ui.dt.plugin.ElementMover.
 sap.ui.define([
-	'sap/ui/base/Object',
-	'sap/ui/base/ManagedObject',
-	'sap/ui/dt/ElementUtil',
-	'sap/ui/dt/OverlayUtil',
-	'sap/ui/dt/OverlayRegistry'
-], function
-(	BaseObject,
+	"sap/ui/base/Object",
+	"sap/ui/base/ManagedObject",
+	"sap/ui/dt/ElementUtil",
+	"sap/ui/dt/OverlayUtil",
+	"sap/ui/dt/Util"
+], function(
+	BaseObject,
 	ManagedObject,
 	ElementUtil,
 	OverlayUtil,
-	OverlayRegistry
+	DtUtil
 ) {
 	"use strict";
 
@@ -30,7 +30,7 @@ sap.ui.define([
 	 * @class The ElementMover enables movement of UI5 elements based on aggregation types, which can be used by drag and
 	 *        drop or cut and paste behavior.
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @constructor
 	 * @private
 	 * @since 1.34
@@ -38,20 +38,20 @@ sap.ui.define([
 	 * @experimental Since 1.34. This class is experimental and provides only limited functionality. Also the API might be
 	 *               changed in future.
 	 */
-	var ElementMover = ManagedObject.extend("sap.ui.dt.plugin.ElementMover", /** @lends sap.ui.dt.plugin.ElementMover.prototype */
-	{
-		metadata : {
-			// ---- object ----
-
-			// ---- control specific ----
-			library : "sap.ui.dt",
-			properties : {
-				movableTypes : {
-					type : "string[]",
-					defaultValue : ["sap.ui.core.Element"]
+	var ElementMover = ManagedObject.extend("sap.ui.dt.plugin.ElementMover", /** @lends sap.ui.dt.plugin.ElementMover.prototype */ {
+		metadata: {
+			library: "sap.ui.dt",
+			properties: {
+				movableTypes: {
+					type: "string[]",
+					defaultValue: ["sap.ui.core.Element"]
 				}
 			},
-			associations : {}
+			associations: {},
+			events: {
+				/** Event fired when the requested valid target zones are activated */
+				validTargetZonesActivated: {}
+			}
 		}
 	});
 
@@ -76,10 +76,12 @@ sap.ui.define([
 	};
 
 	/**
+	 * @param {sap.ui.dt.Overlay} oOverlay - overlay instance
+	 * @return {promise} Resolved promise with true value
 	 * @protected
 	 */
-	ElementMover.prototype.checkMovable = function(oOverlay) {
-		return true;
+	ElementMover.prototype.checkMovable = function() {
+		return Promise.resolve(true);
 	};
 
 	/**
@@ -115,46 +117,43 @@ sap.ui.define([
 	 * @private
 	 */
 	ElementMover.prototype.activateAllValidTargetZones = function(oDesignTime, sAdditionalStyleClass) {
-		this._iterateAllAggregations(oDesignTime, this._activateValidTargetZone.bind(this), sAdditionalStyleClass);
+		return this._iterateAllAggregations(oDesignTime, this._activateValidTargetZone.bind(this), sAdditionalStyleClass, true)
+			.then(function() {
+				this.fireValidTargetZonesActivated();
+			}.bind(this));
 	};
 
 	/**
 	 * @private
 	 */
 	ElementMover.prototype._activateValidTargetZone = function(oAggregationOverlay, sAdditionalStyleClass) {
-		if (this.checkTargetZone(oAggregationOverlay)) {
-			oAggregationOverlay.setTargetZone(true);
-			if (sAdditionalStyleClass) {
-				oAggregationOverlay.addStyleClass(sAdditionalStyleClass);
-			}
-		}
+		return this.checkTargetZone(oAggregationOverlay)
+			.then(function(bValidTargetZone) {
+				if (bValidTargetZone) {
+					oAggregationOverlay.setTargetZone(true);
+					if (sAdditionalStyleClass) {
+						oAggregationOverlay.addStyleClass(sAdditionalStyleClass);
+					}
+				}
+			})
+			.catch(function(oError) {
+				throw DtUtil.createError(
+					"ElementMover#_activateValidTargetZone",
+					"An error occured during activation of valid target zones: " + oError
+				);
+			});
 	};
 
 	/**
+	 * @param {sap.ui.dt.AggregationOverlay} oAggregationOverlay - Aggregation overlay to be checked for target zone
+	 * @param {sap.ui.dt.ElementOverlay} oOverlay - Overlay being moved
+	 * @param {boolean} bOverlayNotInDom - Flag defining if overlay is not in DOM
+	 * @returns {Promise.<boolean>} Resolved promise with <code>true</code> if the aggregation overlay is a valid target zone for the overlay
 	 * @protected
 	 */
 	ElementMover.prototype.checkTargetZone = function(oAggregationOverlay, oOverlay, bOverlayNotInDom) {
-		var oMovedOverlay = oOverlay ? oOverlay : this.getMovedOverlay();
-		var oGeometry = oAggregationOverlay.getGeometry();
-		var bGeometryVisible = oGeometry && oGeometry.size.height > 0 && oGeometry.size.width > 0;
-
-		// this function can get called on overlay registration, when there are no overlays in dom yet. In this case, $().is(":visible") is always false.
-		if ((bOverlayNotInDom && !bGeometryVisible)
-			|| !bOverlayNotInDom && !oAggregationOverlay.$().is(":visible")
-			|| !(oAggregationOverlay.getElement().getVisible && oAggregationOverlay.getElement().getVisible())) {
-			return false;
-		}
-		var oParentElement = oAggregationOverlay.getElement();
-		// an aggregation can still have visible = true even if it has been removed from its parent
-		if (!oParentElement.getParent()){
-			return false;
-		}
-		var oMovedElement = oMovedOverlay.getElement();
-		var sAggregationName = oAggregationOverlay.getAggregationName();
-
-		if (ElementUtil.isValidForAggregation(oParentElement, sAggregationName, oMovedElement)) {
-			return true;
-		}
+		var oMovedOverlay = oOverlay || this.getMovedOverlay();
+		return ElementUtil.checkTargetZone(oAggregationOverlay, oMovedOverlay, bOverlayNotInDom);
 	};
 
 	/**
@@ -171,7 +170,10 @@ sap.ui.define([
 	 * @private
 	 */
 	ElementMover.prototype.activateTargetZonesFor = function(oOverlay, sAdditionalStyleClass) {
-		this._iterateOverlayAggregations(oOverlay, this._activateValidTargetZone.bind(this), sAdditionalStyleClass);
+		return this._iterateOverlayAggregations(oOverlay, this._activateValidTargetZone.bind(this), sAdditionalStyleClass, true)
+			.then(function() {
+				this.fireValidTargetZonesActivated();
+			}.bind(this));
 	};
 
 	/**
@@ -191,21 +193,29 @@ sap.ui.define([
 	/**
 	 * @private
 	 */
-	ElementMover.prototype._iterateAllAggregations = function(oDesignTime, fnStep, sAdditionalStyleClass) {
+	ElementMover.prototype._iterateAllAggregations = function(oDesignTime, fnStep, sAdditionalStyleClass, bAsync) {
 		var aOverlays = oDesignTime.getElementOverlays();
-		aOverlays.forEach(function(oOverlay) {
-			this._iterateOverlayAggregations(oOverlay, fnStep, sAdditionalStyleClass);
+		// if bAsync true the return value of fnStep should return promises
+		var aResultPromises = aOverlays.map(function(oOverlay) {
+			return this._iterateOverlayAggregations(oOverlay, fnStep, sAdditionalStyleClass, bAsync);
 		}, this);
+		if (bAsync) {
+			return Promise.all(aResultPromises);
+		}
 	};
 
 	/**
 	 * @private
 	 */
-	ElementMover.prototype._iterateOverlayAggregations = function(oOverlay, fnStep, sAdditionalStyleClass) {
+	ElementMover.prototype._iterateOverlayAggregations = function(oOverlay, fnStep, sAdditionalStyleClass, bAsync) {
 		var aAggregationOverlays = oOverlay.getAggregationOverlays();
-		aAggregationOverlays.forEach(function(oAggregationOverlay) {
-			fnStep(oAggregationOverlay, sAdditionalStyleClass);
+		// if bAsync true the return value of fnStep should return promises
+		var aResultPromises = aAggregationOverlays.map(function(oAggregationOverlay) {
+			return fnStep(oAggregationOverlay, sAdditionalStyleClass);
 		});
+		if (bAsync) {
+			return Promise.all(aResultPromises);
+		}
 	};
 
 	/**
@@ -215,10 +225,12 @@ sap.ui.define([
 	 * metadata for the relevant aggregation.
 	 * @param  {sap.ui.dt.Overlay} oMovedOverlay The overlay of the element being moved
 	 * @param  {sap.ui.dt.Overlay} oTargetElementOverlay The overlay of the target element for the move
+	 * @param  {boolean} bInsertAfterElement Flag defining if the Element should be inserted After the Selection
 	 */
-	ElementMover.prototype.repositionOn = function(oMovedOverlay, oTargetElementOverlay) {
+	ElementMover.prototype.repositionOn = function(oMovedOverlay, oTargetElementOverlay, bInsertAfterElement) {
 		var oMovedElement = oMovedOverlay.getElement();
 		var oTargetParentInformation = OverlayUtil.getParentInformation(oTargetElementOverlay);
+		var oSourceParentInformation = OverlayUtil.getParentInformation(oMovedOverlay);
 		var oAggregationDesignTimeMetadata;
 
 		var oParentAggregationOverlay = oMovedOverlay.getParentAggregationOverlay();
@@ -231,14 +243,22 @@ sap.ui.define([
 		}
 
 		if (oTargetParentInformation.index !== -1) {
-			if (oAggregationDesignTimeMetadata && oAggregationDesignTimeMetadata.beforeMove){
+			if (oAggregationDesignTimeMetadata && oAggregationDesignTimeMetadata.beforeMove) {
 				oAggregationDesignTimeMetadata.beforeMove(oRelevantContainerElement, oMovedElement);
+			}
+			if (bInsertAfterElement) {
+				oTargetParentInformation.index++;
+				if (oSourceParentInformation.aggregation === oTargetParentInformation.aggregation) {
+					// index should not be incremented if cut-paste occurs inside the same container, where source index is less than the target index
+					oTargetParentInformation.index = ElementUtil.adjustIndexForMove(oSourceParentInformation.parent, oTargetParentInformation.parent, oSourceParentInformation.index, oTargetParentInformation.index);
+				}
 			}
 			ElementUtil.insertAggregation(oTargetParentInformation.parent, oTargetParentInformation.aggregation,
 				oMovedElement, oTargetParentInformation.index);
-			if (oAggregationDesignTimeMetadata && oAggregationDesignTimeMetadata.afterMove){
+			if (oAggregationDesignTimeMetadata && oAggregationDesignTimeMetadata.afterMove) {
 				oAggregationDesignTimeMetadata.afterMove(oRelevantContainerElement, oMovedElement);
 			}
+			this._setSourceAndTargetParentInformation();
 		}
 	};
 
@@ -249,8 +269,9 @@ sap.ui.define([
 	 * metadata for the relevant aggregation.
 	 * @param  {sap.ui.dt.Overlay} oMovedOverlay The overlay of the element being moved
 	 * @param  {sap.ui.dt.Overlay} oTargetAggregationOverlay The overlay of the target aggregation for the move
+	 * @param  {boolean} bInsertAtEnd Flag defining if the Element should be inserted at the End of an Aggregation
 	 */
-	ElementMover.prototype.insertInto = function(oMovedOverlay, oTargetAggregationOverlay) {
+	ElementMover.prototype.insertInto = function(oMovedOverlay, oTargetAggregationOverlay, bInsertAtEnd) {
 		var oMovedElement = oMovedOverlay.getElement();
 		var oTargetParentElement = oTargetAggregationOverlay.getElement();
 		var oAggregationDesignTimeMetadata;
@@ -266,16 +287,20 @@ sap.ui.define([
 
 		var aTargetAggregationItems = ElementUtil.getAggregation(oTargetAggregationOverlay.getElement(), oTargetAggregationOverlay.getAggregationName());
 		var iIndex = aTargetAggregationItems.indexOf(oMovedElement);
-		// Don't do anything when the element is already in the aggregation and is the last element
-		if (!(iIndex > -1 && iIndex === aTargetAggregationItems.length - 1)) {
-			if (oAggregationDesignTimeMetadata && oAggregationDesignTimeMetadata.beforeMove){
+		// insert as first element (index=0) or AFTER the last element (Index=length)
+		var iInsertIndex = bInsertAtEnd ? aTargetAggregationItems.length : 0;
+		// check if element already on desired position
+		// for checking last position, we have to reduce the iInsertIndex by one
+		if (!(iIndex > -1 && iIndex === (iInsertIndex === 0 ? iInsertIndex : iInsertIndex - 1))) {
+			if (oAggregationDesignTimeMetadata && oAggregationDesignTimeMetadata.beforeMove) {
 				oAggregationDesignTimeMetadata.beforeMove(oRelevantContainerElement, oMovedElement);
 			}
 			var sTargetAggregationName = oTargetAggregationOverlay.getAggregationName();
-			ElementUtil.addAggregation(oTargetParentElement, sTargetAggregationName, oMovedElement);
-			if (oAggregationDesignTimeMetadata && oAggregationDesignTimeMetadata.afterMove){
+			ElementUtil.insertAggregation(oTargetParentElement, sTargetAggregationName, oMovedElement, iInsertIndex);
+			if (oAggregationDesignTimeMetadata && oAggregationDesignTimeMetadata.afterMove) {
 				oAggregationDesignTimeMetadata.afterMove(oRelevantContainerElement, oMovedElement);
 			}
+			this._setSourceAndTargetParentInformation();
 		}
 	};
 
@@ -294,5 +319,40 @@ sap.ui.define([
 		return true;
 	};
 
+	ElementMover.prototype._setSourceAndTargetParentInformation = function() {
+		var oMovedOverlay = this.getMovedOverlay();
+		if (!oMovedOverlay) {
+			delete this._mSourceParentInformation;
+			delete this._mTargetParentInformation;
+			return;
+		}
+		var mSource = this._getSource();
+		if (mSource) {
+			this._mSourceParentInformation = {};
+			Object.assign(this._mSourceParentInformation, mSource);
+		} else {
+			delete this._mSourceParentInformation;
+		}
+		var mTarget = OverlayUtil.getParentInformation(oMovedOverlay);
+		if (mTarget) {
+			this._mTargetParentInformation = mTarget;
+		} else {
+			delete this._mTargetParentInformation;
+		}
+	};
+
+	/**
+	 * Returns a structure with objects containing information about the source and target
+	 * parents of the move. The structure contains the parent element, the aggregation name
+	 * and the index.
+	 * @returns {object} Object containing the move source and target parent information
+	 */
+	ElementMover.prototype.getSourceAndTargetParentInformation = function() {
+		return {
+			sourceParentInformation: this._mSourceParentInformation,
+			targetParentInformation: this._mTargetParentInformation
+		};
+	};
+
 	return ElementMover;
-}, /* bExport= */true);
+});

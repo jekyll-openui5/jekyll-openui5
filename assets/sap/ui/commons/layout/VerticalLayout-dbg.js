@@ -1,17 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.layout.VerticalLayout.
 sap.ui.define([
- 'jquery.sap.global',
  'sap/ui/commons/library',
  'sap/ui/layout/VerticalLayout',
- "./VerticalLayoutRenderer"
+ './VerticalLayoutRenderer'
 ],
-	function(jQuery, library, VerticalLayout1, VerticalLayoutRenderer) {
+	function(library, LayoutVerticalLayout, VerticalLayoutRenderer) {
 	"use strict";
 
 
@@ -23,11 +22,11 @@ sap.ui.define([
 	 * @param {object} [mSettings] initial settings for the new control
 	 *
 	 * @class
-	 * In this layout the elemnts are orderd one below the other
+	 * In this layout the elements are ordered one below the other
 	 * @extends sap.ui.layout.VerticalLayout
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -36,7 +35,7 @@ sap.ui.define([
 	 * @alias sap.ui.commons.layout.VerticalLayout
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */
-	var VerticalLayout = VerticalLayout1.extend("sap.ui.commons.layout.VerticalLayout", /** @lends sap.ui.commons.layout.VerticalLayout.prototype */ { metadata : {
+	var VerticalLayout = LayoutVerticalLayout.extend("sap.ui.commons.layout.VerticalLayout", /** @lends sap.ui.commons.layout.VerticalLayout.prototype */ { metadata : {
 
 		deprecated : true,
 		library : "sap.ui.commons"
@@ -46,4 +45,4 @@ sap.ui.define([
 
 	return VerticalLayout;
 
-}, /* bExport= */ true);
+});

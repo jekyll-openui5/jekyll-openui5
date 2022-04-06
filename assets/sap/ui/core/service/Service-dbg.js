@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides class sap.ui.core.service.Service
-sap.ui.define(['jquery.sap.global', 'sap/ui/base/Object'],
-	function(jQuery, BaseObject) {
+sap.ui.define(['sap/ui/base/Object', "sap/base/assert", "sap/base/Log"],
+	function(BaseObject, assert, Log) {
 	"use strict";
 
 
@@ -71,11 +71,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Object'],
 	 *
 	 * @extends sap.ui.base.Object
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @alias sap.ui.core.service.Service
 	 * @abstract
 	 * @private
-	 * @sap-restricted sap.ushell
+	 * @ui5-restricted sap.ushell
 	 * @since 1.37.0
 	 */
 	var Service = BaseObject.extend("sap.ui.core.service.Service", /** @lends sap.ui.service.Service.prototype */ {
@@ -92,8 +92,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Object'],
 			// Service context can either be undefined or null
 			// or an object with the properties scopeObject and scopeType
 			if (oServiceContext) {
-				jQuery.sap.assert(typeof oServiceContext.scopeObject === "object", "The service context requires a scope object!");
-				jQuery.sap.assert(typeof oServiceContext.scopeType === "string", "The service context requires a scope type!");
+				assert(typeof oServiceContext.scopeObject === "object", "The service context requires a scope object!");
+				assert(typeof oServiceContext.scopeType === "string", "The service context requires a scope type!");
 			}
 
 			this._oServiceContext = oServiceContext;
@@ -145,7 +145,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Object'],
 				if (!sMember.match(/^(metadata|constructor|getContext|destroy)$/)) {
 					this[sMember] = oServiceInfo[sMember];
 				} else {
-					jQuery.sap.log.warning("The member " + sMember + " is not allowed for anonymous service declaration and will be ignored!");
+					Log.warning("The member " + sMember + " is not allowed for anonymous service declaration and will be ignored!");
 				}
 			}
 			Service.apply(this, arguments);
@@ -165,7 +165,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Object'],
 	 *
 	 * This function is not available on the service interface.
 	 *
-	 * @return {object} the public interface of the service
+	 * @returns {sap.ui.core.service.Service} the public interface of the service
 	 * @protected
 	 */
 	Service.prototype.getInterface = function() {

@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([],
@@ -52,6 +52,26 @@ sap.ui.define([],
 			 * Stores temporary rules in the local storage.
 			 */
 			LOCAL_STORAGE_SELECTED_CONTEXT_COMPONENT_KEY: "support-assistant-settings-selected-context-components",
+
+			/**
+			 * Stores the visible column setting
+			 */
+			LOCAL_STORAGE_SELECTED_VISIBLE_COLUMN_KEY: "support-assistant-visible-column-setting",
+
+			/**
+			 * Stores selections presets list
+			 */
+			LOCAL_STORAGE_SELECTION_PRESETS_KEY: "support-assistant-selection-presets",
+
+			/**
+			 * Stores custom presets list
+			 */
+			LOCAL_STORAGE_CUSTOM_PRESETS_KEY: "support-assistant-custom-presets",
+
+			/**
+			 * Tells if the user was already warned that temp rules are disabled
+			 */
+			LOCAL_STORAGE_TEMP_RULES_DISABLED_WARNED: "support-assistant-temp-rules-disabled-warned",
 
 			/**
 			 * The name of the persistence cookie.
@@ -111,8 +131,9 @@ sap.ui.define([],
 			/**
 			 * Name of file produced by selection export
 			 */
-			RULE_SELECTION_EXPORT_FILE_NAME: "sa-rule-selections"
+			RULE_SELECTION_EXPORT_FILE_NAME: "sa-rule-preset",
 
+			HIGHLIGHTER_ID: "ui5-highlighter"
 		};
 
 

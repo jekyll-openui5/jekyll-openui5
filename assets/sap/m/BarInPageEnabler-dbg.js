@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides helper sap.m.BarInPageEnabler
-sap.ui.define(['sap/ui/base/Object', 'sap/m/library', 'jquery.sap.global'],
-	function(Object, library, jQuery) {
+sap.ui.define(['sap/ui/base/Object', 'sap/m/library', "sap/base/Log"],
+	function(Object, library, Log) {
 	"use strict";
 
 	// shortcut for sap.m.IBarHTMLTag
@@ -39,6 +39,7 @@ sap.ui.define(['sap/ui/base/Object', 'sap/m/library', 'jquery.sap.global'],
 	 * @alias sap.m.IBarInPageEnabler
 	 */
 	var BarInPageEnabler = Object.extend("sap.m.BarInPageEnabler", /** @lends sap.m.BarInPageEnabler.prototype */ {
+
 		/**
 		 * Determines whether the bar is sensitive to the container context.
 		 *
@@ -114,6 +115,34 @@ sap.ui.define(['sap/ui/base/Object', 'sap/m/library', 'jquery.sap.global'],
 			return this;
 		},
 
+
+		/**
+		 * Gets accessibility aria-level attribute of the Root HTML element.
+		 *
+		 * This is only needed if <code>sap.m.Bar</code> has role="heading"
+		 * @returns {string} aria-level attribute
+		 * @private
+		 */
+		_getRootAriaLevel: function () {
+			var sAriaLevel = this.sAriaLevel;
+
+			return sAriaLevel;
+		},
+
+		/**
+		 * Sets accessibility aria-level attribute of the Root HTML element.
+		 *
+		 * This is only needed if <code>sap.m.Bar</code> has role="heading"
+		 * @param {string} sLevel aria-level attribute of the root Element
+		 * @returns {sap.m.IBar} <code>this</code> to allow method chaining
+		 * @private
+		 */
+		_setRootAriaLevel:  function (sLevel) {
+			this.sAriaLevel = sLevel;
+
+			return this;
+		},
+
 		/**
 		 * Sets classes and HTML tag according to the context of the page.
 		 *
@@ -134,8 +163,8 @@ sap.ui.define(['sap/ui/base/Object', 'sap/m/library', 'jquery.sap.global'],
 		 * Possible contexts are header, footer, subheader.
 		 * @param {string} sContext allowed values are header, footer, subheader.
 		 * @returns {sap.m.IBar} <code>this</code> for chaining
-		 * @sap-restricted
 		 * @private
+		 * @ui5-restricted
 		 */
 		_applyContextClassFor : function (sContext) {
 			var oOptions = this._getContextOptions(sContext);
@@ -145,7 +174,7 @@ sap.ui.define(['sap/ui/base/Object', 'sap/m/library', 'jquery.sap.global'],
 			}
 
 			if (!this.isContextSensitive) {
-				jQuery.sap.log.error("The bar control you are using does not implement all the members of the IBar interface", this);
+				Log.error("The bar control you are using does not implement all the members of the IBar interface", this);
 				return this;
 			}
 
@@ -167,8 +196,8 @@ sap.ui.define(['sap/ui/base/Object', 'sap/m/library', 'jquery.sap.global'],
 		 * Possible contexts are header, footer, subheader.
 		 * @param {string} sContext allowed values are header, footer, subheader.
 		 * @returns {sap.m.IBar} <code>this</code> for chaining
-		 * @sap-restricted
 		 * @private
+		 * @ui5-restricted
 		 */
 		_applyTag : function (sContext) {
 			var oOptions = this._getContextOptions(sContext);
@@ -178,7 +207,7 @@ sap.ui.define(['sap/ui/base/Object', 'sap/m/library', 'jquery.sap.global'],
 			}
 
 			if (!this.setHTMLTag) {
-				jQuery.sap.log.error("The bar control you are using does not implement all the members of the IBar interface", this);
+				Log.error("The bar control you are using does not implement all the members of the IBar interface", this);
 				return this;
 			}
 
@@ -207,7 +236,7 @@ sap.ui.define(['sap/ui/base/Object', 'sap/m/library', 'jquery.sap.global'],
 			var oOptions = oContext[sContext];
 
 			if (!oOptions) {
-				jQuery.sap.log.error("The context " + sContext + " is not known", this);
+				Log.error("The context " + sContext + " is not known", this);
 
 				return null;
 			}
@@ -225,26 +254,22 @@ sap.ui.define(['sap/ui/base/Object', 'sap/m/library', 'jquery.sap.global'],
 		render : function(oRM, oControl) {
 			var sTag = oControl.getHTMLTag().toLowerCase();
 
-			oRM.write("<" + sTag);
-			oRM.addClass(IBAR_CSS_CLASS);
+			oRM.openStart(sTag, oControl);
+			oRM.class(IBAR_CSS_CLASS);
 
 			if (this.shouldAddIBarContext(oControl)) {
-				oRM.addClass(IBAR_CSS_CLASS + "-CTX");
+				oRM.class(IBAR_CSS_CLASS + "-CTX");
 			}
-
-			oRM.writeControlData(oControl);
 
 			// call the hooks
 			BarInPageEnabler.renderTooltip(oRM, oControl);
 			this.decorateRootElement(oRM, oControl);
 
-			oRM.writeClasses();
-			oRM.writeStyles();
-			oRM.write(">");
+			oRM.openEnd();
 
 			this.renderBarContent(oRM, oControl);
 
-			oRM.write("</" + sTag + ">");
+			oRM.close(sTag);
 		}
 
 	});
@@ -258,7 +283,7 @@ sap.ui.define(['sap/ui/base/Object', 'sap/m/library', 'jquery.sap.global'],
 	BarInPageEnabler.renderTooltip = function(oRM, oControl) {
 		var sTooltip = oControl.getTooltip_AsString();
 		if (sTooltip) {
-			oRM.writeAttributeEscaped("title", sTooltip);
+			oRM.attr("title", sTooltip);
 		}
 	};
 

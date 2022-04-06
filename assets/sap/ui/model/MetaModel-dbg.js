@@ -1,9 +1,9 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
+/*eslint-disable max-len */
 sap.ui.define(['./Model'],
 	function(Model) {
 	"use strict";
@@ -16,7 +16,7 @@ sap.ui.define(['./Model'],
 	 * @extends sap.ui.model.Model
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @public
 	 * @alias sap.ui.model.MetaModel
@@ -45,8 +45,6 @@ sap.ui.define(['./Model'],
 	 *
 	 */
 	MetaModel.prototype.createBindingContext = function(sPath, oContext, mParameters, fnCallBack) {
-		//TODO should come from a to be implemented read-only base class for ClientModels
-		// optional parameter handling
 		if (typeof oContext == "function") {
 			fnCallBack = oContext;
 			oContext = null;
@@ -68,22 +66,10 @@ sap.ui.define(['./Model'],
 	};
 
 	/**
-	 * @see sap.ui.model.Model.prototype.destroyBindingContext
-	 * @param {object}
-	 *         oContext to destroy
+	 * Does nothing.
 	 */
-	MetaModel.prototype.destroyBindingContext = function(oContext) {
-		// TODO: what todo here?
+	MetaModel.prototype.destroyBindingContext = function() {
 	};
-
-	/**
-	 * Returns the module path to the model specific adapter factory
-	 *
-	 * @see sap.ui.model.meta.AdapterFactory
-	 *
-	 * @return {string} the module path to a factory class that is tailored to create context specific adapters
-	 */
-	MetaModel.prototype.getAdapterFactoryModulePath = null;
 
 	return MetaModel;
 

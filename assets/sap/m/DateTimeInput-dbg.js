@@ -1,26 +1,32 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.m.DateTimeInput.
 sap.ui.define([
-	'jquery.sap.global',
+	"sap/ui/thirdparty/jquery",
 	'sap/ui/core/Control',
 	'./library',
+	'./DatePicker',
+	'./DateTimePicker',
+	'./TimePicker',
 	'sap/ui/model/type/Date',
 	'sap/ui/model/type/Time',
 	'sap/ui/model/type/DateTime',
 	'sap/ui/model/odata/type/ODataType',
 	'sap/ui/core/library',
 	'sap/ui/Device',
-	'./DateTimeInputRenderer'
+	"./DateTimeInputRenderer"
 ],
 function(
 	jQuery,
 	Control,
 	library,
+	DatePicker,
+	DateTimePicker,
+	TimePicker,
 	Date1,
 	Time,
 	DateTime,
@@ -28,7 +34,7 @@ function(
 	coreLibrary,
 	Device,
 	DateTimeInputRenderer
-	) {
+) {
 	"use strict";
 
 	// shortcut for sap.m.DateTimeInputType
@@ -50,13 +56,13 @@ function(
 	 * @param {object} [mSettings] Initial settings for the new control
 	 *
 	 * @class
-	 * Allows end users to interact with date and/or time and select from a date and/or time pad.
+	 * Allows end users to interact with date (between 0001-01-01 and 9999-12-31) and/or time and select from a date and/or time pad.
 	 *
 	 * <b>Note:</b> This control should not be used any longer, instead please use the dedicated <code>sap.m.DatePicker</code>, <code>sap.m.TimePicker</code> or <code>sap.m.DateTimePicker</code> control.
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -68,6 +74,7 @@ function(
 	var DateTimeInput = Control.extend("sap.m.DateTimeInput", /** @lends sap.m.DateTimeInput.prototype */ { metadata : {
 
 		library : "sap.m",
+		deprecated: true,
 		designtime: "sap/m/designtime/DateTimeInput.designtime",
 		properties : {
 
@@ -209,7 +216,7 @@ function(
 
 		var oi18n = library.getLocaleData();
 
-		$.extend(oPrototype, {
+		jQuery.extend(oPrototype, {
 			_types : {
 				Date : {
 					valueFormat : oi18n.getDatePattern("short"),
@@ -274,19 +281,16 @@ function(
 
 		switch (type) {
 			case DateTimeInputType.DateTime:
-				jQuery.sap.require("sap.m.DateTimePicker");
-				oPicker = new sap.m.DateTimePicker(this.getId() + "-Picker");
+				oPicker = new DateTimePicker(this.getId() + "-Picker");
 				break;
 
 			case DateTimeInputType.Time:
-				jQuery.sap.require("sap.m.TimePicker");
-				oPicker = new sap.m.TimePicker(this.getId() + "-Picker",
+				oPicker = new TimePicker(this.getId() + "-Picker",
 					{localeId: sap.ui.getCore().getConfiguration().getFormatSettings().getFormatLocale().toString()});
 				break;
 
 			default: // default is date
-				jQuery.sap.require("sap.m.DatePicker");
-				oPicker = new sap.m.DatePicker(this.getId() + "-Picker");
+				oPicker = new DatePicker(this.getId() + "-Picker");
 				break;
 		}
 
@@ -371,7 +375,7 @@ function(
 
 	DateTimeInput.prototype.setDateValue = function(oDate) {
 
-		if (this._isValidDate(oDate)) {
+		if (!this._isValidDate(oDate)) {
 			throw new Error("Date must be a JavaScript date object; " + this);
 		}
 
@@ -545,7 +549,7 @@ function(
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
-	 * @returns {Object} Current accessibility state of the control
+	 * @returns {object} Current accessibility state of the control
 	 * @protected
 	 */
 	DateTimeInput.prototype.getAccessibilityInfo = function() {
@@ -629,12 +633,8 @@ function(
 
 	// Cross frame check for a date should be performed here otherwise setDateValue would fail in OPA tests
 	// because Date object in the test is different than the Date object in the application (due to the iframe).
-	// We can use jQuery.type or this method:
-	// function isValidDate (date) {
-	//	return date && Object.prototype.toString.call(date) === "[object Date]" && !isNaN(date);
-	//}
 	DateTimeInput.prototype._isValidDate = function (oDate) {
-		return oDate && jQuery.type(oDate) !== "date";
+		return !oDate || Object.prototype.toString.call(oDate) === "[object Date]";
 	};
 
 	function _updateFormatFromBinding(){

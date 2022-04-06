@@ -1,27 +1,50 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.ux3.NavigationBar.
 sap.ui.define([
-	'jquery.sap.global',
+	'sap/ui/thirdparty/jquery',
 	'sap/ui/core/Control',
 	'sap/ui/core/delegate/ItemNavigation',
 	'./library',
-	"./NavigationBarRenderer",
-	'jquery.sap.dom'
+	'./NavigationBarRenderer',
+	'sap/ui/commons/Menu',
+	'sap/ui/commons/MenuItem',
+	'sap/ui/core/Popup',
+	'sap/ui/events/jquery/EventSimulation',
+	'sap/ui/dom/denormalizeScrollLeftRTL',
+	'sap/ui/util/ActivityDetection',
+	'sap/ui/Device',
+	'sap/base/assert',
+	// jQuery Plugin 'scrollRightRTL'
+	'sap/ui/dom/jquery/scrollRightRTL',
+	// jQuery Plugin 'scrollLeftRTL'
+	'sap/ui/dom/jquery/scrollLeftRTL'
 ],
 	function(
 		jQuery,
 		Control,
 		ItemNavigation,
 		library,
-		NavigationBarRenderer
-		/* jQuerySap */
+		NavigationBarRenderer,
+		Menu,
+		MenuItem,
+		Popup,
+		EventSimulation,
+		denormalizeScrollLeftRTL,
+		ActivityDetection,
+		Device,
+		assert
 	) {
 	"use strict";
+
+
+
+	// shortcut for sap.ui.core.Popup.Dock
+	var Dock = Popup.Dock;
 
 
 
@@ -39,7 +62,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -49,6 +72,7 @@ sap.ui.define([
 	 */
 	var NavigationBar = Control.extend("sap.ui.ux3.NavigationBar", /** @lends sap.ui.ux3.NavigationBar.prototype */ { metadata : {
 
+		deprecated: true,
 		library : "sap.ui.ux3",
 		properties : {
 
@@ -135,7 +159,7 @@ sap.ui.define([
 
 		this.data("sap-ui-fastnavgroup", "true", true); // Define group for F6 handling
 
-		if (jQuery.sap.touchEventMode === "ON") {
+		if (EventSimulation.touchEventMode === "ON") {
 			var fnTouchStart = function(evt) {
 				evt.preventDefault();
 
@@ -177,7 +201,7 @@ sap.ui.define([
 					var oListRef = that.getDomRef("list");
 					var dt = 50;
 					var endVelocity = Math.abs(that._velocity / 10); // continue scrolling until the speed has decreased to a fraction (v/10 means 11 iterations with slowing-down factor 0.8)
-					that._iInertiaIntervalId = window.setInterval(function(){
+					that._iInertiaIntervalId = setInterval(function(){
 						that._velocity = that._velocity * 0.80;
 						var dx = that._velocity * dt;
 						oListRef.scrollLeft = oListRef.scrollLeft + dx;
@@ -210,7 +234,7 @@ sap.ui.define([
 		}
 
 		if (this._checkOverflowIntervalId) {
-			jQuery.sap.clearIntervalCall(this._checkOverflowIntervalId);
+			clearInterval(this._checkOverflowIntervalId);
 			this._checkOverflowIntervalId = null;
 		}
 
@@ -221,20 +245,20 @@ sap.ui.define([
 	NavigationBar.prototype.onBeforeRendering = function() {
 		// stop the periodic overflow checker
 		if (this._checkOverflowIntervalId) {
-			jQuery.sap.clearIntervalCall(this._checkOverflowIntervalId);
+			clearInterval(this._checkOverflowIntervalId);
 			this._checkOverflowIntervalId = null;
 		}
 
 		this._iSoredScrollPosition = this.$("list").scrollLeft();
 
-		if (!!sap.ui.Device.browser.firefox) { // TODO: feature detection... not used yet because of performance implications (may involve creating elements)
-			this.$().unbind("DOMMouseScroll", this._handleScroll);
+		if (Device.browser.firefox) { // TODO: feature detection... not used yet because of performance implications (may involve creating elements)
+			this.$().off("DOMMouseScroll", this._handleScroll);
 		} else {
-			this.$().unbind("mousewheel", this._handleScroll);
+			this.$().off("mousewheel", this._handleScroll);
 		}
 
 		var arrow = this.getDomRef("arrow");
-		this._iLastArrowPos = arrow ? parseInt(this._bRtl ? arrow.style.right : arrow.style.left, 10) : -100;
+		this._iLastArrowPos = arrow ? parseInt(this._bRtl ? arrow.style.right : arrow.style.left) : -100;
 	};
 
 
@@ -278,13 +302,13 @@ sap.ui.define([
 		var oListDomRef = oDomRef.firstChild;
 		var of_back = this.getDomRef("ofb");
 		var of_fw = this.getDomRef("off");
-		this._checkOverflowIntervalId = jQuery.sap.intervalCall(350, this, "_checkOverflow", [oListDomRef,of_back,of_fw]);
+		this._checkOverflowIntervalId = setInterval(this._checkOverflow.bind(this, oListDomRef, of_back, of_fw), 350);
 
 		// bind a scroll handler to the workset item area
-		if (!!sap.ui.Device.browser.firefox) { // TODO: feature detection... not used yet because of performance implications (may involve creating elements)
-			jQuery(oDomRef).bind("DOMMouseScroll", jQuery.proxy(this._handleScroll, this));
+		if (Device.browser.firefox) { // TODO: feature detection... not used yet because of performance implications (may involve creating elements)
+			jQuery(oDomRef).on("DOMMouseScroll", jQuery.proxy(this._handleScroll, this));
 		} else {
-			jQuery(oDomRef).bind("mousewheel", jQuery.proxy(this._handleScroll, this));
+			jQuery(oDomRef).on("mousewheel", jQuery.proxy(this._handleScroll, this));
 		}
 
 		this._calculatePositions();
@@ -392,7 +416,7 @@ sap.ui.define([
 			if (oMenu) {
 				oMenu.destroyAggregation("items", true);
 			} else {
-				oMenu = new sap.ui.commons.Menu();
+				oMenu = new Menu();
 			}
 
 			var aItems = this._getCurrentItems();
@@ -402,7 +426,7 @@ sap.ui.define([
 			for (var i = 0; i < aItems.length; ++i) {
 				var oNavItem = aItems[i];
 
-				var oMenuItem = new sap.ui.commons.MenuItem(oNavItem.getId() + "-overflowItem", {
+				var oMenuItem = new MenuItem(oNavItem.getId() + "-overflowItem", {
 					text : oNavItem.getText(),
 					visible : oNavItem.getVisible(),
 					// Like the normal NavigationBar Items, disabled items are shown and handled
@@ -461,8 +485,8 @@ sap.ui.define([
 		oMenu.open(
 			true, // First item highlighted. Check whether this is the correct behavior
 			oTarget,
-			sap.ui.core.Popup.Dock.EndTop,
-			sap.ui.core.Popup.Dock.CenterCenter,
+			Dock.EndTop,
+			Dock.CenterCenter,
 			oTarget
 		);
 	};
@@ -478,7 +502,7 @@ sap.ui.define([
 		this._menuInvalid = true;
 
 		// update the css classes to make the selected item larger etc.
-		var $newSel = jQuery.sap.byId(sItemId);
+		var $newSel = jQuery(document.getElementById(sItemId));
 		$newSel.attr("tabindex", "0").attr("aria-checked", "true");
 		$newSel.parent().addClass("sapUiUx3NavBarItemSel");
 		$newSel.parent().parent().children().each(function(){
@@ -510,7 +534,7 @@ sap.ui.define([
 			$Arrow.stop();
 			var animation_2 = that._bRtl ? {right:targetPos + "px"} : {left:targetPos + "px"};
 			$Arrow.animate(animation_2, 200, "linear", function(){
-				var item = jQuery.sap.domById(sItemId);
+				var item = sItemId ? window.document.getElementById(sItemId) : null;
 				that._scrollItemIntoView(item);
 			});
 		}, 300);
@@ -534,6 +558,7 @@ sap.ui.define([
 			targetPos = bRtl ? 0 : (ul[0].scrollWidth - ul.innerWidth() + 20); // +20 to account for margins etc.
 		} else {
 			var liLeft = li.position().left;
+			// jQuery Plugin "scrollLeftRTL"
 			var ulScrollLeft = bRtl ? ul.scrollLeftRTL() : ul.scrollLeft();
 
 			if (liLeft < 0) {
@@ -551,7 +576,7 @@ sap.ui.define([
 
 		if (targetPos !== undefined) {
 			if (bRtl) {
-				targetPos = jQuery.sap.denormalizeScrollLeftRTL(targetPos, ul.get(0)); // fix browser differences*/
+				targetPos = denormalizeScrollLeftRTL(targetPos, ul.get(0)); // fix browser differences*/
 			}
 			ul.stop(true, true).animate({scrollLeft: targetPos}); // should be a string like "-50px"
 		}
@@ -568,7 +593,7 @@ sap.ui.define([
 	 * @private
 	 */
 	NavigationBar._getArrowTargetPos = function(sTargetItemId, arrowWidth, bRight) {
-		var $Item = jQuery.sap.byId(sTargetItemId);
+		var $Item = jQuery(document.getElementById(sTargetItemId));
 		if ($Item.length > 0) {
 			var width = $Item.outerWidth(); //Math.min($Item.outerWidth(), sap.ui.ux3.NavigationBar._MAX_ITEM_WIDTH);
 			var leftDistance = Math.round($Item[0].offsetLeft + (width / 2) - (arrowWidth / 2));
@@ -611,7 +636,7 @@ sap.ui.define([
 	NavigationBar.prototype._scroll = function(iDelta, iDuration) {
 		var oDomRef = this.$()[0].firstChild;
 		var iScrollLeft = oDomRef.scrollLeft;
-		if (!sap.ui.Device.browser.internet_explorer && this._bRtl) {
+		if (!Device.browser.msie && this._bRtl) {
 			iDelta = -iDelta;
 		} // RTL lives in the negative space
 		var iScrollTarget = iScrollLeft + iDelta;
@@ -631,10 +656,10 @@ sap.ui.define([
 	NavigationBar.prototype._checkOverflow = function(oListDomRef, of_back, of_fw) {
 
 		function isChromeOnMac() {
-			return sap.ui.Device.os.macintosh && sap.ui.Device.browser.chrome;
+			return Device.os.macintosh && Device.browser.chrome;
 		}
 
-		if (oListDomRef && this.getDomRef() && jQuery.sap.act.isActive()) {
+		if (oListDomRef && this.getDomRef() && ActivityDetection.isActive()) {
 			var iScrollLeft = oListDomRef.scrollLeft;
 
 			// check whether scrolling to the left is possible
@@ -664,9 +689,11 @@ sap.ui.define([
 
 			} else {  // RTL mode
 				var $List = jQuery(oListDomRef);
+				// jQuery Plugin "scrollLeftRTL"
 				if ($List.scrollLeftRTL() > iScrollTolerance) {
 					bScrollForward = true;
 				}
+				// jQuery Plugin "scrollRightRTL"
 				if ($List.scrollRightRTL() > iScrollTolerance) {
 					bScrollBack = true;
 				}
@@ -680,7 +707,6 @@ sap.ui.define([
 						.toggleClass("sapUiUx3NavBarScrollForward", bScrollForward);
 				if (!NavigationBar._bMenuLoaded && (bScrollBack || bScrollForward)) {
 					NavigationBar._bMenuLoaded = true;
-					jQuery.sap.require("sap.ui.commons.Menu");
 				}
 			}
 
@@ -716,6 +742,7 @@ sap.ui.define([
 			var sItemId = (!vItem || (typeof (vItem) == "string")) ? vItem : vItem.getId();
 			this._updateSelection(sItemId); // animate selection
 		}
+		return this;
 	};
 
 
@@ -773,12 +800,12 @@ sap.ui.define([
 	 *
 	 * @param {sap.ui.ux3.NavigationItem[]} aItems
 	 *         The items to associate
-	 * @type sap.ui.ux3.NavigationBar
+	 * @type this
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
 	NavigationBar.prototype.setAssociatedItems = function(aItems /* bResetArrowPosition */) { // second parameter is currently not in the public API
-		jQuery.sap.assert(jQuery.isArray(aItems), "aItems must be an array");
+		assert(Array.isArray(aItems), "aItems must be an array");
 
 		var oListDomRef = this.getDomRef("list");
 
@@ -799,21 +826,21 @@ sap.ui.define([
 				this._iLastArrowPos = -100;
 			} else {
 				var arrow = this.getDomRef("arrow");
-				this._iLastArrowPos = parseInt(this._bRtl ? arrow.style.right : arrow.style.left, 10);
+				this._iLastArrowPos = parseInt(this._bRtl ? arrow.style.right : arrow.style.left);
 			}
 
 			oListDomRef.innerHTML = "";
 			var rm = sap.ui.getCore().createRenderManager();
 
-			sap.ui.ux3.NavigationBarRenderer.renderItems(rm, this);
+			NavigationBarRenderer.renderItems(rm, this);
 
 			rm.flush(oListDomRef, true);
 			rm.destroy();
 
 			// restore focus
-			var oNewFocusRef;
-			if (focusId && (oNewFocusRef = jQuery.sap.domById(focusId))) {
-				jQuery.sap.focus(oNewFocusRef);
+			var oNewFocusRef = focusId ? document.getElementById(focusId) : null;
+			if (oNewFocusRef) {
+				oNewFocusRef.focus();
 			}
 
 			this._updateSelection(this.getSelectedItem());
@@ -861,4 +888,4 @@ sap.ui.define([
 
 	return NavigationBar;
 
-}, /* bExport= */ true);
+});

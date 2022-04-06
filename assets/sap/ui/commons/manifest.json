@@ -1,17 +1,29 @@
 {
-  "_version": "1.9.0",
+  "_version": "1.21.0",
   "sap.app": {
     "id": "sap.ui.commons",
     "type": "library",
     "embeds": [],
     "applicationVersion": {
-      "version": "1.56.5"
+      "version": "1.96.7"
     },
     "title": "Common basic controls, mainly intended for desktop scenarios",
     "description": "Common basic controls, mainly intended for desktop scenarios",
     "ach": "CA-UI5-CTR",
     "resources": "resources.json",
-    "offline": true
+    "offline": true,
+    "openSourceComponents": [
+      {
+        "name": "jquery_UI",
+        "packagedWithMySelf": true,
+        "version": "1.10.4"
+      },
+      {
+        "name": "jquery-fix-clone",
+        "packagedWithMySelf": true,
+        "version": "unknown"
+      }
+    ]
   },
   "sap.ui": {
     "technology": "UI5",
@@ -22,21 +34,74 @@
   },
   "sap.ui5": {
     "dependencies": {
-      "minUI5Version": "1.56",
+      "minUI5Version": "1.96",
       "libs": {
         "sap.ui.core": {
-          "minVersion": "1.56.5"
+          "minVersion": "1.96.7"
         },
         "sap.ui.layout": {
-          "minVersion": "1.56.5"
+          "minVersion": "1.96.7"
         },
         "sap.ui.unified": {
-          "minVersion": "1.56.5"
+          "minVersion": "1.96.7"
         }
       }
     },
     "library": {
-      "i18n": "messagebundle.properties",
+      "i18n": {
+        "bundleUrl": "messagebundle.properties",
+        "supportedLocales": [
+          "",
+          "ar",
+          "bg",
+          "ca",
+          "cs",
+          "cy",
+          "da",
+          "de",
+          "el",
+          "en",
+          "en-GB",
+          "en-US-sappsd",
+          "en-US-saprigi",
+          "en-US-saptrc",
+          "es",
+          "es-MX",
+          "et",
+          "fi",
+          "fr",
+          "fr-CA",
+          "hi",
+          "hr",
+          "hu",
+          "id",
+          "it",
+          "iw",
+          "ja",
+          "kk",
+          "ko",
+          "lt",
+          "lv",
+          "ms",
+          "nl",
+          "no",
+          "pl",
+          "pt",
+          "pt-PT",
+          "ro",
+          "ru",
+          "sh",
+          "sk",
+          "sl",
+          "sv",
+          "th",
+          "tr",
+          "uk",
+          "vi",
+          "zh-CN",
+          "zh-TW"
+        ]
+      },
       "content": {
         "controls": [
           "sap.ui.commons.Accordion",

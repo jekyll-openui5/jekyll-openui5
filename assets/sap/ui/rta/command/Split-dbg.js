@@ -1,10 +1,10 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
-	'sap/ui/rta/command/FlexCommand'
+	"sap/ui/rta/command/FlexCommand"
 ], function(FlexCommand) {
 	"use strict";
 
@@ -14,7 +14,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.FlexCommand
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @constructor
 	 * @private
 	 * @since 1.46
@@ -23,21 +23,21 @@ sap.ui.define([
 	 *							 changed in future.
 	 */
 	var Split = FlexCommand.extend("sap.ui.rta.command.Split", {
-		metadata : {
-			library : "sap.ui.rta",
-			properties : {
-				newElementIds : {
-					type : "string[]"
+		metadata: {
+			library: "sap.ui.rta",
+			properties: {
+				newElementIds: {
+					type: "string[]"
 				},
-				source : {
-					type : "any"
+				source: {
+					type: "any"
 				},
-				parentElement : {
-					type : "any"
+				parentElement: {
+					type: "any"
 				}
 			},
-			associations : {},
-			events : {}
+			associations: {},
+			events: {}
 		}
 	});
 
@@ -46,14 +46,13 @@ sap.ui.define([
 	 */
 	Split.prototype._getChangeSpecificData = function() {
 		var mSpecificInfo = {
-				newElementIds : this.getNewElementIds(),
-				sourceControlId : this.getSource().getId(),
-				changeType : this.getChangeType(),
-				parentId : this.getParentElement().getId()
+			newElementIds: this.getNewElementIds(),
+			sourceControlId: this.getSource().getId(),
+			changeType: this.getChangeType(),
+			parentId: this.getParentElement().getId()
 		};
 		return mSpecificInfo;
 	};
 
 	return Split;
-
-}, /* bExport= */true);
+});

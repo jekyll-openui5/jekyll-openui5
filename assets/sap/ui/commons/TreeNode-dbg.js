@@ -1,13 +1,17 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.TreeNode.
-sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/CustomStyleClassSupport', 'sap/ui/core/Element'],
-	function(jQuery, library, CustomStyleClassSupport, Element) {
+sap.ui.define(['sap/ui/thirdparty/jquery', './library', 'sap/ui/core/CustomStyleClassSupport', 'sap/ui/core/Element', './Tree'],
+	function(jQuery, library, CustomStyleClassSupport, Element, Tree) {
 	"use strict";
+
+
+	// shortcut for sap.ui.commons.TreeSelectionMode
+	var TreeSelectionMode = library.TreeSelectionMode;
 
 
 	/**
@@ -19,7 +23,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/CustomStyleClassSu
 	 * @class
 	 * Tree node element
 	 * @extends sap.ui.core.Element
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -30,6 +34,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/CustomStyleClassSu
 	var TreeNode = Element.extend("sap.ui.commons.TreeNode", /** @lends sap.ui.commons.TreeNode.prototype */ { metadata : {
 
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -110,6 +115,11 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/CustomStyleClassSu
 		}
 	}});
 
+	// FIXME: added for compatibility with existing code (internal).
+	// selectedForNodes is a hidden association and therefore doesn't have generated accessor / mutator methods
+	TreeNode.prototype.getSelectedForNodes = function() {
+		return this.getAssociation("selectedForNodes", []);
+	};
 
 	TreeNode.ANIMATION_DURATION	 = 600;
 
@@ -317,7 +327,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/CustomStyleClassSu
 	 * Default value is empty/<code>undefined</code>
 	 *
 	 * @param {boolean} bIsSelected  new value for property <code>isSelected</code>
-	 * @return {sap.ui.commons.TreeNode} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	TreeNode.prototype.setIsSelected = function(bIsSelected) {
@@ -346,7 +356,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/CustomStyleClassSu
 	 * Default value is <code>true</code>
 	 *
 	 * @param {boolean} bSelectable  new value for property <code>selectable</code>
-	 * @return {sap.ui.commons.TreeNode} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	TreeNode.prototype.setSelectable = function(bSelectable) {
@@ -392,13 +402,13 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/CustomStyleClassSu
 			oDomClicked.focus();
 
 		} else if (jQuery(oDomClicked).is(".sapUiTreeNodeContent") || jQuery(oDomClicked).is(".sapUiTreeIcon")) {
-			var sSelectionType = sap.ui.commons.Tree.SelectionType.Select;
-			if (oTree.getSelectionMode() == sap.ui.commons.TreeSelectionMode.Multi) {
+			var sSelectionType = Tree.SelectionType.Select;
+			if (oTree.getSelectionMode() == TreeSelectionMode.Multi) {
 				if (oEvent.shiftKey) {
-					sSelectionType = sap.ui.commons.Tree.SelectionType.Range;
+					sSelectionType = Tree.SelectionType.Range;
 				}
 				if (oEvent.metaKey || oEvent.ctrlKey) {
-					sSelectionType = sap.ui.commons.Tree.SelectionType.Toggle;
+					sSelectionType = Tree.SelectionType.Toggle;
 				}
 			}
 			oTree.setSelection(this, false, sSelectionType);
@@ -617,4 +627,4 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/CustomStyleClassSu
 
 	return TreeNode;
 
-}, /* bExport= */ true);
+});

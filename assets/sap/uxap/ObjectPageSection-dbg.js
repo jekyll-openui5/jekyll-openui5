@@ -1,12 +1,11 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.uxap.ObjectPageSection.
 sap.ui.define([
-    "sap/ui/core/InvisibleText",
     "./ObjectPageSectionBase",
     "sap/ui/Device",
     "sap/m/Button",
@@ -16,7 +15,6 @@ sap.ui.define([
     "sap/m/library",
     "./ObjectPageSectionRenderer"
 ], function(
-    InvisibleText,
 	ObjectPageSectionBase,
 	Device,
 	Button,
@@ -76,10 +74,6 @@ sap.ui.define([
 				 */
 				subSections: {type: "sap.uxap.ObjectPageSubSection", multiple: true, singularName: "subSection"},
 
-				/**
-				 * Screen Reader ariaLabelledBy
-				 */
-				ariaLabelledBy: {type: "sap.ui.core.InvisibleText", multiple: false, visibility: "hidden"},
 				_showHideAllButton: {type: "sap.m.Button", multiple: false, visibility: "hidden"},
 				_showHideButton: {type: "sap.m.Button", multiple: false, visibility: "hidden"}
 			},
@@ -97,9 +91,9 @@ sap.ui.define([
 	ObjectPageSection.MEDIA_RANGE = Device.media.RANGESETS.SAP_STANDARD;
 
 	/**
-	 * Returns the closest ObjectPageSection
+	 * Returns the closest ObjectPageSection.
 	 * @param  {sap.uxap.ObjectPageSectionBase} oSectionBase
-	 * @returns {sap.uxap.ObjectPageSection}
+	 * @returns {sap.uxap.ObjectPageSection} The closest ObjectPageSection
 	 * @private
 	 */
 	ObjectPageSection._getClosestSection = function (vSectionBase) {
@@ -114,7 +108,18 @@ sap.ui.define([
 	 * @returns {Object} the resource bundle object
 	 */
 	ObjectPageSection._getLibraryResourceBundle = function() {
-		return library.i18nModel.getResourceBundle();
+		return sap.ui.getCore().getLibraryResourceBundle("sap.uxap");
+	};
+
+	/**
+	 * Returns the control name text.
+	 *
+	 * @override
+	 * @return {string} control name text
+	 * @protected
+	 */
+	ObjectPageSection.prototype.getSectionText = function (sValue) {
+		return ObjectPageSection._getLibraryResourceBundle().getText("SECTION_CONTROL_NAME");
 	};
 
 	ObjectPageSection.prototype._expandSection = function () {
@@ -131,16 +136,6 @@ sap.ui.define([
 		this._detachMediaContainerWidthChange(this._updateImportance, this);
 	};
 
-	ObjectPageSection.prototype.setTitle = function (sValue) {
-		ObjectPageSectionBase.prototype.setTitle.call(this, sValue);
-
-		var oAriaLabelledBy = this.getAggregation("ariaLabelledBy");
-
-		if (oAriaLabelledBy) {
-			sap.ui.getCore().byId(oAriaLabelledBy.getId()).setText(sValue);
-		}
-	};
-
 	ObjectPageSection.prototype._getImportanceLevelToHide = function (oCurrentMedia) {
 		var oObjectPage = this._getObjectPageLayout(),
 			oMedia = oCurrentMedia || this._getCurrentMediaContainerRange(),
@@ -151,7 +146,8 @@ sap.ui.define([
 
 	ObjectPageSection.prototype._updateImportance = function (oCurrentMedia) {
 		var oObjectPage = this._getObjectPageLayout(),
-			sImportanceLevelToHide = this._getImportanceLevelToHide(oCurrentMedia);
+			sImportanceLevelToHide = this._getImportanceLevelToHide(oCurrentMedia),
+			oHeaderDOM = this.bOutput && this.getDomRef("header");
 
 		this.getSubSections().forEach(function (oSubSection) {
 			oSubSection._applyImportanceRules(sImportanceLevelToHide);
@@ -159,6 +155,8 @@ sap.ui.define([
 
 		this._applyImportanceRules(sImportanceLevelToHide);
 		this._updateShowHideAllButton(false);
+
+		oHeaderDOM && oHeaderDOM.classList.toggle("sapUxAPObjectPageSectionHeaderHidden", !this._isTitleVisible());
 
 		if (oObjectPage && this.getDomRef()) {
 			oObjectPage._requestAdjustLayout();
@@ -189,11 +187,7 @@ sap.ui.define([
 	};
 
 	ObjectPageSection.prototype.onBeforeRendering = function () {
-		var sAriaLabeledBy = "ariaLabelledBy";
-
-		if (!this.getAggregation(sAriaLabeledBy)) {
-			this.setAggregation(sAriaLabeledBy, this._getAriaLabelledBy(), true); // this is called onBeforeRendering, so suppress invalidate
-		}
+		ObjectPageSectionBase.prototype.onBeforeRendering.call(this);
 
 		this._detachMediaContainerWidthChange(this._updateImportance, this);
 
@@ -205,23 +199,14 @@ sap.ui.define([
 	};
 
 	/**
-	 * provide a default aria-labeled by text
-	 * @private
-	 * @returns {*} sap.ui.core.InvisibleText
-	 */
-	ObjectPageSection.prototype._getAriaLabelledBy = function () {
-		return new InvisibleText({
-			text: this._getTitle()
-		}).toStatic();
-	};
-
-	/**
 	 * Determines if the <code>ObjectPageSection</code> title is visible.
 	 * @private
-	 * @returns {Boolean}
+	 * @returns {boolean}
 	 */
 	ObjectPageSection.prototype._isTitleVisible = function () {
-		return this.getShowTitle() && this._getInternalTitleVisible();
+		return (this.getShowTitle() && this._getInternalTitleVisible())
+		|| this._getShouldDisplayExpandCollapseButton()
+		|| this._getShouldDisplayShowHideAllButton();
 	};
 
 	/**
@@ -230,7 +215,7 @@ sap.ui.define([
 	 * @returns {*} this
 	 */
 	ObjectPageSection.prototype._setSubSectionsFocusValues = function () {
-		var aSubSections = this.getSubSections() || [],
+		var aSubSections = this._getVisibleSubSections() || [],
 			sLastSelectedSubSectionId = this.getSelectedSubSection(),
 			bPreselectedSection;
 
@@ -244,7 +229,7 @@ sap.ui.define([
 		}
 
 		aSubSections.forEach(function (oSubsection) {
-			if (sLastSelectedSubSectionId === oSubsection.sId) {
+			if (sLastSelectedSubSectionId === oSubsection.getId()) {
 				oSubsection._setToFocusable(true);
 				bPreselectedSection = true;
 			} else {
@@ -291,6 +276,10 @@ sap.ui.define([
 		});
 	};
 
+	ObjectPageSection.prototype._getShouldDisplayExpandCollapseButton = function () {
+		return this._getIsHidden();
+	};
+
 	ObjectPageSection.prototype._showHideContentAllContent = function () {
 		var bShouldShowSubSections = this._thereAreHiddenSubSections();
 
@@ -303,8 +292,13 @@ sap.ui.define([
 	};
 
 	ObjectPageSection.prototype._updateShowHideState = function (bHide) {
+		if (this._getIsHidden() === bHide) {
+			return this;
+		}
+
 		this._updateShowHideButton(bHide);
 		this._getShowHideAllButton().setVisible(this._getShouldDisplayShowHideAllButton());
+
 		return ObjectPageSectionBase.prototype._updateShowHideState.call(this, bHide);
 	};
 
@@ -312,6 +306,12 @@ sap.ui.define([
 		this._getShowHideAllButton()
 			.setVisible(this._getShouldDisplayShowHideAllButton())
 			.setText(this._getShowHideAllButtonText(bHide));
+	};
+
+	ObjectPageSection.prototype._getVisibleSubSections = function () {
+		return this.getSubSections().filter(function (oSubSection) {
+			return oSubSection.getVisible() && oSubSection._getInternalVisible();
+		});
 	};
 
 	ObjectPageSection.prototype._getShowHideAllButton = function () {

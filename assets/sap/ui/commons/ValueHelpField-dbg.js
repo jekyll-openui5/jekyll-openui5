@@ -1,19 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.ValueHelpField.
 sap.ui.define([
-    'jquery.sap.global',
     './TextField',
     './library',
     'sap/ui/core/IconPool',
     'sap/ui/core/theming/Parameters',
-    "./ValueHelpFieldRenderer"
+    './ValueHelpFieldRenderer'
 ],
-	function(jQuery, TextField, library, IconPool, Parameters, ValueHelpFieldRenderer) {
+	function(TextField, library, IconPool, Parameters, ValueHelpFieldRenderer) {
 	"use strict";
 
 
@@ -29,7 +28,7 @@ sap.ui.define([
 	 * @extends sap.ui.commons.TextField
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -40,6 +39,7 @@ sap.ui.define([
 	var ValueHelpField = TextField.extend("sap.ui.commons.ValueHelpField", /** @lends sap.ui.commons.ValueHelpField.prototype */ { metadata : {
 
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -86,15 +86,13 @@ sap.ui.define([
 			} else {
 				this.sIconHoverUrl = "sap-icon://value-help";
 			}
-			var oIcon = jQuery.sap.byId(oEvent.target.id);
-			oIcon.attr( 'src', this.sIconHoverUrl );
+			oEvent.target.setAttribute( 'src', this.sIconHoverUrl );
 		}
 	};
 
 	ValueHelpField.prototype.onmouseout = function (oEvent) {
 		if (oEvent.target.id == this.getId() + '-icon' && this.getEnabled() && this.getEditable() && !this.bIsIconURI) {
-			var oIcon = jQuery.sap.byId(oEvent.target.id);
-			oIcon.attr( 'src', this.sIconRegularUrl );
+			oEvent.target.setAttribute( 'src', this.sIconRegularUrl );
 		}
 	};
 
@@ -120,6 +118,7 @@ sap.ui.define([
 				oIcon.addClass('sapUiTfValueHelpDsblIcon');
 			}
 		}
+		return this;
 	};
 
 	ValueHelpField.prototype.setEditable = function(bEditable) {
@@ -136,6 +135,7 @@ sap.ui.define([
 				oIcon.addClass('sapUiTfValueHelpDsblIcon');
 			}
 		}
+		return this;
 	};
 
 	/**
@@ -186,4 +186,4 @@ sap.ui.define([
 
 	return ValueHelpField;
 
-}, /* bExport= */ true);
+});

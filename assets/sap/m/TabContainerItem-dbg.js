@@ -1,12 +1,15 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.core.Item.
-sap.ui.define(['sap/ui/core/Element'],
-	function(Element) {
+sap.ui.define(['sap/ui/core/Element',
+	'sap/ui/core/IconPool',
+	'./TabStripItem',
+	'./library'],
+	function(Element, IconPool, TabStripItem, library) {
 		"use strict";
 
 		/**
@@ -20,7 +23,7 @@ sap.ui.define(['sap/ui/core/Element'],
 		 * @extends sap.ui.core.Element
 		 *
 		 * @author SAP SE
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 *
 		 * @constructor
 		 * @public
@@ -30,13 +33,34 @@ sap.ui.define(['sap/ui/core/Element'],
 		 */
 		var TabContainerItem = Element.extend("sap.m.TabContainerItem", /** @lends sap.m.TabContainerItem.prototype */ { metadata : {
 
-			library : "sap.ui.core",
 			properties : {
 
 				/**
 				 * Determines the text to be displayed for the item.
 				 */
 				name : {type : "string", group : "Misc", defaultValue : ""},
+
+				/**
+				 * Determines additional text to be displayed for the item.
+				 * @experimental
+				 * since 1.63 Disclaimer: this property is in a beta state - incompatible API changes may be done before its official public release. Use at your own discretion.
+				 */
+				additionalText : {type : "string", group : "Misc", defaultValue : ""},
+
+				/**
+				 * Defines the icon to be displayed as graphical element within the <code>TabContainerItem</code>.
+				 * It can be an image or an icon from the icon font.
+				 * @experimental
+				 * since 1.63 Disclaimer: this property is in a beta state - incompatible API changes may be done before its official public release. Use at your own discretion.
+				 */
+				icon : {type : "sap.ui.core.URI", group : "Appearance", defaultValue : null},
+
+				/**
+				 * Determines the tooltip text of the <code>TabContainerItem</code>'s icon.
+				 * @experimental
+				 * since 1.63 Disclaimer: this property is in a beta state - incompatible API changes may be done before its official public release. Use at your own discretion.
+				 */
+				iconTooltip : {type : "string", group : "Accessibility", defaultValue : null},
 
 				/**
 				 * Determines the name of the item. Can be used as input for subsequent actions.
@@ -53,7 +77,13 @@ sap.ui.define(['sap/ui/core/Element'],
 				/**
 				 * The content displayed for this item.
 				 */
-				content : {type : "sap.ui.core.Control", multiple : true, defaultValue : null}
+				content : {type : "sap.ui.core.Control", multiple : true, defaultValue : null},
+
+				/**
+				 *
+				 * Icon / Image for the <code>TabContainerItem</code> are managed in this aggregation.
+				 */
+				_image: {type: "sap.ui.core.Control", multiple: false, visibility: "hidden"}
 			},
 			events : {
 
@@ -80,7 +110,8 @@ sap.ui.define(['sap/ui/core/Element'],
 						propertyValue : {type : "any"}
 					}
 				}
-			}
+			},
+			dnd: { draggable: true, droppable: false }
 		}});
 
 		/**
@@ -89,14 +120,10 @@ sap.ui.define(['sap/ui/core/Element'],
 		 * @param {string} sName Property name to be set
 		 * @param {boolean | string | object} vValue Property value to be set
 		 * @param {boolean} bSuppressInvalidation Whether invalidation to be suppressed
-		 * @return {sap.m.TabContainerItem} This instance for chaining
+		 * @return {this} This instance for chaining
 		 * @public
 		 */
 		TabContainerItem.prototype.setProperty = function(sName, vValue, bSuppressInvalidation) {
-			if (sName === "modified") {
-				bSuppressInvalidation = true;
-			}
-
 			this.fireItemPropertyChanged({
 				itemChanged : this,
 				propertyKey : sName,
@@ -106,6 +133,29 @@ sap.ui.define(['sap/ui/core/Element'],
 			return Element.prototype.setProperty.call(this, sName, vValue, bSuppressInvalidation);
 		};
 
-		return TabContainerItem;
 
+		/**
+		 * Property setter for the icon
+		 *
+		 * @param {sap.ui.core.URI} sIcon new value of the Icon property
+		 * @return {this} <code>this</code> to allow method chaining
+		 * @public
+		 */
+		TabContainerItem.prototype.setIcon = function(sIcon) {
+			return TabStripItem.prototype._setIcon.call(this, sIcon, true);
+		};
+
+		/**
+		 * Function is called when image control needs to be loaded.
+		 *
+		 * @param {string} sImgId - id to be used for the image
+		 * @param {sap.ui.core.URI} sSrc - URI indicating the image to use as image source
+		 * @return {sap.ui.core.Control} The image
+		 * @private
+		 */
+		TabContainerItem.prototype._getImage = function () {
+			return this.getAggregation("_image");
+		};
+
+		return TabContainerItem;
 });

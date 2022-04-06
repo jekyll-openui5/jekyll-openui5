@@ -1,18 +1,24 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/format/DateFormat',
-		'sap/ui/model/FormatException', 'sap/ui/model/odata/type/ODataType',
-		'sap/ui/model/ParseException', 'sap/ui/model/ValidateException'],
-	function(jQuery, DateFormat, FormatException, ODataType, ParseException, ValidateException) {
+sap.ui.define([
+	"sap/base/Log",
+	"sap/base/util/extend",
+	"sap/ui/core/format/DateFormat",
+	"sap/ui/model/FormatException",
+	"sap/ui/model/ParseException",
+	"sap/ui/model/ValidateException",
+	"sap/ui/model/odata/type/ODataType"
+], function (Log, extend, DateFormat, FormatException, ParseException, ValidateException,
+		ODataType) {
 	"use strict";
 
 	var oDemoTime = {
 			__edmType : "Edm.Time",
-			ms : 49646000 // "13:47:26"
+			ms : 86398000 // "23:59:58"
 		},
 		// a "formatter" like DateFormat, see getModelFormat
 		oModelFormat = {
@@ -45,7 +51,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/format/DateFormat',
 		var oFormatOptions;
 
 		if (!oType.oFormat) {
-			oFormatOptions = jQuery.extend({strictParsing : true}, oType.oFormatOptions);
+			oFormatOptions = extend({strictParsing : true}, oType.oFormatOptions);
 			oFormatOptions.UTC = true;
 			oType.oFormat = DateFormat.getTimeInstance(oFormatOptions);
 		}
@@ -80,7 +86,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/format/DateFormat',
 			if (vNullable === false || vNullable === "false") {
 				oType.oConstraints = {nullable : false};
 			} else if (vNullable !== undefined && vNullable !== true && vNullable !== "true") {
-				jQuery.sap.log.warning("Illegal nullable: " + vNullable, null, oType.getName());
+				Log.warning("Illegal nullable: " + vNullable, null, oType.getName());
 			}
 		}
 	}
@@ -148,7 +154,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/format/DateFormat',
 	 * @extends sap.ui.model.odata.type.ODataType
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @alias sap.ui.model.odata.type.Time
 	 * @param {object} [oFormatOptions]
@@ -190,18 +196,18 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/format/DateFormat',
 	 *   if <code>sTargetType</code> is unsupported
 	 * @public
 	 */
-	Time.prototype.formatValue = function(oValue, sTargetType) {
+	Time.prototype.formatValue = function (oValue, sTargetType) {
 		if (oValue === undefined || oValue === null) {
 			return null;
 		}
 		switch (this.getPrimitiveType(sTargetType)) {
-		case "any":
-			return oValue;
-		case "string":
-			return getFormatter(this).format(toDate(oValue));
-		default:
-			throw new FormatException("Don't know how to format " + this.getName() + " to "
-				+ sTargetType);
+			case "any":
+				return oValue;
+			case "string":
+				return getFormatter(this).format(toDate(oValue));
+			default:
+				throw new FormatException("Don't know how to format " + this.getName() + " to "
+					+ sTargetType);
 		}
 	};
 
@@ -216,7 +222,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/format/DateFormat',
 	 * @override
 	 * @protected
 	 */
-	Time.prototype.getModelFormat = function() {
+	Time.prototype.getModelFormat = function () {
 		return oModelFormat;
 	};
 
@@ -269,7 +275,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/format/DateFormat',
 	 *
 	 * @param {object} oValue
 	 *   the value to be validated
-	 * @returns {void}
 	 * @throws {sap.ui.model.ValidateException} if the value is not valid
 	 * @public
 	 */

@@ -1,19 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.unified.SplitContainer.
 sap.ui.define([
-	'jquery.sap.global',
 	'sap/ui/core/Control',
 	'sap/ui/core/theming/Parameters',
 	'./library',
 	'sap/ui/core/library',
 	'./SplitContainerRenderer',
-	'jquery.sap.script'
-], function(jQuery, Control, Parameters, library, coreLibrary, SplitContainerRenderer /*, jQueryScript*/ ) {
+	"sap/base/Log"
+], function(Control, Parameters, library, coreLibrary, SplitContainerRenderer, Log ) {
 	"use strict";
 
 
@@ -34,7 +33,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -48,6 +47,7 @@ sap.ui.define([
 	var SplitContainer = Control.extend("sap.ui.unified.SplitContainer", /** @lends sap.ui.unified.SplitContainer.prototype */ { metadata : {
 
 		library : "sap.ui.unified",
+		deprecated : true,
 		properties : {
 
 			/**
@@ -102,8 +102,8 @@ sap.ui.define([
 
 	// Design decided that content does not need to be handled differently depending on device - remove
 	// comments if needed again...
-	//	sap.ui.Device.media.attachHandler(
-	//		this._handleMediaChange, this, sap.ui.Device.media.RANGESETS.SAP_STANDARD
+	//	Device.media.attachHandler(
+	//		this._handleMediaChange, this, Device.media.RANGESETS.SAP_STANDARD
 	//	);
 
 		// By default move the content when the secondaryContent is shown
@@ -117,7 +117,7 @@ sap.ui.define([
 		delete this._canvasRenderer;
 
 		if (this._closeContentDelayId) {
-			jQuery.sap.clearDelayedCall(this._closeContentDelayId);
+			clearTimeout(this._closeContentDelayId);
 			delete this._closeContentDelayId;
 		}
 		delete this._contentContainer;
@@ -139,7 +139,7 @@ sap.ui.define([
 	// comments if needed again...
 	//	this._lastDeviceName = "";
 	//	this._handleMediaChange(
-	//		sap.ui.Device.media.getCurrentRange(sap.ui.Device.media.RANGESETS.SAP_STANDARD)
+	//		sap.ui.Device.media.getCurrentRange(Device.media.RANGESETS.SAP_STANDARD)
 	//	);
 
 		this._applySecondaryContentSize();
@@ -156,7 +156,7 @@ sap.ui.define([
 	// *
 	// * @private
 	// */
-	//sap.ui.unified.SplitContainer.prototype._handleMediaChange = function(mParams) {
+	//SplitContainer.prototype._handleMediaChange = function(mParams) {
 	//	var sDeviceName = mParams.name;
 	//
 	//	// By default, move the content to the right, there should be enough space
@@ -204,7 +204,7 @@ sap.ui.define([
 			}
 
 			if (this._closeContentDelayId) {
-				jQuery.sap.clearDelayedCall(this._closeContentDelayId);
+				clearTimeout(this._closeContentDelayId);
 				delete this._closeContentDelayId;
 			}
 
@@ -225,14 +225,12 @@ sap.ui.define([
 				// ignored by parseInt.
 				// TODO: Cache the value.
 				var iHideDelay = parseInt(
-					Parameters.get("_sap_ui_unified_SplitContainer_AnimationDuration"),
-					10
-				);
+					Parameters.get("_sap_ui_unified_SplitContainer_AnimationDuration"));
 				// Maybe we could also allow "s"-values and then multiply everything below 20 with 1000...?
 
-				this._closeContentDelayId = jQuery.sap.delayedCall(iHideDelay, this, function() {
+				this._closeContentDelayId = setTimeout(function() {
 					this._secondaryContentContainer.toggleClass("sapUiUfdSplitContSecondClosed", true);
-				});
+				}.bind(this), iHideDelay);
 			} else {
 				this._secondaryContentContainer.toggleClass("sapUiUfdSplitContSecondClosed", false);
 			}
@@ -286,7 +284,7 @@ sap.ui.define([
 	// Backwards compatibility with old property name
 
 	SplitContainer.prototype.getSecondaryContentWidth = function() {
-		jQuery.sap.log.warning(
+		Log.warning(
 			"SplitContainer: Use of deprecated property \"SecondaryContentWidth\", please use " +
 			"\"SecondaryContentSize\" instead."
 		);
@@ -294,7 +292,7 @@ sap.ui.define([
 	};
 
 	SplitContainer.prototype.setSecondaryContentWidth = function() {
-		jQuery.sap.log.warning(
+		Log.warning(
 			"SplitContainer: Use of deprecated property \"SecondaryContentWidth\", please use " +
 			"\"SecondaryContentSize\" instead."
 		);

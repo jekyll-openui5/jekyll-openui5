@@ -1,19 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	'jquery.sap.global',
 	'./library',
 	'sap/ui/core/Control',
 	'sap/m/Text',
 	'sap/ui/Device',
 	'./FeedContentRenderer',
-	'jquery.sap.keycodes'
+	"sap/ui/events/KeyCodes"
 ],
-	function(jQuery, library, Control, Text, Device, FeedContentRenderer) {
+	function(library, Control, Text, Device, FeedContentRenderer, KeyCodes) {
 	"use strict";
 
 	// shortcut for sap.m.Size
@@ -29,7 +28,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @since 1.34
 	 *
 	 * @public
@@ -46,7 +45,7 @@ sap.ui.define([
 				 * Updates the size of the chart. If not set then the default size is applied based on the device tile.
 				 * @deprecated Since version 1.38.0. The FeedContent control has now a fixed size, depending on the used media (desktop, tablet or phone).
 				 */
-				"size" : {type : "sap.m.Size", group : "Misc", defaultValue : Size.Auto},
+				"size" : {type : "sap.m.Size", group : "Misc", defaultValue : Size.Auto, deprecated: true},
 
 				/**
 				 * The content text.
@@ -101,13 +100,13 @@ sap.ui.define([
 	};
 
 	FeedContent.prototype.onBeforeRendering = function() {
-		this.$().unbind("mouseenter", this._addTooltip);
-		this.$().unbind("mouseleave", this._removeTooltip);
+		this.$().off("mouseenter");
+		this.$().off("mouseleave");
 	};
 
 	FeedContent.prototype.onAfterRendering = function() {
-		this.$().bind("mouseenter", this._addTooltip.bind(this));
-		this.$().bind("mouseleave", this._removeTooltip.bind(this));
+		this.$().on("mouseenter", this._addTooltip.bind(this));
+		this.$().on("mouseleave", this._removeTooltip.bind(this));
 	};
 
 	FeedContent.prototype.exit = function() {
@@ -188,7 +187,7 @@ sap.ui.define([
 	 */
 	FeedContent.prototype.ontap = function(oEvent) {
 		if (Device.browser.msie) {
-			this.$().focus();
+			this.$().trigger("focus");
 		}
 		this.firePress();
 	};
@@ -198,7 +197,7 @@ sap.ui.define([
 	 * @param {jQuery.Event} oEvent which was triggered
 	 */
 	FeedContent.prototype.onkeydown = function(oEvent) {
-		if (oEvent.which === jQuery.sap.KeyCodes.ENTER || oEvent.which === jQuery.sap.KeyCodes.SPACE) {
+		if (oEvent.which === KeyCodes.ENTER || oEvent.which === KeyCodes.SPACE) {
 			this.firePress();
 			oEvent.preventDefault();
 		}

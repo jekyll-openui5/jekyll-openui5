@@ -1,12 +1,14 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.layout.form.GridElementData.
-sap.ui.define(['sap/ui/core/LayoutData', 'sap/ui/layout/library'],
-	function(LayoutData, library) {
+sap.ui.define([
+	'sap/ui/core/LayoutData',
+	'sap/ui/layout/library'
+	], function(LayoutData, library) {
 	"use strict";
 
 	/**
@@ -20,7 +22,7 @@ sap.ui.define(['sap/ui/core/LayoutData', 'sap/ui/layout/library'],
 	 * @extends sap.ui.core.LayoutData
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -52,13 +54,6 @@ sap.ui.define(['sap/ui/core/LayoutData', 'sap/ui/layout/library'],
 			vCells : {type : "int", group : "Appearance", defaultValue : 1}
 		}
 	}});
-
-	///**
-	// * This file defines behavior for the control,
-	// */
-	//sap.ui.commons.form.GridElementData.prototype.init = function(){
-	//   // do something for initialization...
-	//};
 
 	return GridElementData;
 

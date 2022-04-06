@@ -1,23 +1,26 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides class sap.ui.core.support.plugins.ViewInfo (ViewInfo support plugin)
 sap.ui.define([
-	'jquery.sap.global', 'sap/ui/core/support/Plugin', 'sap/ui/core/support/controls/TreeViewer', 'sap/ui/core/support/controls/ObjectViewer', 'sap/ui/Device'
-], function(jQuery, Plugin, TreeViewer, ObjectViewer, Device) {
+	'sap/ui/core/support/Plugin',
+	'sap/ui/core/support/controls/TreeViewer',
+	'sap/ui/core/support/controls/ObjectViewer',
+	'sap/ui/Device',
+	"sap/base/Log",
+	"sap/base/security/encodeXML"
+], function(Plugin, TreeViewer, ObjectViewer, Device, Log, encodeXML) {
 	"use strict";
-
-	/*global Blob, Uint8Array, alert */
 
 		var $ = jQuery;
 		/**
 		 * Creates an instance of sap.ui.core.support.plugins.ViewInfo.
 		 * @class This class represents the ViewInfo plugin for the support tool functionality of UI5. This class is internal and all its functions must not be used by an application.
 		 * @extends sap.ui.core.support.Plugin
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 * @private
 		 * @alias sap.ui.core.support.plugins.ViewInfo
 		 */
@@ -62,7 +65,7 @@ sap.ui.define([
 
 			if (typeof this.supportInfo !== "function") {
 				this.$().get(0).innerHTML =
-					"<div class='sapUISupportLabel' style='padding: 5px;'>" +
+					"<div class='sapUISupportLabel'>" +
 						"View Info Support Tool is only available in <b>Support Mode.</b>" +
 						"<br>Turn it on by adding '<b>sap-ui-support=true</b>' to the url or your application." +
 					"</div>";
@@ -201,30 +204,6 @@ sap.ui.define([
 			this._propertyChangeDebugger = {};
 			this._methodDebugger = {};
 			var rm = sap.ui.getCore().createRenderManager();
-			rm.write('<style>' +
-				'.viewxmlinfo {width: 620px; height: 300px; position: absolute;margin-top: -310px;margin-left: 810px; box-sizing:border-box;}' +
-				'.viewxmlinfo .content {overflow: auto; box-sizing:border-box;}' +
-				'.viewxmlinfo .toolbar {padding:4px 10px;box-sizing:border-box;height:25px}' +
-				'.viewxmlinfo .title {padding:4px 10px;box-sizing:border-box;height:25px;font-size:17px;}' +
-				'.viewxmlinfo .title a {color: #007dc0; text-decoration: none}' +
-				'.viewxmlinfo .title a:hover {color: #007dc0; text-decoration: underline}' +
-				'.viewxmlheader {cursor:default;font-family:arial; font-size: 14px;}' +
-				'.viewxmlheader .info{margin-left:3px;display:inline-block}' +
-				'.viewxmlheader[collapsed=\'true\'] .settingscontainer {display:none;margin-left: 8px;}' +
-				'.viewxmlheader[collapsed=\'false\'] .settingscontainer {margin-top: 3px; display:block;margin-left: 12px;}' +
-				'.viewxmlmain .settingscontainer {margin-left: 12px;}' +
-				'.viewxmlmain .settings{font-size:14px;margin: 0px 6px;padding:2px 6px;color:#007dc0;cursor:pointer; display:inline-block;width:180px;white-space:nowrap;}' +
-				'.viewxmlmain .settings [selected=\'true\'] {background-color:#007dc0;}' +
-				'.viewxmlmain .settings [selected] {border: 1px solid #007dc0;height: 11px;display: inline-block;width: 11px;box-sizing: border-box;margin-right: 4px;margin-bottom: -1px;}' +
-				'.viewxmlheader .settings {margin: 0px 6px;padding:2px 6px;color:#007dc0;cursor:pointer; display:inline-block;width:180px;white-space:nowrap;}' +
-				'.viewxmlheader .settings [selected=\'true\'] {background-color:#007dc0;}' +
-				'.viewxmlheader .settings [selected] {border: 1px solid #007dc0;height: 11px;display: inline-block;width: 11px;box-sizing: border-box;margin-right: 4px;margin-bottom: -1px;}' +
-				'.viewxmlheader[collapsed=\'true\'] .toggle {border-color: transparent transparent transparent #333;border-radius: 0;border-style: solid;border-width: 4px 3px 4px 8px;height: 0;width: 0;position: relative;margin-top: 0px;margin-left: 10px;display: inline-block;}' +
-				'.viewxmlheader[collapsed=\'false\'] .toggle {border-color: #333 transparent transparent transparent;border-radius: 0;border-style: solid;border-width: 8px 4px 0px 4px;height: 0;width: 0;position: relative;margin-top: 0px;margin-left: 8px;margin-right: 5px;display: inline-block;}' +
-				'.viewxmlsplitter {font-family: consolas, monospace; width: 5px; overflow: auto; height: 300px; position: absolute;margin-top: -310px;margin-left: 810px; padding-left:10px}' +
-				TreeViewer.getCss() +
-				ObjectViewer.getCss() +
-				'</style>');
 
 			if (!this.aTrees) {
 				this.aTrees = [];
@@ -240,11 +219,11 @@ sap.ui.define([
 							this.aMetamodels.push(oMetadata);
 							var oTree = this.createTree(oMetadata, i);
 							this.aTrees[i] = oTree;
-							rm.write('<div class="viewxmlheader" collapsed="true"><span class="toggle"></span><span class="info">Metadata: ' + jQuery.sap.encodeHTML(oMetadata.env.settings.response.requestUri) + '</span><div class="settingscontainer"><span class="settings"  style="display:none" raise="_onToggleDebugNodes" idx="' + i + '">Expand debugged nodes</span><span class="settings"  style="display:none" raise="_onToggleRealIds" idx="' + i + '" style=\"display:none\"><span selected="false"></span>Show XML View Ids</span><span class="settings" raise="_onToggleNamespace" idx="' + i + '" ><span selected="false"></span>Hide tag namespace</span><span class="settings" raise="_onToggleInactive" idx="' + i + '" ><span selected="false"></span>Hide inactive</span></div></div>');
-							rm.write('<div style="display:none"><div id="treecontent_' + i + '"></div>');
+							rm.write('<div class="viewxmlheader" collapsed="true"><span class="toggle"></span><span class="info">Metadata: ' + encodeXML(oMetadata.env.settings.response.requestUri) + '</span><div class="settingscontainer"><span class="settings sapUiSupportViewInfoElementHidden" raise="_onToggleDebugNodes" idx="' + i + '">Expand debugged nodes</span><span class="settings sapUiSupportViewInfoElementHidden" raise="_onToggleRealIds" idx="' + i + '"><span selected="false"></span>Show XML View Ids</span><span class="settings" raise="_onToggleNamespace" idx="' + i + '" ><span selected="false"></span>Hide tag namespace</span><span class="settings" raise="_onToggleInactive" idx="' + i + '" ><span selected="false"></span>Hide inactive</span></div></div>');
+							rm.write('<div class="sapUiSupportViewInfoElementHidden"><div id="treecontent_' + i + '"></div>');
 							rm.write('<div class="viewxmlsplitter">');
 							rm.write('</div>');
-							rm.write('<div class="viewxmlinfo"><div class="title" id="objectHeader' + i + '" style="display:none">Header</div><div class="toolbar" id="objectToolbar' + i + '" style="display:none">Toolbar</div><div class="content" id="selectedcontent_' + i + '">');
+							rm.write('<div class="viewxmlinfo"><div class="title sapUiSupportViewInfoElementHidden" id="objectHeader' + i + '">Header</div><div class="toolbar sapUiSupportViewInfoElementHidden" id="objectToolbar' + i + '">Toolbar</div><div class="content" id="selectedcontent_' + i + '">');
 							rm.write('</div></div></div>');
 						}
 						oMetadata.env.tree = oTree;
@@ -297,7 +276,7 @@ sap.ui.define([
 						}
 
 						if (oView.env.type === "template") {
-							rm.write('<div class="viewxmlheader" collapsed="true"><span class="toggle"></span><span class="info">' + sId + ' (' + oView.env.type + ')</span><div class="settingscontainer"><span class="settings" raise="_onToggleDebugNodes" idx="' + i + '">Expand debugged nodes</span><span class="settings" raise="_onToggleRealIds" idx="' + i + '" style=\"display:none\"><span selected="false"></span>Show XML View Ids</span><span class="settings" raise="_onToggleNamespace" idx="' + i + '" ><span selected="false"></span>Hide tag namespace</span><span class="settings" raise="_onToggleInactive" idx="' + i + '" ><span selected="false"></span>Hide inactive</span></div></div>');
+							rm.write('<div class="viewxmlheader" collapsed="true"><span class="toggle"></span><span class="info">' + sId + ' (' + oView.env.type + ')</span><div class="settingscontainer"><span class="settings" raise="_onToggleDebugNodes" idx="' + i + '">Expand debugged nodes</span><span class="settings sapUiSupportViewInfoElementHidden" raise="_onToggleRealIds" idx="' + i + '"><span selected="false"></span>Show XML View Ids</span><span class="settings" raise="_onToggleNamespace" idx="' + i + '" ><span selected="false"></span>Hide tag namespace</span><span class="settings" raise="_onToggleInactive" idx="' + i + '" ><span selected="false"></span>Hide inactive</span></div></div>');
 						} else {
 							var sTemplatedBy = "";
 							if (oView.env.metamodels) {
@@ -311,12 +290,12 @@ sap.ui.define([
 							if (oView.env.settings.cache) {
 								sCache += " from client cache " + JSON.stringify(oView.env.settings.cache);
 							}
-							rm.write('<div class="viewxmlheader" collapsed="true"><span class="toggle"></span><span class="info">' + sId + ' (' + oView.env.type + jQuery.sap.encodeHTML(String(sTemplatedBy)) + ') ' + jQuery.sap.encodeHTML(String(sCache)) + '</span><div class="settingscontainer"><span class="settings" raise="_onToggleDebugNodes" idx="' + i + '">Expand debugged nodes</span><span class="settings" raise="_onToggleRealIds" idx="' + i + '" ><span selected="false"></span>Show XML View Ids</span><span class="settings" raise="_onToggleNamespace" idx="' + i + '" ><span selected="false"></span>Hide tag namespace</span></div></div>');
+							rm.write('<div class="viewxmlheader" collapsed="true"><span class="toggle"></span><span class="info">' + sId + ' (' + oView.env.type + encodeXML(String(sTemplatedBy)) + ') ' + encodeXML(String(sCache)) + '</span><div class="settingscontainer"><span class="settings" raise="_onToggleDebugNodes" idx="' + i + '">Expand debugged nodes</span><span class="settings" raise="_onToggleRealIds" idx="' + i + '" ><span selected="false"></span>Show XML View Ids</span><span class="settings" raise="_onToggleNamespace" idx="' + i + '" ><span selected="false"></span>Hide tag namespace</span></div></div>');
 						}
-						rm.write('<div style="display:none"><div id="treecontent_' + i + '"></div>');
+						rm.write('<div class="sapUiSupportViewInfoElementHidden"><div id="treecontent_' + i + '"></div>');
 						rm.write('<div class="viewxmlsplitter">');
 						rm.write('</div>');
-						rm.write('<div class="viewxmlinfo"><div class="title" id="objectHeader' + i + '" style="display:none">Header</div><div class="toolbar" id="objectToolbar' + i + '" style="display:none">Toolbar</div><div class="content" id="selectedcontent_' + i + '">');
+						rm.write('<div class="viewxmlinfo"><div class="title sapUiSupportViewInfoElementHidden" id="objectHeader' + i + '">Header</div><div class="toolbar sapUiSupportViewInfoElementHidden" id="objectToolbar' + i + '">Toolbar</div><div class="content" id="selectedcontent_' + i + '">');
 						rm.write('</div></div></div></div>');
 						i++;
 					}
@@ -392,7 +371,7 @@ sap.ui.define([
 			} catch (ex) {
 				return {error: "Property " + sName + " - Invalid Binding:" + ex.message};
 			}
-			var vValue = sValue = oBindingInfo || sValue; // oBindingInfo could be an unescaped string
+			var vValue = sValue = typeof oBindingInfo === "string" ? oBindingInfo : sValue; // oBindingInfo could be an unescaped string
 			var oType = DataType.getType(sType);
 			if (oType) {
 				if (oType instanceof DataType) {
@@ -646,7 +625,7 @@ sap.ui.define([
 					}
 				}
 			} catch (ex) {
-				jQuery.sap.log.debug("Diagnostics: ViewInfo failed to remove highlighting of controls");
+				Log.debug("Diagnostics: ViewInfo failed to remove highlighting of controls");
 			}
 
 		};
@@ -811,7 +790,7 @@ sap.ui.define([
 			if (oDomRef.getAttribute("selected")) {
 				oDomRef = oDomRef.parentNode;
 			}
-			var iIndex = parseInt(oDomRef.getAttribute("idx"),10),
+			var iIndex = parseInt(oDomRef.getAttribute("idx")),
 				oTree = this.aTrees[iIndex];
 			if (oTree.toggleIds()) {
 				oDomRef.innerHTML = "<span selected=\"false\"></span>Show XML View Ids";
@@ -825,7 +804,7 @@ sap.ui.define([
 			if (oDomRef.getAttribute("selected")) {
 				oDomRef = oDomRef.parentNode;
 			}
-			var iIndex = parseInt(oDomRef.getAttribute("idx"), 10),
+			var iIndex = parseInt(oDomRef.getAttribute("idx")),
 				oTree = this.aTrees[iIndex];
 			if (oTree.toggleInactive()) {
 				oDomRef.innerHTML = "<span selected=\"false\"></span>Hide inactive";
@@ -840,7 +819,7 @@ sap.ui.define([
 			if (oDomRef.getAttribute("selected")) {
 				oDomRef = oDomRef.parentNode;
 			}
-			var iIndex = parseInt(oDomRef.getAttribute("idx"), 10),
+			var iIndex = parseInt(oDomRef.getAttribute("idx")),
 				oTree = this.aTrees[iIndex];
 			if (oTree.toggleNS()) {
 				oDomRef.innerHTML = "<span selected=\"false\"></span>Hide tag namespace";
@@ -851,7 +830,7 @@ sap.ui.define([
 		};
 
 		ViewInfo.prototype._onToggleDebugNodes = function(oEvent) {
-			var iIndex = parseInt(oEvent.target.getAttribute("idx"), 10),
+			var iIndex = parseInt(oEvent.target.getAttribute("idx")),
 				oTree = this.aTrees[iIndex];
 			oTree.expandNodesWithSelectedInfo(0);
 			oTree.expandNodesWithSelectedInfo(1);
@@ -930,46 +909,6 @@ sap.ui.define([
 				oDomRef.nextSibling.style.display = "none";
 			}
 		};
-		ViewInfo.prototype.createTemplateTreeNodes = function(oRootNode) {
-			var oTemplateTree = (new DOMParser()).parseFromString("", "application/xml");
-			var aInfos = this.supportInfo.getAll();
-			var oCurrentNode = oTemplateTree;
-			var sCurrentAttributeName = "";
-			var sCurrentAttributeValue = "";
-			var aParents = [];
-			for (var i = 0; i < aInfos.length; i++) {
-				var oInfo = aInfos[i];
-				if (oInfo.env.before) {
-					if (oInfo.env.caller === "visitNode") {
-						var oProcessedNode = oInfo.context;
-						if (oCurrentNode === oProcessedNode) {
-							continue;
-						}
-						oTemplateTree.importNode(oProcessedNode);
-						oProcessedNode.removeAttribute("support:data");
-						oProcessedNode.removeAttribute("xmlns:support");
-						if (oTemplateTree === oCurrentNode) {
-							oCurrentNode.replaceChild(oProcessedNode, oCurrentNode.firstChild);
-							aParents.push(oCurrentNode);
-						} else {
-							oCurrentNode.appendChild(oProcessedNode);
-							aParents.push(oCurrentNode);
-						}
-						oCurrentNode = oProcessedNode;
-					} else if (oInfo.env.caller === "visitAttributes") {
-						sCurrentAttributeName = oInfo.env.before.name;
-						sCurrentAttributeValue = oInfo.env.before.value;
-						oCurrentNode.setAttribute(sCurrentAttributeName, sCurrentAttributeValue);
-					}
-				} else if (oInfo.env.after) {
-					if (oInfo.env.caller === "visitNode") {
-						oCurrentNode = oCurrentNode.parentNode || oInfo.env.parent;
-					}
-
-				}
-			}
-			return oTemplateTree.childNodes[0];
-		};
 
 		ViewInfo.prototype.getValidDebugStackIndices = function(oNode) {
 			var aResults = [],
@@ -980,7 +919,7 @@ sap.ui.define([
 					oSupportInfo = this.supportInfo,
 					iLevel = 0;
 				for (var i = 0; i < aIndices.length; i++) {
-					var iIdx = parseInt(aIndices[i], 10);
+					var iIdx = parseInt(aIndices[i]);
 					var oDebugInfo = oSupportInfo.byIndex(iIdx);
 					if (!oDebugInfo) {
 						continue;

@@ -1,18 +1,24 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.layout.BorderLayout.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/base/assert',
     'sap/ui/commons/library',
     'sap/ui/core/Control',
-    "./BorderLayoutRenderer"
+    './BorderLayoutRenderer',
+    './BorderLayoutArea'
 ],
-	function(jQuery, library, Control, BorderLayoutRenderer) {
+	function(assert, library, Control, BorderLayoutRenderer, BorderLayoutArea) {
 	"use strict";
+
+
+
+	// shortcut for sap.ui.commons.layout.BorderLayoutAreaTypes
+	var BorderLayoutAreaTypes = library.layout.BorderLayoutAreaTypes;
 
 
 
@@ -28,7 +34,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -38,6 +44,7 @@ sap.ui.define([
 	 */
 	var BorderLayout = Control.extend("sap.ui.commons.layout.BorderLayout", /** @lends sap.ui.commons.layout.BorderLayout.prototype */ { metadata : {
 
+		deprecated: true,
 		library : "sap.ui.commons",
 		properties : {
 
@@ -89,7 +96,7 @@ sap.ui.define([
 
 	BorderLayout.prototype._getOrCreateArea = function(sAreaId, aContent) {
 
-		var Types = sap.ui.commons.layout.BorderLayoutAreaTypes,
+		var Types = BorderLayoutAreaTypes,
 			that = this,
 			oArea;
 
@@ -97,7 +104,7 @@ sap.ui.define([
 			var oCreateArea;
 
 			if ( aContent ) {
-				oCreateArea = new sap.ui.commons.layout.BorderLayoutArea({
+				oCreateArea = new BorderLayoutArea({
 					id : that.getId() + "--" + sAreaId,
 					areaId : sAreaId,
 					content : aContent
@@ -131,7 +138,7 @@ sap.ui.define([
 				oArea = this.getBottom() || create("setBottom");
 				break;
 			default:
-				jQuery.sap.assert(false, "default case must not be reached");
+				assert(false, "default case must not be reached");
 				break;
 		}
 
@@ -216,7 +223,7 @@ sap.ui.define([
 	 *         Specifies the area whose properties will be set
 	 * @param {object} oData
 	 *         JSON-like object that contains the values to be set
-	 * @returns {sap.ui.commons.layout.BorderLayout} <code>this</code> to allow method chaining
+	 * @returns {this} <code>this</code> to allow method chaining
 	 *
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -232,7 +239,7 @@ sap.ui.define([
 	 *
 	 * @param {sap.ui.commons.layout.BorderLayoutAreaTypes} sAreaId
 	 *         Specifies the area where controls will be added
-	 * @returns {sap.ui.commons.layout.BorderLayout} <code>this</code> to allow method chaining
+	 * @returns {this} <code>this</code> to allow method chaining
 	 *
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -256,7 +263,7 @@ sap.ui.define([
 	 * @param {int} iIndex
 	 *         Specifies the index where the controls shall be added. For a negative value of iIndex, the content is inserted at
 	 *         position '0'; for a value greater than the current size of the aggregation, the content is inserted at the last position.
-	 * @returns {sap.ui.commons.layout.BorderLayout} <code>this</code> to allow method chaining
+	 * @returns {this} <code>this</code> to allow method chaining
 	 *
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -279,7 +286,7 @@ sap.ui.define([
 	 *         Specifies the area whose content shall be removed
 	 * @param {*} vElement The content to be removed
 	 *         Specifies the control that shall be removed
-	 * @returns {sap.ui.commons.layout.BorderLayout} <code>this</code> to allow method chaining
+	 * @returns {this} <code>this</code> to allow method chaining
 	 *
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -298,7 +305,7 @@ sap.ui.define([
 	 *
 	 * @param {sap.ui.commons.layout.BorderLayoutAreaTypes} sAreaId
 	 *         Specifies the area whose content shall be removed
-	 * @returns {sap.ui.commons.layout.BorderLayout} <code>this</code> to allow method chaining
+	 * @returns {this} <code>this</code> to allow method chaining
 	 *
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -348,7 +355,7 @@ sap.ui.define([
 	 *
 	 * @param {sap.ui.commons.layout.BorderLayoutAreaTypes} sAreaId
 	 *         Specifies the area whose content will be destroyed
-	 * @returns {sap.ui.commons.layout.BorderLayout} <code>this</code> to allow method chaining
+	 * @returns {this} <code>this</code> to allow method chaining
 	 *
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -372,4 +379,4 @@ sap.ui.define([
 
 	return BorderLayout;
 
-}, /* bExport= */ true);
+});

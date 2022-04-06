@@ -1,19 +1,42 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.TextField.
 sap.ui.define([
-    'jquery.sap.global',
-    './library',
-    'sap/ui/core/Control',
-    'sap/ui/core/ValueStateSupport',
-    "./TextFieldRenderer"
+	'sap/ui/thirdparty/jquery',
+	'./library',
+	'sap/ui/core/Control',
+	'sap/ui/core/ValueStateSupport',
+	'./TextFieldRenderer',
+	'sap/ui/core/library',
+	'sap/ui/Device',
+	'sap/ui/events/KeyCodes',
+	'sap/ui/dom/jquery/cursorPos', // jQuery.fn.cursorPos
+	'sap/ui/dom/jquery/selectText' // jQuery.fn.selectText
 ],
-	function(jQuery, library, Control, ValueStateSupport, TextFieldRenderer) {
+	function(jQuery, library, Control, ValueStateSupport, TextFieldRenderer, coreLibrary, Device, KeyCodes) {
 	"use strict";
+
+	// shortcut for sap.ui.core.AccessibleRole
+	var AccessibleRole = coreLibrary.AccessibleRole;
+
+	// shortcut for sap.ui.core.Design
+	var Design = coreLibrary.Design;
+
+	// shortcut for sap.ui.core.ImeMode
+	var ImeMode = coreLibrary.ImeMode;
+
+	// shortcut for sap.ui.core.TextAlign
+	var TextAlign = coreLibrary.TextAlign;
+
+	// shortcut for sap.ui.core.ValueState
+	var ValueState = coreLibrary.ValueState;
+
+	// shortcut for sap.ui.core.TextDirection
+	var TextDirection = coreLibrary.TextDirection;
 
 	/**
 	 * Constructor for a new TextField.
@@ -27,7 +50,7 @@ sap.ui.define([
 	 * @implements sap.ui.commons.ToolbarItem, sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -42,6 +65,7 @@ sap.ui.define([
 			"sap.ui.core.IFormContent"
 		],
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -54,7 +78,7 @@ sap.ui.define([
 			/**
 			 * Direction of the text. Possible values: "rtl", "ltr".
 			 */
-			textDirection : {type : "sap.ui.core.TextDirection", group : "Appearance", defaultValue : sap.ui.core.TextDirection.Inherit},
+			textDirection : {type : "sap.ui.core.TextDirection", group : "Appearance", defaultValue : TextDirection.Inherit},
 
 			/**
 			 * Switches enabled state of the control. Disabled fields have different colors, and can not be focused.
@@ -85,22 +109,22 @@ sap.ui.define([
 			/**
 			 * Visualizes warnings or errors related to the text field. Possible values: Warning, Error, Success.
 			 */
-			valueState : {type : "sap.ui.core.ValueState", group : "Data", defaultValue : sap.ui.core.ValueState.None},
+			valueState : {type : "sap.ui.core.ValueState", group : "Data", defaultValue : ValueState.None},
 
 			/**
 			 * Sets the horizontal alignment of the text.
 			 */
-			textAlign : {type : "sap.ui.core.TextAlign", group : "Appearance", defaultValue : sap.ui.core.TextAlign.Begin},
+			textAlign : {type : "sap.ui.core.TextAlign", group : "Appearance", defaultValue : TextAlign.Begin},
 
 			/**
 			 * State of the Input Method Editor (IME).
 			 */
-			imeMode : {type : "sap.ui.core.ImeMode", group : "Behavior", defaultValue : sap.ui.core.ImeMode.Auto},
+			imeMode : {type : "sap.ui.core.ImeMode", group : "Behavior", defaultValue : ImeMode.Auto},
 
 			/**
 			 * Font type. valid values are Standard and Monospace.
 			 */
-			design : {type : "sap.ui.core.Design", group : "Appearance", defaultValue : sap.ui.core.Design.Standard},
+			design : {type : "sap.ui.core.Design", group : "Appearance", defaultValue : Design.Standard},
 
 			/**
 			 * Unique identifier used for help service.
@@ -110,7 +134,7 @@ sap.ui.define([
 			/**
 			 * Accessibility role for the text field.
 			 */
-			accessibleRole : {type : "sap.ui.core.AccessibleRole", group : "Accessibility", defaultValue : sap.ui.core.AccessibleRole.Textbox},
+			accessibleRole : {type : "sap.ui.core.AccessibleRole", group : "Accessibility", defaultValue : AccessibleRole.Textbox},
 
 			/**
 			 * The <code>name</code> property to be used in the HTML code (e.g. for HTML forms that send data to the server via 'submit').
@@ -171,17 +195,6 @@ sap.ui.define([
 
 		// currently empty but defined to add on Child controls (ComboBox...)
 		// for later use.
-
-	};
-
-	TextField.prototype.onAfterRendering = function() {
-
-		if (sap.ui.Device.browser.internet_explorer) {
-			// as IE fires oninput event directly after rendering if value contains special characters (like Ü,Ö,Ä)
-			// compare first value in first oninput event with rendered one
-			var $input = jQuery(this.getInputDomRef());
-			this._sRenderedValue = $input.val();
-		}
 
 	};
 
@@ -286,8 +299,8 @@ sap.ui.define([
 
 	TextField.prototype.onsapnext = function(oEvent) {
 
-		if (oEvent.keyCode != jQuery.sap.KeyCodes.ARROW_DOWN) { //Only interested in left / right
-			if (jQuery(this.getFocusDomRef()).data("sap.InNavArea") && oEvent.keyCode != jQuery.sap.KeyCodes.END) {
+		if (oEvent.keyCode != KeyCodes.ARROW_DOWN) { //Only interested in left / right
+			if (jQuery(this.getFocusDomRef()).data("sap.InNavArea") && oEvent.keyCode != KeyCodes.END) {
 				// parent handles arrow navigation
 				oEvent.preventDefault();
 				return;
@@ -299,8 +312,8 @@ sap.ui.define([
 	};
 
 	TextField.prototype.onsapprevious = function(oEvent) {
-		if (oEvent.keyCode != jQuery.sap.KeyCodes.ARROW_UP) { //Only interested in left / right
-			if (jQuery(this.getFocusDomRef()).data("sap.InNavArea") && oEvent.keyCode != jQuery.sap.KeyCodes.HOME) {
+		if (oEvent.keyCode != KeyCodes.ARROW_UP) { //Only interested in left / right
+			if (jQuery(this.getFocusDomRef()).data("sap.InNavArea") && oEvent.keyCode != KeyCodes.HOME) {
 				// parent handles arrow navigation
 				oEvent.preventDefault();
 				return;
@@ -354,7 +367,7 @@ sap.ui.define([
 			oEvent.stopPropagation();
 		}
 
-		if (!sap.ui.Device.browser.firefox) {
+		if (!Device.browser.firefox) {
 			this._doOnEscape(oEvent);
 		}
 
@@ -362,7 +375,7 @@ sap.ui.define([
 
 	TextField.prototype.onkeydown = function(oEvent) {
 
-		if (oEvent.which == jQuery.sap.KeyCodes.Z && oEvent.ctrlKey && !oEvent.altKey) {
+		if (oEvent.which == KeyCodes.Z && oEvent.ctrlKey && !oEvent.altKey) {
 			// prevent browsers standard history logic because different in different browsers
 			oEvent.preventDefault();
 		}
@@ -383,7 +396,7 @@ sap.ui.define([
 		var iKC = oEvent.which;
 		// in FireFox keypress is fired for all keys, in other browsers only for characters. But in IE also for ESC
 
-		if ( iKC > 0 && iKC !== jQuery.sap.KeyCodes.ESCAPE ) {
+		if ( iKC > 0 && iKC !== KeyCodes.ESCAPE ) {
 			// if text is edited -> switch to action mode
 			var $FocusDomRef = jQuery(this.getFocusDomRef());
 			if ($FocusDomRef.data("sap.InNavArea")) {
@@ -428,7 +441,7 @@ sap.ui.define([
 	 */
 	TextField.prototype.onkeyup = function(oEvent) {
 
-		if (oEvent.keyCode == jQuery.sap.KeyCodes.F2) {
+		if (oEvent.keyCode == KeyCodes.F2) {
 			// toggle action mode
 			var $FocusDomRef = jQuery(this.getFocusDomRef());
 			if ($FocusDomRef.data("sap.InNavArea")) {
@@ -436,53 +449,12 @@ sap.ui.define([
 			} else if ($FocusDomRef.data("sap.InNavArea") === false) { // check for false to avoid undefined
 				$FocusDomRef.data("sap.InNavArea", true);
 			}
-		} else if ((sap.ui.Device.browser.msie && sap.ui.Device.browser.version < 10) &&
-					(oEvent.which === jQuery.sap.KeyCodes.DELETE || oEvent.which === jQuery.sap.KeyCodes.BACKSPACE)) {
-			this._fireLiveChange(oEvent);
 		}
 	};
 
 	TextField.prototype.oninput = function(oEvent) {
 
-		if (!this._realOninput(oEvent)) {
-			return;
-		}
-
 		this._fireLiveChange(oEvent);
-
-	};
-
-	if (sap.ui.Device.browser.internet_explorer) {
-		//In IE pasting of strings with line endings cutoffs the text after the 1st line ending, so make sure line endings are removed
-		TextField.prototype.onpaste = function(oEvent) {
-			var clipboardData,
-				pastedData,
-				modifiedData;
-
-			clipboardData = oEvent.clipboardData || window.clipboardData;
-			pastedData = clipboardData.getData('Text');
-
-			if (pastedData) {
-				modifiedData = pastedData.replace(/(?:\r\n|\r|\n)/g, ' ').replace(/\s+$/, "");
-				clipboardData.setData("Text", modifiedData);
-			}
-		};
-	}
-
-	TextField.prototype._realOninput = function(oEvent) {
-
-		if (sap.ui.Device.browser.internet_explorer) {
-			// as IE fires oninput event directly after rendering if value contains special characters (like Ü,Ö,Ä)
-			// compare first value in first oninput event with rendered one
-			var $input = jQuery(this.getInputDomRef());
-			var sRenderedValue = this._sRenderedValue;
-			this._sRenderedValue = undefined;
-			if (sRenderedValue == $input.val()) {
-				return false;
-			}
-		}
-
-		return true;
 
 	};
 
@@ -505,7 +477,7 @@ sap.ui.define([
 	 * Property setter for the ValueState
 	 *
 	 * @param {sap.ui.core.ValueState} oValueState
-	 * @return {sap.ui.commons.TextField} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	TextField.prototype.setValueState = function(oValueState) {
@@ -528,11 +500,13 @@ sap.ui.define([
 		}
 
 		if (this.delayedCallId) {
-			jQuery.sap.clearDelayedCall(this.delayedCallId);
+			clearTimeout(this.delayedCallId);
 			this.delayedCallId = null;
 		}
-		if (sap.ui.core.ValueState.Success == oValueState) {
-			this.delayedCallId = jQuery.sap.delayedCall(3000, this, "removeValidVisualization");
+		if (ValueState.Success == oValueState) {
+			this.delayedCallId = setTimeout(function() {
+				this.removeValidVisualization();
+			}.bind(this), 3000);
 		}
 
 		return this;
@@ -548,7 +522,7 @@ sap.ui.define([
 	 * Property setter for the editable state
 	 *
 	 * @param {boolean} bEditable
-	 * @return {sap.ui.commons.TextField} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	TextField.prototype.setEditable = function(bEditable) {
@@ -570,7 +544,7 @@ sap.ui.define([
 	 * Property setter for the enabled state
 	 *
 	 * @param {boolean} bEnabled
-	 * @return {sap.ui.commons.TextField} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	TextField.prototype.setEnabled = function(bEnabled) {
@@ -592,7 +566,7 @@ sap.ui.define([
 	 * Property setter for the Required-State
 	 *
 	 * @param {boolean} bRequired:
-	 * @return {sap.ui.commons.TextField} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	TextField.prototype.setRequired = function(bRequired) {
@@ -620,7 +594,7 @@ sap.ui.define([
 	 * Property setter for the Design
 	 *
 	 * @param {sap.ui.core.Design} sDesign:
-	 * @return {sap.ui.commons.TextField} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	TextField.prototype.setDesign = function(sDesign) {
@@ -645,7 +619,7 @@ sap.ui.define([
 	 * Property setter for the Value
 	 *
 	 * @param {string} sValue:
-	 * @return {sap.ui.commons.TextField} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	TextField.prototype.setValue = function(sValue) {
@@ -658,7 +632,7 @@ sap.ui.define([
 		newValue = this.getValue(); // to use validated value
 		var oInput = this.getInputDomRef();
 		if (oInput && oInput.value !== newValue) {
-			if (!sap.ui.Device.support.input.placeholder) {
+			if (!Device.support.input.placeholder) {
 				if (newValue) {
 					this.$().removeClass('sapUiTfPlace');
 					oInput.value = newValue;
@@ -685,7 +659,7 @@ sap.ui.define([
 	 * Property setter for the Tooltip
 	 *
 	 * @param oTooltip:
-	 * @return {sap.ui.commons.TextField} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	TextField.prototype.setTooltip = function(oTooltip) {
@@ -767,7 +741,7 @@ sap.ui.define([
 
 	TextField.prototype.ondrop = function(oEvent) {
 
-		if (sap.ui.Device.browser.firefox) {
+		if (Device.browser.firefox) {
 			this.focus();
 		}
 
@@ -860,7 +834,7 @@ sap.ui.define([
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
-	 * @returns {Object} Current accessibility state of the control
+	 * @returns {object} Current accessibility state of the control
 	 * @protected
 	 */
 	TextField.prototype.getAccessibilityInfo = function() {
@@ -877,4 +851,4 @@ sap.ui.define([
 
 	return TextField;
 
-}, /* bExport= */ true);
+});

@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-sap.ui.define([],function(){"use strict";var Q={};Q.render=function(r,q){var c=q.getNavContainer();r.write("<div");r.addClass("sapMQuickViewCard");if(!q.getShowVerticalScrollBar()){r.addClass("sapMQuickViewCardNoScroll");}r.writeControlData(q);r.writeClasses();r.write(">");r.renderControl(c);r.write("</div>");};return Q;},true);
+sap.ui.define(["sap/ui/core/Core"],function(C){"use strict";var Q={apiVersion:2};Q.render=function(r,q){r.openStart("div",q).class("sapMQuickViewCard").accessibilityState({label:{value:C.getLibraryResourceBundle("sap.m").getText("ARIA_ROLEDESCRIPTION_CARD"),append:true}});if(!q.getShowVerticalScrollBar()){r.class("sapMQuickViewCardNoScroll");}r.openEnd();r.renderControl(q.getNavContainer());r.close("div");};return Q;},true);

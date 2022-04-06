@@ -1,14 +1,19 @@
 /*!
-  * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+  * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
+/*eslint-disable max-len */
 // Provides the JSON model implementation of a list binding
-sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/model/SorterProcessor', 'sap/ui/model/FilterProcessor', 'sap/ui/model/FilterType'],
-	function(jQuery, ChangeReason, TreeBinding, SorterProcessor, FilterProcessor, FilterType) {
+sap.ui.define([
+	"./ChangeReason",
+	"./TreeBinding",
+	"sap/base/util/each",
+	"sap/ui/model/FilterProcessor",
+	"sap/ui/model/FilterType",
+	"sap/ui/model/SorterProcessor"
+], function(ChangeReason, TreeBinding, each, FilterProcessor, FilterType, SorterProcessor) {
 	"use strict";
-
 
 	/**
 	 * Creates a new ClientTreeBinding.
@@ -27,6 +32,11 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 	 * @class
 	 * Tree binding implementation for client models.
 	 *
+	 * Please Note that a hierarchy's "state" (i.e. the information about expanded, collapsed, selected, and deselected nodes) may become
+	 * inconsistent when the structure of the model data is changed at runtime. This is because each node is identified internally by its
+	 * index position relative to its parent, plus its parent's ID. Therefore, inserting or removing a node in the model data will likely
+	 * lead to a shift in the index positions of other nodes, causing them to lose their state and/or to gain the state of another node.
+	 *
 	 * @alias sap.ui.model.ClientTreeBinding
 	 * @extends sap.ui.model.TreeBinding
 	 * @protected
@@ -42,6 +52,8 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 			this.filterInfo = {};
 			this.filterInfo.aFilteredContexts = [];
 			this.filterInfo.oParentContext = {};
+			this.oCombinedFilter = null;
+			this.mNormalizeCache = {};
 
 			if (aApplicationFilters) {
 				this.oModel.checkFilterOperation(aApplicationFilters);
@@ -71,7 +83,7 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 			iLength = this.oModel.iSizeLimit;
 		}
 
-		var sResolvedPath = this.oModel.resolve(this.sPath, this.oContext),
+		var sResolvedPath = this.getResolvedPath(),
 			that = this,
 			aContexts,
 			oContext,
@@ -91,7 +103,7 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 			aContexts = [];
 			sContextPath = this._sanitizePath(sResolvedPath);
 
-			jQuery.each(this.oModel._getObject(sContextPath), function(iIndex, oObject) {
+			each(this.oModel._getObject(sContextPath), function(iIndex, oObject) {
 				that._saveSubContext(oObject, aContexts, sContextPath, iIndex);
 			});
 
@@ -107,10 +119,10 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 
 	/**
 	 * Return node contexts for the tree
-	 * @param {object} oContext to use for retrieving the node contexts
+	 * @param {sap.ui.model.Context} oContext to use for retrieving the node contexts
 	 * @param {int} iStartIndex the startIndex where to start the retrieval of contexts
 	 * @param {int} iLength determines how many contexts to retrieve beginning from the start index.
-	 * @return {object[]} the contexts array
+	 * @return {sap.ui.model.Context[]} the contexts array
 	 * @protected
 	 */
 	ClientTreeBinding.prototype.getNodeContexts = function(oContext, iStartIndex, iLength) {
@@ -208,13 +220,16 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 
 	/**
 	 * Makes sure the path is prepended and appended with a "/" if necessary.
-	 * @param {string} sContextPath the path to be checked
+	 *
+	 * @param {string} sContextPath The path to be checked
+	 *
+	 * @returns {string} The sanitized path
 	 */
 	ClientTreeBinding.prototype._sanitizePath = function (sContextPath) {
-		if (!jQuery.sap.endsWith(sContextPath,"/")) {
+		if (!sContextPath.endsWith("/")) {
 			sContextPath = sContextPath + "/";
 		}
-		if (!jQuery.sap.startsWith(sContextPath,"/")) {
+		if (!sContextPath.startsWith("/")) {
 			sContextPath = "/" + sContextPath;
 		}
 		return sContextPath;
@@ -225,8 +240,8 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 		if (oNode && typeof oNode == "object") {
 			var oNodeContext = this.oModel.getContext(sContextPath + sName);
 			// check if there is a filter on this level applied
-			if (this.aAllFilters && !this.bIsFiltering) {
-				if (jQuery.inArray(oNodeContext, this.filterInfo.aFilteredContexts) != -1) {
+			if (this.oCombinedFilter && !this.bIsFiltering) {
+				if (this.filterInfo.aFilteredContexts.indexOf(oNodeContext) != -1) {
 					aContexts.push(oNodeContext);
 				}
 			} else {
@@ -247,7 +262,7 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 	 * @see sap.ui.model.TreeBinding.prototype.filter
 	 * @param {sap.ui.model.Filter|sap.ui.model.Filter[]} aFilters Single filter object or an array of filter objects
 	 * @param {sap.ui.model.FilterType} sFilterType Type of the filter which should be adjusted, if it is not given, the standard behaviour applies
-	 * @return {sap.ui.model.ClientTreeBinding} <code>this</code> to facilitate method chaining
+	 * @return {this} <code>this</code> to facilitate method chaining
 	 * @throws {Error} When one of the filters uses an operator that is not supported by the underlying model implementation
 	 * @public
 	 */
@@ -273,16 +288,12 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 		}
 
 
-		aFilters = this.aFilters.concat(this.aApplicationFilters);
-		if (aFilters.length == 0) {
-			this.aAllFilters = null;
-		} else {
-			this.aAllFilters = aFilters;
+		this.oCombinedFilter = FilterProcessor.combineFilters(this.aFilters, this.aApplicationFilters);
+		if (this.oCombinedFilter) {
 			this.applyFilter();
 		}
 		this._mLengthsCache = {};
 		this._fireChange({reason: "filter"});
-		// TODO remove this if the filter event is removed
 		this._fireFilter({filters: aFilters});
 
 		return this;
@@ -310,7 +321,7 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 		var that = this,
 			aFilteredContexts = [];
 
-		if (jQuery.isEmptyObject(this.aAllFilters)) {
+		if (!this.oCombinedFilter) {
 			return;
 		}
 
@@ -327,23 +338,24 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 		this.bIsFiltering = false;
 
 		if (aUnfilteredContexts.length > 0) {
-			jQuery.each(aUnfilteredContexts, function(i, oContext){
+			each(aUnfilteredContexts, function(i, oContext){
 				// Add parentContext reference for later use (currently to calculate correct group IDs in the adapter)
 				oContext._parentContext = oParentContext;
 				that._applyFilterRecursive(oContext);
 			});
 
-			aFilteredContexts = FilterProcessor.apply(aUnfilteredContexts, this.aAllFilters, function (oContext, sPath) {
+			aFilteredContexts = FilterProcessor.apply(aUnfilteredContexts, this.oCombinedFilter, function (oContext, sPath) {
 				return that.oModel.getProperty(sPath, oContext);
-			});
+			}, this.mNormalizeCache);
 
 			if (aFilteredContexts.length > 0) {
-				jQuery.merge(this.filterInfo.aFilteredContexts, aFilteredContexts);
+				this.filterInfo.aFilteredContexts =
+					this.filterInfo.aFilteredContexts.concat(aFilteredContexts);
 				this.filterInfo.aFilteredContexts.push(oParentContext);
 				this.filterInfo.oParentContext = oParentContext;
 			}
 			// push additionally parentcontexts if any children are already included in filtered contexts
-			if (jQuery.inArray(this.filterInfo.oParentContext, aUnfilteredContexts) != -1) {
+			if (aUnfilteredContexts.indexOf(this.filterInfo.oParentContext) != -1) {
 				this.filterInfo.aFilteredContexts.push(oParentContext);
 				// set the parent context which was added to be the new parent context
 				this.filterInfo.oParentContext = oParentContext;
@@ -353,11 +365,12 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 
 	/**
 	 * Sorts the contexts of this ClientTreeBinding.
-	 * The tree will be sorted level by level. So the nodes are NOT sorted absolute, but relative to their parent node,
-	 * to keep the hierarchy untouched.
+	 * The tree will be sorted level by level. So the nodes are NOT sorted absolute, but relative to
+	 * their parent node, to keep the hierarchy untouched.
 	 *
-	 * @param {sap.ui.model.Sorter[]} an array of Sorter instances which will be applied
-	 * @return {sap.ui.model.ClientTreeBinding} returns <code>this</code> to facilitate method chaining
+	 * @param {sap.ui.model.Sorter[]} aSorters An array of Sorter instances which will be applied
+	 *
+	 * @return {this} Returns <code>this</code> to facilitate method chaining
 	 * @public
 	 */
 	ClientTreeBinding.prototype.sort = function (aSorters) {
@@ -386,7 +399,10 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 
 	/**
 	 * Sets the length cache.
-	 * Called by get*Contexts() to keep track of the child count (after filtering)
+	 * Called by get*Contexts() to keep track of the child count (after filtering).
+	 *
+	 * @param {string} sKey The cache entry to set the length for
+	 * @param {number} iLength The new length
 	 */
 	ClientTreeBinding.prototype._setLengthCache = function (sKey, iLength) {
 		// keep track of the child count for each context (after filtering)
@@ -397,7 +413,7 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './TreeBinding', 'sap/ui/m
 	 * Check whether this Binding would provide new values and in case it changed,
 	 * inform interested parties about this.
 	 *
-	 * @param {boolean} bForceupdate
+	 * @param {boolean} bForceupdate Not used in this method
 	 *
 	 */
 	ClientTreeBinding.prototype.checkUpdate = function(bForceupdate){

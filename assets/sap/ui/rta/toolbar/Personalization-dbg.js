@@ -1,16 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	'./Base',
-	'sap/m/ToolbarSpacer'
+	"./Base",
+	"sap/m/Button"
 ],
 function(
 	Base,
-	ToolbarSpacer
+	Button
 ) {
 	"use strict";
 
@@ -22,7 +22,7 @@ function(
 	 * @extends sap.ui.rta.toolbar.Base
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @private
@@ -31,50 +31,43 @@ function(
 	 * @experimental Since 1.48. This class is experimental. API might be changed in future.
 	 */
 	var Personalization = Base.extend("sap.ui.rta.toolbar.Personalization", {
-		renderer: 'sap.ui.rta.toolbar.BaseRenderer',
-		type: 'personalization',
+		renderer: "sap.ui.rta.toolbar.BaseRenderer",
+		type: "personalization",
 		metadata: {
+			library: "sap.ui.rta",
 			events: {
 				/**
 				 * Events are fired when the Toolbar - Buttons are pressed
 				 */
-				"exit": {},
-				"restore": {}
+				exit: {},
+				restore: {}
 			}
+		},
+		constructor: function() {
+			Base.apply(this, arguments);
+			this.setJustifyContent("End");
 		}
 	});
 
-	Personalization.prototype.buildControls = function() {
-		var aControls = [
-			new ToolbarSpacer(),
-			new sap.m.Button({
+	Personalization.prototype.buildContent = function() {
+		[
+			new Button("sapUiRta_restore", {
 				type: "Transparent",
-				text: this.getTextResources().getText("BTN_RESTORE"),
-				tooltip: this.getTextResources().getText("BTN_RESTORE"),
+				text: "{i18n>BTN_RESTORE}",
 				visible: true,
-				press: this.eventHandler.bind(this, 'Restore')
-			}).data('name', 'restore'),
-			new sap.m.Button({
-				type:"Emphasized",
-				text: this.getTextResources().getText("BTN_DONE"),
-				tooltip: this.getTextResources().getText("BTN_DONE_TOOLTIP"),
-				press: this.eventHandler.bind(this, 'Exit')
-			}).data('name', 'exit')
-		];
+				press: this.eventHandler.bind(this, "Restore")
+			}).data("name", "restore"),
+			new Button("sapUiRta_exit", {
+				type: "Emphasized",
+				text: "{i18n>BTN_DONE}",
+				press: this.eventHandler.bind(this, "Exit")
+			}).data("name", "exit")
+		].forEach(function (oControl) {
+			this.addItem(oControl);
+		}.bind(this));
 
-		return aControls;
-	};
-
-	Personalization.prototype.setUndoRedoEnabled = function() {
-	};
-
-	Personalization.prototype.setPublishEnabled = function() {
-	};
-
-	Personalization.prototype.setRestoreEnabled = function (bEnabled) {
-		this.getControl('restore').setEnabled(bEnabled);
+		return Promise.resolve();
 	};
 
 	return Personalization;
-
-}, true);
+});

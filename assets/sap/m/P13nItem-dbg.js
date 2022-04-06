@@ -1,6 +1,6 @@
 /*
- * ! UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * ! OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -17,7 +17,7 @@ sap.ui.define([
 	 * @param {object} [mSettings] initial settings for the new control
 	 * @class Base type for <code>items</code> aggregation in <code>P13nPanel</code> control.
 	 * @extends sap.ui.core.Element
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @constructor
 	 * @public
 	 * @since 1.26.0
@@ -63,6 +63,16 @@ sap.ui.define([
 					type: "string",
 					group: "Misc",
 					defaultValue: "text"
+				},
+
+				/**
+				 * data type instance of the column. Can be used instead of the type, precision, scale and formatSettings properties
+				 */
+				typeInstance: {
+					type: "object",
+					group: "Misc",
+					defaultValue: null,
+					since: "1.56"
 				},
 
 				/**
@@ -189,14 +199,23 @@ sap.ui.define([
 					type: "object",
 					defaultValue: null
 				},
-                /**
-                 * Defines additional information of the link.
-                 *
-                 * @since 1.56.0
-                 */
-                description: {
-                    type: "string",
-                    defaultValue: null
+				/**
+				 * Defines additional information of the link.
+				 *
+				 * @since 1.56.0
+				 */
+				description: {
+					type: "string",
+					defaultValue: null
+				},
+
+				/**
+				 * Defines if the item is nullable
+				 */
+				nullable: {
+					type: "boolean",
+					group: "Misc",
+					defaultValue: false
 				}
 			}
 		}

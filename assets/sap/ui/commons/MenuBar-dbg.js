@@ -1,21 +1,33 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.MenuBar.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/ui/thirdparty/jquery',
     './Menu',
     './MenuItem',
     './MenuItemBase',
     './library',
     'sap/ui/core/Control',
-    "./MenuBarRenderer"
+    './MenuBarRenderer',
+    'sap/ui/core/ResizeHandler',
+    'sap/ui/core/Popup',
+    'sap/ui/events/checkMouseEnterOrLeave',
+    'sap/ui/events/KeyCodes'
 ],
-	function(jQuery, Menu, MenuItem, MenuItemBase, library, Control, MenuBarRenderer) {
+	function(jQuery, Menu, MenuItem, MenuItemBase, library, Control, MenuBarRenderer, ResizeHandler, Popup, checkMouseEnterOrLeave, KeyCodes) {
 	"use strict";
+
+
+
+	// shortcut for sap.ui.core.Popup.Dock
+	var Dock = Popup.Dock;
+
+	// shortcut for sap.ui.commons.MenuBarDesign
+	var MenuBarDesign = library.MenuBarDesign;
 
 
 
@@ -33,7 +45,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -44,6 +56,7 @@ sap.ui.define([
 	var MenuBar = Control.extend("sap.ui.commons.MenuBar", /** @lends sap.ui.commons.MenuBar.prototype */ { metadata : {
 
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -59,7 +72,7 @@ sap.ui.define([
 			/**
 			 * Available design options are Header and Standard. Note that design settings are theme-dependent.
 			 */
-			design : {type : "sap.ui.commons.MenuBarDesign", group : "Appearance", defaultValue : sap.ui.commons.MenuBarDesign.Standard}
+			design : {type : "sap.ui.commons.MenuBarDesign", group : "Appearance", defaultValue : MenuBarDesign.Standard}
 		},
 		defaultAggregation : "items",
 		aggregations : {
@@ -73,7 +86,7 @@ sap.ui.define([
 
 	/*Ensure MenuItemBase is loaded (incl. loading of unified library)*/
 
-	MenuItem.extend("sap.ui.commons._DelegatorMenuItem", {
+	var _DelegatorMenuItem = MenuItem.extend("sap.ui.commons._DelegatorMenuItem", {
 		constructor: function(oAlterEgoItm) {
 			MenuItem.apply(this);
 			this.oAlterEgoItm = oAlterEgoItm;
@@ -112,9 +125,6 @@ sap.ui.define([
 		}
 	});
 
-	(function() {
-
-
 	/**
 	 * Initialize this control.
 	 *
@@ -140,7 +150,7 @@ sap.ui.define([
 		this.oOvrFlwMnu = null;
 		// Cleanup resize event registration
 		if (this.sResizeListenerId) {
-			sap.ui.core.ResizeHandler.deregister(this.sResizeListenerId);
+			ResizeHandler.deregister(this.sResizeListenerId);
 			this.sResizeListenerId = null;
 		}
 	};
@@ -156,17 +166,17 @@ sap.ui.define([
 		for (var i = 0; i < aItems.length; i++) {
 			var oMenu = aItems[i].getSubmenu();
 			if (oMenu) {
-				oMenu.setRootMenuTopStyle(this.getDesign() == sap.ui.commons.MenuBarDesign.Header);
+				oMenu.setRootMenuTopStyle(this.getDesign() == MenuBarDesign.Header);
 			}
 		}
 
 		if (this.oOvrFlwMnu) {
-			this.oOvrFlwMnu.setRootMenuTopStyle(this.getDesign() == sap.ui.commons.MenuBarDesign.Header);
+			this.oOvrFlwMnu.setRootMenuTopStyle(this.getDesign() == MenuBarDesign.Header);
 		}
 
 		// Cleanup resize event registration before re-rendering
 		if (this.sResizeListenerId) {
-			sap.ui.core.ResizeHandler.deregister(this.sResizeListenerId);
+			ResizeHandler.deregister(this.sResizeListenerId);
 			this.sResizeListenerId = null;
 		}
 	};
@@ -178,7 +188,7 @@ sap.ui.define([
 	 */
 	MenuBar.prototype.onAfterRendering = function() {
 		//Listen to resizing
-		this.sResizeListenerId = sap.ui.core.ResizeHandler.register(this.getDomRef(), jQuery.proxy(this.onresize, this));
+		this.sResizeListenerId = ResizeHandler.register(this.getDomRef(), jQuery.proxy(this.onresize, this));
 
 		//Calculate the overflow
 		this.onresize();
@@ -213,7 +223,7 @@ sap.ui.define([
 			this.sCurrentFocusedItemRefId = jTargetId;
 		}
 
-		var oFocusElement = jQuery.sap.byId(this.sCurrentFocusedItemRefId).get(0);
+		var oFocusElement = this.sCurrentFocusedItemRefId ? document.getElementById(this.sCurrentFocusedItemRefId) : null;
 		if (oFocusElement) {
 			oFocusElement.focus();
 		}
@@ -261,12 +271,12 @@ sap.ui.define([
 		var oMenuItem = _getMenuItem(this, oEvent);
 		if (oMenuItem === "ovrflw") {
 			var jRef = get$Item(this, oEvent);
-			if (this._bOvrFlwMnuSkipOpen && jQuery.sap.checkMouseEnterOrLeave(oEvent, jRef[0])) {
+			if (this._bOvrFlwMnuSkipOpen && checkMouseEnterOrLeave(oEvent, jRef[0])) {
 				this._bOvrFlwMnuSkipOpen = false;
 			}
 		} else if (oMenuItem) {
 			var jRef = get$Item(this, oEvent);
-			if (oMenuItem._bSkipOpen && jQuery.sap.checkMouseEnterOrLeave(oEvent, jRef[0])) {
+			if (oMenuItem._bSkipOpen && checkMouseEnterOrLeave(oEvent, jRef[0])) {
 				oMenuItem._bSkipOpen = false;
 			}
 		}
@@ -326,7 +336,7 @@ sap.ui.define([
 	 * @private
 	 */
 	MenuBar.prototype.onsapprevious = function(oEvent){
-		if (oEvent.keyCode != jQuery.sap.KeyCodes.ARROW_UP) {//Ignore arrow up
+		if (oEvent.keyCode != KeyCodes.ARROW_UP) {//Ignore arrow up
 			focusStep(this, oEvent, "prev");
 		}
 	};
@@ -339,7 +349,7 @@ sap.ui.define([
 	 * @private
 	 */
 	MenuBar.prototype.onsapnext = function(oEvent){
-		if (oEvent.keyCode != jQuery.sap.KeyCodes.ARROW_DOWN) {//Ignore arrow down
+		if (oEvent.keyCode != KeyCodes.ARROW_DOWN) {//Ignore arrow down
 			focusStep(this, oEvent, "next");
 		}
 	};
@@ -380,7 +390,7 @@ sap.ui.define([
 			if (oMenuItem === "ovrflw") {
 				var jRef = get$Item(oThis, oEvent);
 				if (oThis.oOvrFlwMnu && !oThis._bOvrFlwMnuSkipOpen) {
-					var eDock = sap.ui.core.Popup.Dock;
+					var eDock = Dock;
 					oThis.oOvrFlwMnu.open(bWithKeyboard, jRef.get(0), eDock.EndTop, eDock.EndBottom, jRef.get(0));
 				}
 			} else if (oMenuItem) {
@@ -388,7 +398,7 @@ sap.ui.define([
 					var jRef = get$Item(oThis, oEvent);
 					var oMenu = oMenuItem.getSubmenu();
 					if (oMenu && !oMenuItem._bSkipOpen) {
-						var eDock = sap.ui.core.Popup.Dock;
+						var eDock = Dock;
 						oMenu.open(bWithKeyboard, jRef.get(0), eDock.BeginTop, eDock.BeginBottom, jRef.get(0));
 					} else if (!oMenu) {
 						oMenuItem.fireSelect({item: oMenuItem});
@@ -425,7 +435,7 @@ sap.ui.define([
 				if (sItemIdx == "ovrflw") {
 					return "ovrflw";
 				} else {
-					var iIdx = parseInt(sItemIdx, 10);
+					var iIdx = parseInt(sItemIdx);
 					var oMenuItem = oThis.getItems()[iIdx];
 					return oMenuItem;
 				}
@@ -486,13 +496,13 @@ sap.ui.define([
 			jOvrFlwRef.attr("style", "display:block;");
 			if (!oThis.oOvrFlwMnu) {
 				oThis.oOvrFlwMnu = new Menu(oThis.getId() + "-ovrflwmnu");
-				oThis.oOvrFlwMnu.bUseTopStyle = oThis.getDesign() == sap.ui.commons.MenuBarDesign.Header;
+				oThis.oOvrFlwMnu.bUseTopStyle = oThis.getDesign() == MenuBarDesign.Header;
 				oThis.oOvrFlwMnu.attachItemSelect(function(oEvent){
 					var oItem = oEvent.getParameter("item");
-					if (!(oItem instanceof sap.ui.commons._DelegatorMenuItem)) {
+					if (!(oItem instanceof _DelegatorMenuItem)) {
 						var oItemRootMenu = Menu.prototype.getRootMenu.apply(oItem.getParent());
 						oItemRootMenu.fireItemSelect({item: oItem});
-					} else if (oItem.bNoSubMenu && oItem instanceof sap.ui.commons._DelegatorMenuItem) {
+					} else if (oItem.bNoSubMenu && oItem instanceof _DelegatorMenuItem) {
 						oItem.oAlterEgoItm.fireSelect({item: oItem.oAlterEgoItm});
 					}
 				});
@@ -509,7 +519,7 @@ sap.ui.define([
 						oThis.sLastVisibleItemId = oItem.getId();
 					}
 				} else {
-					oThis.oOvrFlwMnu.addItem(new sap.ui.commons._DelegatorMenuItem(oItem));
+					oThis.oOvrFlwMnu.addItem(new _DelegatorMenuItem(oItem));
 					if (oItem.getId() == oThis.sCurrentFocusedItemRefId) {
 						bUpdateFocus = true;
 					}
@@ -535,7 +545,7 @@ sap.ui.define([
 
 		if (bUpdateFocus) {
 			oThis.sCurrentFocusedItemRefId = oThis.sLastVisibleItemId;
-			jQuery.sap.byId(oThis.sLastVisibleItemId).get(0).focus();
+			document.getElementById(oThis.sLastVisibleItemId).focus();
 		}
 	};
 
@@ -565,21 +575,18 @@ sap.ui.define([
 				bIsJumpToEnd = true;
 			}
 
-			var jCurrentFocusItem = jQuery.sap.byId(oThis.sCurrentFocusedItemRefId);
+			var jCurrentFocusItem = jQuery(document.getElementById(oThis.sCurrentFocusedItemRefId));
 			var jFollowingItems = jCurrentFocusItem[sFoo](":visible");
 
 			sFollowingFocusItemId = jQuery(jFollowingItems.get(bIsJumpToEnd ? jFollowingItems.length - 1 : 0)).attr("id");
 		}
 		if (sFollowingFocusItemId) {
 			oThis.sCurrentFocusedItemRefId = sFollowingFocusItemId;
-			jQuery.sap.byId(sFollowingFocusItemId).get(0).focus();
+			document.getElementById(sFollowingFocusItemId).focus();
 		}
 	};
 
 
-	}());
-
-
 	return MenuBar;
 
-}, /* bExport= */ true);
+});

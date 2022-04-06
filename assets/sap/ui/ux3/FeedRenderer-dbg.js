@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -19,16 +19,12 @@ sap.ui.define([], function() {
 	/**
 	 * Renders the HTML for the given control, using the provided {@link sap.ui.core.RenderManager}.
 	 *
-	 * @param {sap.ui.core.RenderManager} oRenderManager the RenderManager that can be used for writing to the Render-Output-Buffer
-	 * @param {sap.ui.core.Control} oControl an object representation of the control that should be rendered
+	 * @param {sap.ui.core.RenderManager} rm the RenderManager that can be used for writing to the Render-Output-Buffer
+	 * @param {sap.ui.core.Control} oFeed an object representation of the control that should be rendered
 	 */
-	FeedRenderer.render = function(oRenderManager, oControl){
-	    // convenience variable
-		var rm = oRenderManager;
-		var oFeed = oControl;
-
+	FeedRenderer.render = function(rm, oFeed){
 		// write the HTML into the render manager
-	    rm.write('<DIV');
+	    rm.write('<div');
 	    rm.writeControlData(oFeed);
 		rm.addClass('sapUiFeed');
 		rm.writeClasses();
@@ -37,7 +33,7 @@ sap.ui.define([], function() {
 	    //feeder
 		rm.renderControl(oFeed.oFeeder);
 
-	    rm.write('<HEADER class=sapUiFeedTitle ><H4>');
+	    rm.write('<header class=sapUiFeedTitle ><h4>');
 	    //titlebar
 	    var sTitle = oFeed.getTitle();
 	    if (!sTitle || sTitle == "") {
@@ -51,26 +47,26 @@ sap.ui.define([], function() {
 		}
 	    //live-button (alsways must exist)
 		rm.renderControl(oFeed.oLiveButton);
-	    rm.write('</H4>');
+	    rm.write('</h4>');
 
 	    //toolbar
-	    rm.write('<DIV class="sapUiFeedToolbar" >');
+	    rm.write('<div class="sapUiFeedToolbar" >');
 		rm.renderControl(oFeed.oFilter);
 		rm.renderControl(oFeed.oSearchField);
 
-	    rm.write('</DIV>');
-	    rm.write('</HEADER>');
+	    rm.write('</div>');
+	    rm.write('</header>');
 
 	    //Chunks
-	    rm.write('<SECTION>');
+	    rm.write('<section>');
 	    for ( var i = 0; i < oFeed.getChunks().length; i++) {
 			var oChunk = oFeed.getChunks()[i];
 			rm.renderControl(oChunk);
 		}
 
-	    rm.write('</SECTION>');
+	    rm.write('</section>');
 
-	    rm.write('</DIV>');
+	    rm.write('</div>');
 
 	};
 

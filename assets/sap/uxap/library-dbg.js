@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -8,18 +8,14 @@
  * Initialization Code and shared classes of library sap.uxap.
  */
 sap.ui.define([
-	"jquery.sap.global",
 	"sap/ui/core/Core",
 	"sap/ui/base/DataType",
 	"sap/ui/Device",
-	"sap/m/library",
-	"sap/ui/layout/library"
-], function(
-	jQuery,
-	Core,
-	DataType,
-	Device
-) {
+	"sap/ui/core/library", // library dependency
+	"sap/f/library", // library dependency
+	"sap/m/library", // library dependency
+	"sap/ui/layout/library" // library dependency
+], function(Core, DataType, Device) {
 	"use strict";
 
 	/**
@@ -27,16 +23,21 @@ sap.ui.define([
 	 *
 	 * @namespace
 	 * @name sap.uxap
+	 * @author SAP SE
+	 * @version 1.96.7
+	 * @since 1.36
 	 * @public
 	 */
 		// library dependencies
 		// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name: "sap.uxap",
-		dependencies: ["sap.ui.core", "sap.m", "sap.ui.layout"],
+		dependencies: ["sap.ui.core", "sap.f", "sap.m", "sap.ui.layout"],
 		designtime: "sap/uxap/designtime/library.designtime",
 		types: [
 			"sap.uxap.BlockBaseColumnLayout",
+			"sap.uxap.BlockBaseFormAdjustment",
+			"sap.uxap.Importance",
 			"sap.uxap.ObjectPageConfigurationMode",
 			"sap.uxap.ObjectPageHeaderDesign",
 			"sap.uxap.ObjectPageHeaderPictureShape",
@@ -64,9 +65,11 @@ sap.ui.define([
 		],
 		elements: [
 			"sap.uxap.ModelMapping",
-			"sap.uxap.ObjectPageHeaderLayoutData"
+			"sap.uxap.ObjectPageAccessibleLandmarkInfo",
+			"sap.uxap.ObjectPageHeaderLayoutData",
+			"sap.uxap.ObjectPageLazyLoader"
 		],
-		version: "1.56.5",
+		version: "1.96.7",
 		extensions: {
 			flChangeHandlers: {
 				"sap.uxap.ObjectPageHeader": "sap/uxap/flexibility/ObjectPageHeader",
@@ -74,8 +77,15 @@ sap.ui.define([
 				"sap.uxap.ObjectPageSection": "sap/uxap/flexibility/ObjectPageSection",
 				"sap.uxap.ObjectPageSubSection": "sap/uxap/flexibility/ObjectPageSubSection",
 				"sap.uxap.ObjectPageDynamicHeaderTitle": "sap/uxap/flexibility/ObjectPageDynamicHeaderTitle",
+				"sap.uxap.ObjectPageHeaderActionButton": "sap/uxap/flexibility/ObjectPageHeaderActionButton",
 				"sap.ui.core._StashedControl": {
 					"unstashControl": {
+						"changeHandler": "default",
+						"layers": {
+							"USER": true
+						}
+					},
+					"stashControl": {
 						"changeHandler": "default",
 						"layers": {
 							"USER": true
@@ -92,7 +102,7 @@ sap.ui.define([
 
 	/**
 	 * @class Used by the <code>BlockBase</code> control to define how many columns should it be assigned by the <code>objectPageSubSection</code>.
-	 *     The allowed values can be auto (subsection assigned a number of columns based on the parent objectPageLayout subsectionLayout property), 1, 2 or 3
+	 *     The allowed values can be auto (subsection assigned a number of columns based on the parent objectPageLayout subsectionLayout property), 1, 2, 3 or 4
 	 *     (This may not be a valid value for some <code>subSectionLayout</code>, for example, asking for 3 columns in a 2 column layout would raise warnings).
 	 *
 	 * @static
@@ -282,12 +292,6 @@ sap.ui.define([
 		High: "High"
 	};
 
-	sap.uxap.i18nModel = (function () {
-		return new sap.ui.model.resource.ResourceModel({
-			bundleUrl: jQuery.sap.getModulePath("sap.uxap.i18n.i18n", ".properties")
-		});
-	}());
-
 	/**
 	 *
 	 * @type {{getClosestOPL: Function}}
@@ -321,6 +325,31 @@ sap.ui.define([
 		},
 		_isCurrentMediaSize: function (sMedia, oRange) {
 			return oRange && oRange.name === sMedia;
+		},
+		/**
+		 * Calculates scroll position of a child of a container.
+		 * @param {HTMLElement | jQuery} vElement An element(DOM or jQuery) for which the scroll position will be calculated.
+		 * @param {HTMLElement | jQuery} vContainer The container element(DOM or jQuery) and reference offsetParent
+		 * @returns {object} Position object.
+		 * @protected
+		 */
+		getChildPosition: function(vElement, vContainer) {
+			// check if vElement is a DOM element and if yes convert it to jQuery object
+			var $Element = vElement instanceof jQuery ? vElement : jQuery(vElement),
+				$Container = vContainer instanceof jQuery ? vContainer : jQuery(vContainer),
+				$topmostContainer = jQuery(document.documentElement),
+				oElementPosition = $Element.position(),
+				$OffsetParent = $Element.offsetParent(),
+				oAddUpPosition;
+
+			while (!$OffsetParent.is($Container) && !$OffsetParent.is($topmostContainer)) {
+				oAddUpPosition = $OffsetParent.position();
+				oElementPosition.top += oAddUpPosition.top;
+				oElementPosition.left += oAddUpPosition.left;
+				$OffsetParent = $OffsetParent.offsetParent();
+			}
+
+			return oElementPosition;
 		}
 	};
 

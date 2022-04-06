@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -15,8 +15,8 @@
  * All measurement activities get recorded by jquery.sap.measure, which is located in jquery.sap.global. As the initial
  * interaction is the app startup, we need the measuring capability already before this module is loaded.
  */
-sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/URI', 'sap/ui/Device', 'sap/ui/performance/E2ETrace/Passport', 'sap/ui/performance/Interaction', 'sap/ui/performance/FESR', 'sap/base/Log', 'sap/ui/Global'],
-function(jQuery, URI, Device, Passport, Interaction, FESR, Log) {
+sap.ui.define(['jquery.sap.global', 'sap/ui/performance/trace/Passport', 'sap/ui/performance/trace/Interaction', 'sap/ui/performance/trace/FESR', 'sap/base/Log', 'sap/ui/Global'],
+function(jQuery, Passport, Interaction, FESR, Log) {
 	"use strict";
 
 
@@ -45,6 +45,7 @@ function(jQuery, URI, Device, Passport, Interaction, FESR, Log) {
 	 * @static
 	 * @public
 	 * @since 1.36
+	 * @deprecated since 1.58 use {@link module:sap/ui/performance/trace/Interaction} instead
 	 */
 	jQuery.sap.interaction = {};
 
@@ -144,6 +145,7 @@ function(jQuery, URI, Device, Passport, Interaction, FESR, Log) {
 	 * @name jQuery.sap.fesr
 	 * @static
 	 * @private
+	 * @deprecated since 1.58 use {@link module:sap/ui/performance/trace/FESR} instead
 	 */
 	jQuery.sap.fesr = {};
 
@@ -197,6 +199,7 @@ function(jQuery, URI, Device, Passport, Interaction, FESR, Log) {
 	 * @name jQuery.sap.passport
 	 * @static
 	 * @private
+	 * @deprecated since 1.58 use {@link module:sap/ui/performance/trace/Passport} instead
 	 */
 	jQuery.sap.passport = {};
 
@@ -234,7 +237,8 @@ function(jQuery, URI, Device, Passport, Interaction, FESR, Log) {
 
 	// *********** Include E2E-Trace Scripts *************
 	if (/sap-ui-xx-e2e-trace=(true|x|X)/.test(location.search)) {
-		sap.ui.requireSync("sap/ui/core/support/trace/E2eTraceLib");
+		// jquery.sap.trace.js module gets loaded synchronous via stubbing layer
+		sap.ui.requireSync("sap/ui/core/support/trace/E2eTraceLib"); // legacy-relevant
 	}
 
 	return jQuery;

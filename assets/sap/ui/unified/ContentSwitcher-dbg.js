@@ -1,16 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.unified.ContentSwitcher.
 sap.ui.define([
-	'jquery.sap.global',
 	'sap/ui/core/Control',
 	'./library',
-	"./ContentSwitcherRenderer"
-], function(jQuery, Control, library, ContentSwitcherRenderer) {
+	"./ContentSwitcherRenderer",
+	"sap/base/Log"
+], function(Control, library, ContentSwitcherRenderer, Log) {
 	"use strict";
 
 
@@ -31,7 +31,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -77,9 +77,6 @@ sap.ui.define([
 
 	////////////////////////////////////////// Public Methods //////////////////////////////////////////
 
-	/**
-	 * This file defines behavior for the control,
-	 */
 	ContentSwitcher.prototype.init = function(){
 	};
 
@@ -125,18 +122,18 @@ sap.ui.define([
 		///////////////////////////////// Property "activeContent" /////////////////////////////////
 
 	ContentSwitcher.prototype.setActiveContent = function(iNumber) {
-		iNumber = parseInt(iNumber, 10);
+		iNumber = parseInt(iNumber);
 
 		if (isNaN(iNumber) || iNumber < 1) {
 			iNumber = 1;
 
-			jQuery.sap.log.warning(
+			Log.warning(
 				"setActiveContent argument must be either 1 or 2. Active content set to 1."
 			);
 		} else if (iNumber > 2) {
 			iNumber = 2;
 
-			jQuery.sap.log.warning(
+			Log.warning(
 				"setActiveContent argument must be either 1 or 2. Active content set to 2."
 			);
 		}
@@ -154,7 +151,7 @@ sap.ui.define([
 	ContentSwitcher.prototype.setAnimation = function(sAnimation, bSuppressInvalidate){
 		if (typeof (sAnimation) !== "string") {
 			sAnimation = ContentSwitcherAnimation.None;
-			jQuery.sap.log.warning(
+			Log.warning(
 				"setAnimation argument must be a string. Animation was set to \"" +
 				ContentSwitcherAnimation.None + "\"."
 			);

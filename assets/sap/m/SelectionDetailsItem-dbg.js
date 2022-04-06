@@ -1,18 +1,38 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.m.SelectionDetailsItem.
-sap.ui.define(["jquery.sap.global", "sap/ui/core/Element", "sap/m/ListItemBase", "./library", "sap/m/Button", "sap/m/OverflowToolbar", "sap/m/ToolbarSpacer", "sap/ui/base/Interface"],
-	function(jQuery, Element, ListItemBase, library, Button, OverflowToolbar, ToolbarSpacer, Interface) {
+sap.ui.define([
+	"sap/ui/core/Element",
+	"sap/m/ListItemBase",
+	"./library",
+	"sap/m/Button",
+	"sap/m/OverflowToolbar",
+	"sap/m/ToolbarSpacer",
+	"sap/ui/base/Interface",
+	"./SelectionDetailsListItemRenderer"
+],
+	function(
+		Element,
+		ListItemBase,
+		library,
+		Button,
+		OverflowToolbar,
+		ToolbarSpacer,
+		Interface,
+		SelectionDetailsListItemRenderer
+	) {
 	"use strict";
 
 	/**
 	 * @private
 	 */
-	var SelectionDetailsListItem = ListItemBase.extend("sap.m.SelectionDetailsListItem");
+	var SelectionDetailsListItem = ListItemBase.extend("sap.m.SelectionDetailsListItem", {
+		renderer: SelectionDetailsListItemRenderer
+	});
 
 	SelectionDetailsListItem.prototype.onBeforeRendering = function() {
 		var sType;
@@ -38,7 +58,7 @@ sap.ui.define(["jquery.sap.global", "sap/ui/core/Element", "sap/m/ListItemBase",
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @protected
@@ -98,7 +118,9 @@ sap.ui.define(["jquery.sap.global", "sap/ui/core/Element", "sap/m/ListItemBase",
 	 */
 	SelectionDetailsItem.prototype.getFacade = function() {
 		var oFacade = new Interface(this, SelectionDetailsItem.prototype._aFacadeMethods);
-		this.getFacade = jQuery.sap.getter(oFacade);
+		this.getFacade = function() {
+			return oFacade;
+		};
 		return oFacade;
 	};
 
@@ -112,7 +134,9 @@ sap.ui.define(["jquery.sap.global", "sap/ui/core/Element", "sap/m/ListItemBase",
 			this._oListItem = new SelectionDetailsListItem({
 				press: [this._onSelectionDetailsListItemPress, this]
 			});
-			this._oListItem._getParentElement = jQuery.sap.getter(this);
+			this._oListItem._getParentElement = function() {
+				return this;
+			}.bind(this);
 			this._addOverflowToolbar();
 		}
 

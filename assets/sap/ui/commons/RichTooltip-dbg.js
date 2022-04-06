@@ -1,17 +1,19 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.RichTooltip.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/ui/thirdparty/jquery',
     './library',
     'sap/ui/core/TooltipBase',
-    "./RichTooltipRenderer"
+    './RichTooltipRenderer',
+    './FormattedTextView',
+    'sap/ui/dom/jquery/control' // jQuery.fn.control
 ],
-	function(jQuery, library, TooltipBase, RichTooltipRenderer) {
+	function(jQuery, library, TooltipBase, RichTooltipRenderer, FormattedTextView) {
 	"use strict";
 
 
@@ -28,7 +30,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.TooltipBase
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -39,6 +41,7 @@ sap.ui.define([
 	var RichTooltip = TooltipBase.extend("sap.ui.commons.RichTooltip", /** @lends sap.ui.commons.RichTooltip.prototype */ { metadata : {
 
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -100,7 +103,7 @@ sap.ui.define([
 	 * This sets an individual text for the ValueState of the parent element of the RichTooltip.
 	 *
 	 * @param {string} sText the text that should be shown as individual ValueState text
-	 * @returns {sap.ui.commons.RichTooltip} Returns <code>this</code> to facilitate method chaining.
+	 * @returns {this} Returns <code>this</code> to facilitate method chaining.
 	 * @public
 	 */
 	RichTooltip.prototype.setValueStateText = function(sText) {
@@ -109,7 +112,7 @@ sap.ui.define([
 			if (oValueStateText) {
 				oValueStateText.setHtmlText(sText);
 			} else {
-				oValueStateText = new sap.ui.commons.FormattedTextView(this.getId() + "-valueStateText", {
+				oValueStateText = new FormattedTextView(this.getId() + "-valueStateText", {
 					htmlText : sText
 				}).addStyleClass("sapUiRttValueStateText").addStyleClass("individual");
 
@@ -121,6 +124,7 @@ sap.ui.define([
 				this.setAggregation("individualStateText", oValueStateText);
 			}
 		}
+		return this;
 	};
 
 	/**
@@ -148,21 +152,22 @@ sap.ui.define([
 	 * @param {string} sText the text that should be shown
 	 */
 	RichTooltip.prototype.setText = function(sText) {
-		if (!!sText) {
+		if (sText) {
 			//replace carriage returns etc. with br tag
-			sText = sText.replace(/(\r\n|\n|\r)/g,"<br />");
+			sText = sText.replace(/(\r\n|\n|\r)/g,"<br>");
 		}
 
 		var oText = this.getAggregation("formattedText");
 		if (oText) {
 			oText.setHtmlText(sText);
 		} else {
-			oText = new sap.ui.commons.FormattedTextView(this.getId() + "-txt");
+			oText = new FormattedTextView(this.getId() + "-txt");
 			oText.setHtmlText(sText);
 			oText.addStyleClass("sapUiRttText");
 			this.setAggregation("formattedText", oText);
 			this.setProperty("text", sText, true);
 		}
+		return this;
 	};
 
 	/**
@@ -217,4 +222,4 @@ sap.ui.define([
 
 	return RichTooltip;
 
-}, /* bExport= */ true);
+});

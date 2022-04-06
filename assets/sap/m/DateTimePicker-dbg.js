@@ -1,12 +1,13 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 //Provides control sap.m.DateTimePicker.
 sap.ui.define([
-	'jquery.sap.global',
+	"sap/ui/thirdparty/jquery",
+	'./InputBase',
 	'./DatePicker',
 	'sap/ui/model/type/Date',
 	'sap/ui/unified/DateRange',
@@ -16,9 +17,16 @@ sap.ui.define([
 	'sap/ui/core/format/DateFormat',
 	'sap/ui/core/LocaleData',
 	'./DateTimePickerRenderer',
-	'jquery.sap.keycodes'
+	'./TimePickerSliders',
+	'./SegmentedButton',
+	'./SegmentedButtonItem',
+	'./ResponsivePopover',
+	'./Button',
+	"sap/ui/events/KeyCodes",
+	"sap/ui/core/IconPool"
 ], function(
 	jQuery,
+	InputBase,
 	DatePicker,
 	Date1,
 	DateRange,
@@ -27,12 +35,22 @@ sap.ui.define([
 	Device,
 	DateFormat,
 	LocaleData,
-	DateTimePickerRenderer
-	) {
+	DateTimePickerRenderer,
+	TimePickerSliders,
+	SegmentedButton,
+	SegmentedButtonItem,
+	ResponsivePopover,
+	Button,
+	KeyCodes,
+	IconPool
+) {
 	"use strict";
 
-	// shortcut for sap.m.PlacementType
-	var PlacementType = library.PlacementType;
+	// shortcut for sap.m.PlacementType and sap.m.ButtonType
+	var PlacementType = library.PlacementType,
+		ButtonType = library.ButtonType,
+		// From sap.ui.Device.media.RANGESETS.SAP_STANDARD - "Phone": For screens smaller than 600 pixels.
+		STANDART_PHONE_RANGESET = "Phone";
 
 	/**
 	 * Constructor for a new <code>DateTimePicker</code>.
@@ -41,20 +59,22 @@ sap.ui.define([
 	 * @param {object} [mSettings] Initial settings for the new control
 	 *
 	 * @class
-	 * Enables the users to select date and time values in a combined input.
+	 * Enables the users to select date (between 0001-01-01 and 9999-12-31) and time values in a combined input.
 	 *
 	 * <h3>Overview</h3>
 	 *
 	 * The <code>DateTimePicker</code> control consists of two parts: the input field and the
 	 * date/time picker.
 	 *
-	 * <b>Note:</b> The {@link sap.ui.unified.Calendar} is used internally only if the
+	 * <b>Note:</b> The application developer should add dependency to <code>sap.ui.unified</code> library
+	 * on application level to ensure that the library is loaded before the module dependencies will be required.
+	 * The {@link sap.ui.unified.Calendar} is used internally only if the
 	 * <code>DateTimePicker</code> is opened (not used for the initial rendering). If
 	 * the <code>sap.ui.unified</code> library is not loaded before the
 	 * <code>DateTimePicker</code> is opened, it will be loaded upon opening. This
-	 * could lead to a waiting time when the <code>DateTimePicker</code> is opened for
+	 * could lead to CSP compliance issues and adds an additional waiting time when the <code>DateTimePicker</code> is opened for
 	 * the first time. To prevent this, apps using the <code>DateTimePicker</code>
-	 * should also load the <code>sap.ui.unified</code> library.
+	 * should also load the <code>sap.ui.unified</code> library in advance.
 	 *
 	 * <h3>Usage</h3>
 	 *
@@ -79,7 +99,11 @@ sap.ui.define([
 	 * <li>Use the <code>value</code> property if the date is provided as a string from
 	 * the backend or inside the app (for example, as ABAP type DATS field)</li>
 	 * <li>Use the <code>dateValue</code> property if the date is already provided as a
-	 * JavaScript Date object or you want to work with a JavaScript Date object</li></ul>
+	 * JavaScript Date object or you want to work with a JavaScript Date object.
+	 * Use <code>dateValue</code> as a helper property to easily obtain the day, month, year,
+	 * hours, minutes and seconds of the chosen date and time. Although possible to bind it,
+	 * the recommendation is not to do it.
+	 * When binding is needed, use <code>value</code> property instead</li></ul>
 	 *
 	 * <h3>Formatting</h3>
 	 *
@@ -112,7 +136,7 @@ sap.ui.define([
 	 * mobile devices, it opens in full screen.
 	 *
 	 * @extends sap.m.DatePicker
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -139,18 +163,21 @@ sap.ui.define([
 			 */
 			secondsStep: {type: "int", group: "Misc", defaultValue: 1 }
 		},
-		aggregations: {
-			/**
-			 * Internal aggregation that contains the inner _picker pop-up.
-			 */
-			_popup: { type: "sap.m.ResponsivePopover", multiple: false, visibility: "hidden" }
-		},
-		designtime: "sap/m/designtime/DateTimePicker.designtime"
+		designtime: "sap/m/designtime/DateTimePicker.designtime",
+		dnd: { draggable: false, droppable: true }
 	}});
 
-	var PopupContent = Control.extend("DateTimePickerPopup", {
+	var DateTimeFormatStyles = {
+		Short: "short",
+		Medium: "medium",
+		Long: "long",
+		Full: "full"
+	};
+
+	var PopupContent = Control.extend("sap.m.internal.DateTimePickerPopup", {
 
 		metadata: {
+			library : "sap.m",
 			aggregations: {
 				_switcher  : {type: "sap.ui.core.Control", multiple: false, visibility: "hidden"},
 				calendar   : {type: "sap.ui.core.Control", multiple: false},
@@ -158,42 +185,42 @@ sap.ui.define([
 			}
 		},
 
-		renderer: function(oRm, oPopup) {
+		renderer: {
+			apiVersion: 2,
+			render: function(oRm, oPopup) {
 
-			oRm.write("<div");
-			oRm.writeControlData(oPopup);
-			oRm.addClass("sapMDateTimePopupCont");
-			oRm.addClass("sapMTimePickerDropDown");
-			oRm.writeClasses();
-			oRm.write(">");
+				oRm.openStart("div", oPopup);
+				oRm.class("sapMDateTimePopupCont")
+					.class("sapMTimePickerDropDown");
+				oRm.openEnd();
 
-			var oSwitcher = oPopup.getAggregation("_switcher");
-			if (oSwitcher && oSwitcher.getVisible()) {
-				oRm.write("<div");
-				oRm.addClass("sapMTimePickerSwitch");
-				oRm.writeClasses();
-				oRm.write(">");
-				oRm.renderControl(oSwitcher);
-				oRm.write("</div>");
+				var oSwitcher = oPopup.getAggregation("_switcher");
+				if (oSwitcher) {
+					oRm.openStart("div");
+					oRm.class("sapMTimePickerSwitch");
+					oRm.openEnd();
+					oRm.renderControl(oSwitcher);
+					oRm.close("div");
+
+				}
+
+				var oCalendar = oPopup.getCalendar();
+				if (oCalendar) {
+					oRm.renderControl(oCalendar);
+				}
+
+				oRm.openStart("div");
+				oRm.class("sapMTimePickerSep");
+				oRm.openEnd();
+				oRm.close("div");
+
+				var oSliders = oPopup.getTimeSliders();
+				if (oSliders) {
+					oRm.renderControl(oSliders);
+				}
+
+				oRm.close("div");
 			}
-
-			var oCalendar = oPopup.getCalendar();
-			if (oCalendar) {
-				oRm.renderControl(oCalendar);
-			}
-
-			oRm.write("<div");
-			oRm.addClass("sapMTimePickerSep");
-			oRm.writeClasses();
-			oRm.write(">");
-			oRm.write("</div>");
-
-			var oSliders = oPopup.getTimeSliders();
-			if (oSliders) {
-				oRm.renderControl(oSliders);
-			}
-
-			oRm.write("</div>");
 		},
 
 		init: function() {
@@ -204,46 +231,47 @@ sap.ui.define([
 
 			var oSwitcher = this.getAggregation("_switcher");
 
+			if (!oSwitcher) {
+				var oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.m");
+				var sDateText = oResourceBundle.getText("DATETIMEPICKER_DATE");
+				var sTimeText = oResourceBundle.getText("DATETIMEPICKER_TIME");
+
+
+				oSwitcher = new SegmentedButton(this.getId() + "-Switch", {
+					selectedKey: "Cal",
+					items: [
+						new SegmentedButtonItem(this.getId() + "-Switch-Cal", {key: "Cal", text: sDateText}),
+						new SegmentedButtonItem(this.getId() + "-Switch-Sli", {key: "Sli", text: sTimeText})
+					]
+				});
+				oSwitcher.attachSelect(this._handleSelect, this);
+
+				this.setAggregation("_switcher", oSwitcher, true);
+			}
+
 			if (Device.system.phone || jQuery('html').hasClass("sapUiMedia-Std-Phone")) {
-				if (!oSwitcher) {
-					var oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.m");
-					var sDateText = oResourceBundle.getText("DATETIMEPICKER_DATE");
-					var sTimeText = oResourceBundle.getText("DATETIMEPICKER_TIME");
-
-
-					oSwitcher = new sap.m.SegmentedButton(this.getId() + "-Switch", {
-						selectedKey: "Cal",
-						items: [ new sap.m.SegmentedButtonItem(this.getId() + "-Switch-Cal", {key: "Cal", text: sDateText}),
-								 new sap.m.SegmentedButtonItem(this.getId() + "-Switch-Sli", {key: "Sli", text: sTimeText})
-						]
-					});
-					oSwitcher.attachSelect(this._handleSelect, this);
-
-					this.setAggregation("_switcher", oSwitcher, true);
-				} else {
-					oSwitcher.setVisible(true);
-					oSwitcher.setSelectedKey("Cal");
-				}
-			} else if (oSwitcher) {
+				oSwitcher.setVisible(true);
+				oSwitcher.setSelectedKey("Cal");
+			} else {
 				oSwitcher.setVisible(false);
 			}
 
 		},
 
 		onAfterRendering: function() {
-
+			if (this.getAggregation('timeSliders') && this.getAggregation('timeSliders').getAggregation("_columns")) {
+				this.getAggregation('timeSliders').getAggregation("_columns")[0].setIsExpanded(false);
+			}
 			if (Device.system.phone || jQuery('html').hasClass("sapUiMedia-Std-Phone")) {
 				var oSwitcher = this.getAggregation("_switcher");
 				var sKey = oSwitcher.getSelectedKey();
 				this._switchVisibility(sKey);
 			}
-
 		},
 
 		_handleSelect: function(oEvent) {
 
 			this._switchVisibility(oEvent.getParameter("key"));
-
 		},
 
 		_switchVisibility: function(sKey) {
@@ -281,17 +309,33 @@ sap.ui.define([
 		getSpecialDates: function() {
 
 			return this._oDateTimePicker.getSpecialDates();
+		},
 
+		onkeydown: function(oEvent) {
+			var bIsTabForward = oEvent.keyCode === KeyCodes.TAB && !oEvent.shiftKey;
+			var bIsTabBackward = oEvent.keyCode === KeyCodes.TAB && oEvent.shiftKey;
+			if ( bIsTabForward && oEvent.target.classList.contains('sapUiCalHeadBLast')) {
+				this.getAggregation('timeSliders').getDomRef().children[0].focus();
+			}
+			if (bIsTabBackward && oEvent.target.classList.contains('sapUiCalItem')) {
+				var iLastElementIndex = this.oParent.getAggregation("footer").getAggregation("content").length - 1;
+				this.oParent.getAggregation("footer").getAggregation("content")[iLastElementIndex].focus();
+			}
 		}
-
 	});
 
-
-	DateTimePicker.prototype.init = function(){
-
+	DateTimePicker.prototype.init = function() {
 		DatePicker.prototype.init.apply(this, arguments);
-		this._bOnlyCalendar = false;
 
+		this._bOnlyCalendar = false;
+	};
+
+	/**
+	 * Apply the correct icon to the used Date control
+	 * @protected
+	 */
+	DateTimePicker.prototype.getIconSrc = function () {
+		return IconPool.getIconURI("date-time");
 	};
 
 	DateTimePicker.prototype.exit = function(){
@@ -304,7 +348,7 @@ sap.ui.define([
 		}
 
 		this._oPopupContent = undefined; // is destroyed via popup aggregation - just remove reference
-
+		Device.media.detachHandler(this._handleWindowResize, this);
 	};
 
 	DateTimePicker.prototype.setDisplayFormat = function(sDisplayFormat) {
@@ -329,6 +373,10 @@ sap.ui.define([
 
 		return this;
 
+	};
+
+	DateTimePicker.prototype._getDefaultValueStyle = function () {
+		return DateTimeFormatStyles.Medium;
 	};
 
 	DateTimePicker.prototype.setMinDate = function (oDate) {
@@ -394,7 +442,7 @@ sap.ui.define([
 			return true;
 		} else if (sPattern.indexOf("/") > 0) {
 			// could be a mixed style
-			var aStyles = ["short", "medium", "long", "full"];
+			var aStyles = [ DateTimeFormatStyles.Short, DateTimeFormatStyles.Medium, DateTimeFormatStyles.Long, DateTimeFormatStyles.Long];
 			var bStyle = false;
 
 			for (var i = 0; i < aStyles.length; i++) {
@@ -461,52 +509,59 @@ sap.ui.define([
 
 	DateTimePicker.prototype._createPopup = function(){
 
+		var sLabelId, sLabel, oResourceBundle, sOKButtonText, sCancelButtonText, oPopover;
+
 		if (!this._oPopup) {
-			var oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.m");
-			var sOKButtonText = oResourceBundle.getText("TIMEPICKER_SET");
-			var sCancelButtonText = oResourceBundle.getText("TIMEPICKER_CANCEL");
+			oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.m");
+			sOKButtonText = oResourceBundle.getText("TIMEPICKER_SET");
+			sCancelButtonText = oResourceBundle.getText("TIMEPICKER_CANCEL");
 
 			this._oPopupContent = new PopupContent(this.getId() + "-PC");
 			this._oPopupContent._oDateTimePicker = this;
 
-			this._oPopup = new sap.m.ResponsivePopover(this.getId() + "-RP", {
+			this._oOKButton = new Button(this.getId() + "-OK", {
+				text: sOKButtonText,
+				type: ButtonType.Emphasized,
+				press: _handleOkPress.bind(this)
+			});
+			var oHeader = this._getValueStateHeader();
+			this._oPopup = new ResponsivePopover(this.getId() + "-RP", {
 				showCloseButton: false,
 				showHeader: false,
 				placement: PlacementType.VerticalPreferedBottom,
-				beginButton: new sap.m.Button(this.getId() + "-OK", { text: sOKButtonText, press: jQuery.proxy(_handleOkPress, this) }),
-				endButton: new sap.m.Button(this.getId() + "-Cancel", { text: sCancelButtonText, press: jQuery.proxy(_handleCancelPress, this) }),
-				content: this._oPopupContent
+				beginButton: this._oOKButton,
+				content: [
+					oHeader,
+					this._oPopupContent
+				],
+				afterOpen: _handleAfterOpen.bind(this),
+				afterClose: _handleAfterClose.bind(this)
 			});
+			oHeader.setPopup(this._oPopup._oControl);
+
+
+			if (Device.system.phone) {
+				sLabelId = this.$("inner").attr("aria-labelledby");
+				sLabel = sLabelId ? document.getElementById(sLabelId).getAttribute("aria-label") : "";
+				this._oPopup.setTitle(sLabel);
+				this._oPopup.setShowHeader(true);
+				this._oPopup.setShowCloseButton(true);
+			} else {
+				// We add time in miliseconds for opening and closing animations of the popup,
+				// so the opening and closing event handlers are properly ordered in the event queue
+				this._oPopup._getPopup().setDurations(0, 0);
+				this._oPopup.setEndButton(new Button(this.getId() + "-Cancel", {
+					text: sCancelButtonText,
+					press: _handleCancelPress.bind(this)
+				}));
+			}
 
 			this._oPopup.addStyleClass("sapMDateTimePopup");
 
-			var oPopover = this._oPopup.getAggregation("_popup");
+			oPopover = this._oPopup.getAggregation("_popup");
 			// hide arrow in case of popover as dialog does not have an arrow
 			if (oPopover.setShowArrow) {
 				oPopover.setShowArrow(false);
-			}
-
-			this._oPopup.attachAfterOpen(_handleAfterOpen, this);
-			this._oPopup.attachAfterClose(_handleAfterClose, this);
-
-			if (Device.system.desktop) {
-				this._oPopoverKeydownEventDelegate = {
-						onkeydown: function(oEvent) {
-							var oKC = jQuery.sap.KeyCodes,
-							iKC = oEvent.which || oEvent.keyCode,
-							bAlt = oEvent.altKey;
-
-							// Popover should be closed when Alt+Arrow key or F4 is pressed
-							if ((bAlt && (iKC === oKC.ARROW_UP || iKC === oKC.ARROW_DOWN)) || iKC === oKC.F4) {
-								_handleOkPress.call(this, oEvent);
-								//focus the input
-								this.focus();
-								oEvent.preventDefault();
-							}
-						}
-				};
-
-				this._oPopup.addEventDelegate(this._oPopoverKeydownEventDelegate, this);
 			}
 
 			// define a parent-child relationship between the control's and the _picker pop-up
@@ -521,17 +576,16 @@ sap.ui.define([
 		if (!this._oPopup) {
 			return;
 		}
-
-		this._storeInputSelection(this._$input.get(0));
+		this.addStyleClass(InputBase.ICON_PRESSED_CSS_CLASS);
 
 		var oPopover = this._oPopup.getAggregation("_popup");
 		oPopover.oPopup.setAutoCloseAreas([this.getDomRef()]);
 
 		this._oPopup.openBy(this);
 
-		var oSliders = this._oPopup.getContent()[0] && this._oPopup.getContent()[0].getTimeSliders();
+		var oSliders = this._oPopup.getContent()[1] && this._oPopup.getContent()[1].getTimeSliders();
 		if (oSliders) {//Sliders values need to be updated after a popup is (especially sliders) is really visible
-			jQuery.sap.delayedCall(0, oSliders, oSliders._updateSlidersValues);
+			setTimeout(oSliders._updateSlidersValues.bind(oSliders), 0);
 		}
 	};
 
@@ -543,34 +597,11 @@ sap.ui.define([
 
 		if (bNoCalendar) {
 			this._oPopupContent.setCalendar(this._oCalendar);
-			this._oCalendar.attachSelect(_selectDate, this);
-
-			var that = this,
-				oHideMonthPicker = this._oCalendar._hideMonthPicker,
-				oHideYearPicker = this._oCalendar._hideYearPicker;
-
-			this._oCalendar._hideMonthPicker = function (bSkipFocus) {
-				oHideMonthPicker.apply(this, arguments);
-
-				if (!bSkipFocus) {
-					that._selectFocusedDateValue(new DateRange().setStartDate(this._getFocusedDate().toLocalJSDate()));
-
-				}
-			};
-
-			this._oCalendar._hideYearPicker = function (bSkipFocus) {
-				oHideYearPicker.apply(this, arguments);
-
-				if (!bSkipFocus) {
-					that._selectFocusedDateValue(new DateRange().setStartDate(this._getFocusedDate().toLocalJSDate()));
-
-				}
-			};
+			this._oCalendar.attachSelect(_handleCalendarSelect, this);
 		}
 
 		if (!this._oSliders) {
-			jQuery.sap.require("sap.m.TimePickerSliders");
-			this._oSliders = new sap.m.TimePickerSliders(this.getId() + "-Sliders", {
+			this._oSliders = new TimePickerSliders(this.getId() + "-Sliders", {
 				minutesStep: this.getMinutesStep(),
 				secondsStep: this.getSecondsStep(),
 				displayFormat: _getTimePattern.call(this),
@@ -592,22 +623,33 @@ sap.ui.define([
 
 	DateTimePicker.prototype._fillDateRange = function(){
 
-		var oDate = this.getDateValue();
+		var oDate = this.getDateValue(),
+			bDateFound = true;
 
 		if (oDate) {
 			oDate = new Date(oDate.getTime());
+			this._oOKButton.setEnabled(true);
 		} else {
-			oDate = this._getInitialFocusedDateValue();
-			var iMaxTimeMillis = this._oMaxDate.getTime() + 86400000 /* one day in milliseconds */;
+			bDateFound = false;
+			oDate = this.getInitialFocusedDateValue();
+			if (!oDate) {
+				oDate = new Date();
+				this._oCalendar.removeAllSelectedDates();
+			}
+			var iMaxTimeMillis = this._oMaxDate.getTime();
 
 			if (oDate.getTime() < this._oMinDate.getTime() || oDate.getTime() > iMaxTimeMillis) {
 				oDate = this._oMinDate;
 			}
+			this._oOKButton.setEnabled(false);
 		}
 
 		this._oCalendar.focusDate(oDate);
-		if (!this._oDateRange.getStartDate() || this._oDateRange.getStartDate().getTime() != oDate.getTime()) {
-			this._oDateRange.setStartDate(oDate);
+
+		if (bDateFound) {
+			if (!this._oDateRange.getStartDate() || this._oDateRange.getStartDate().getTime() != oDate.getTime()) {
+				this._oDateRange.setStartDate(oDate);
+			}
 		}
 
 		this._oSliders._setTimeValues(oDate);
@@ -633,17 +675,13 @@ sap.ui.define([
 
 			if (oDate.getTime() < this._oMinDate.getTime()) {
 				oDate = new Date(this._oMinDate.getTime());
-			}else if (oDate.getTime() > this._oMaxDate.getTime()){
+			} else if (oDate.getTime() > this._oMaxDate.getTime()){
 				oDate = new Date(this._oMaxDate.getTime());
 			}
 		}
 
 		return oDate;
 
-	};
-
-	DateTimePicker.prototype._getInitialFocusedDateValue = function () {
-		return this.getInitialFocusedDateValue() || new Date();
 	};
 
 	DateTimePicker.prototype.getLocaleId = function(){
@@ -654,7 +692,7 @@ sap.ui.define([
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
-	 * @returns {Object} Current accessibility state of the control
+	 * @returns {object} Current accessibility state of the control
 	 * @protected
 	 */
 	DateTimePicker.prototype.getAccessibilityInfo = function() {
@@ -664,30 +702,49 @@ sap.ui.define([
 	};
 
 	function _handleOkPress(oEvent){
-
-		this._selectDate();
-
+		this._handleCalendarSelect();
 	}
 
 	function _handleCancelPress(oEvent){
-
 		this.onsaphide(oEvent);
-
-		this._oCalendar.removeAllSelectedDates();
-		this._oCalendar.addSelectedDate(new DateRange().setStartDate(this._getInitialFocusedDateValue()));
+		if (!this.getDateValue()) {
+			this._oCalendar.removeAllSelectedDates();
+		}
 	}
+
+	/**
+	 * @private
+	 */
+	DateTimePicker.prototype._handleWindowResize = function(mParams) {
+		var oSwitcher = this.getAggregation("_popup").getContent()[1].getAggregation("_switcher"),
+			oCalendar = this.getAggregation("_popup").getContent()[1].getCalendar(),
+			oSliders = this.getAggregation("_popup").getContent()[1].getTimeSliders();
+
+		if (mParams.name === STANDART_PHONE_RANGESET) {
+			oSwitcher.setVisible(true);
+			// Getting "sap.m.internal.DateTimePickerPopup" instance in order to call "_switchVisibility(sKey)" method
+			this.getAggregation("_popup").getContent()[1]._switchVisibility(oSwitcher.getSelectedKey());
+		} else {
+			oSwitcher.setVisible(false);
+			oSliders.$().css("display", "");
+			oCalendar.$().css("display", "");
+		}
+	};
 
 	function _handleAfterOpen(oEvent){
 		this.$("inner").attr("aria-expanded", true);
 		this._oCalendar.focus();
 		this._oSliders._onOrientationChanged();
 
+		Device.media.attachHandler(this._handleWindowResize, this);
 	}
 
 	function _handleAfterClose(){
+		this.removeStyleClass(InputBase.ICON_PRESSED_CSS_CLASS);
 		this.$("inner").attr("aria-expanded", false);
 
-		this._restoreInputSelection(this._$input.get(0));
+		this._oCalendar._closePickers();
+		Device.media.detachHandler(this._handleWindowResize, this);
 	}
 
 	function _getTimePattern(){
@@ -705,7 +762,7 @@ sap.ui.define([
 		}
 
 		if (!sDisplayFormat) {
-			sDisplayFormat = "medium";
+			sDisplayFormat = DateTimeFormatStyles.Medium;
 		}
 
 		var iSlashIndex = sDisplayFormat.indexOf("/");
@@ -713,7 +770,7 @@ sap.ui.define([
 			sDisplayFormat = sDisplayFormat.substr(iSlashIndex + 1);
 		}
 
-		if (sDisplayFormat == "short" || sDisplayFormat == "medium" || sDisplayFormat == "long" || sDisplayFormat == "full") {
+		if (sDisplayFormat == DateTimeFormatStyles.Short || sDisplayFormat == DateTimeFormatStyles.Medium || sDisplayFormat == DateTimeFormatStyles.Long || sDisplayFormat == DateTimeFormatStyles.Full) {
 			var oLocale = sap.ui.getCore().getConfiguration().getFormatSettings().getFormatLocale();
 			var oLocaleData = LocaleData.getInstance(oLocale);
 			sTimePattern = oLocaleData.getTimePattern(sDisplayFormat);
@@ -725,10 +782,9 @@ sap.ui.define([
 
 	}
 
-	function _selectDate(oEvent) {
-
+	function _handleCalendarSelect(oEvent) {
+		this._oOKButton.setEnabled(true);
 		this._oPopupContent.switchToTime();
-
 	}
 
 	return DateTimePicker;

@@ -1,15 +1,20 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
+/*eslint-disable max-len */
 // Provides the JSON model implementation of a list binding
-sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/ClientListBinding'],
-	function(jQuery, ChangeReason, ClientListBinding) {
+sap.ui.define([
+	"sap/base/Log",
+	"sap/base/util/deepEqual",
+	"sap/base/util/deepExtend",
+	"sap/base/util/each",
+	"sap/base/util/extend",
+	"sap/ui/model/ChangeReason",
+	"sap/ui/model/ClientListBinding"
+], function(Log, deepEqual, deepExtend, each, extend, ChangeReason, ClientListBinding) {
 	"use strict";
-
-
 
 	/**
 	 * Creates a new JSONListBinding.
@@ -67,7 +72,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/C
 
 				//Check diff
 				if (this.aLastContextData && iStartIndex < this.iLastEndIndex) {
-					aContexts.diff = jQuery.sap.arraySymbolDiff(this.aLastContextData, aContextData);
+					aContexts.diff = this.diffData(this.aLastContextData, aContextData);
 				}
 
 				this.iLastEndIndex = iStartIndex + iLength;
@@ -75,7 +80,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/C
 				this.aLastContextData = aContextData.slice(0);
 			} catch (oError) {
 				this.bUseExtendedChangeDetection = false;
-				jQuery.sap.log.warning("JSONListBinding: Extended change detection has been disabled as JSON data could not be serialized.");
+				Log.warning("JSONListBinding: Extended change detection has been disabled as JSON data could not be serialized.");
 			}
 		}
 
@@ -117,12 +122,13 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/C
 		if (oList) {
 			if (Array.isArray(oList)) {
 				if (this.bUseExtendedChangeDetection) {
-					this.oList = jQuery.extend(true, [], oList);
+					this.oList = deepExtend([], oList);
 				} else {
 					this.oList = oList.slice(0);
 				}
 			} else {
-				this.oList = jQuery.extend(this.bUseExtendedChangeDetection, {}, oList);
+				this.oList = this.bUseExtendedChangeDetection
+					? deepExtend({}, oList) : extend({}, oList);
 			}
 			this.updateIndices();
 			this.applyFilter();
@@ -136,21 +142,23 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/C
 	};
 
 	/**
-	 * Check whether this Binding would provide new values and in case it changed,
-	 * inform interested parties about this.
+	 * Check whether this Binding would provide new values and in case it changed, fire a change
+	 * event with change reason <code>sap.ui.model.ChangeReason.Change</code>.
 	 *
 	 * @param {boolean} bForceupdate
+	 *   Whether the change event will be fired regardless of the bindings state
 	 *
 	 */
 	JSONListBinding.prototype.checkUpdate = function(bForceupdate){
+		var oList;
 
 		if (this.bSuspended && !this.bIgnoreSuspend && !bForceupdate) {
 			return;
 		}
 
 		if (!this.bUseExtendedChangeDetection) {
-			var oList = this.oModel._getObject(this.sPath, this.oContext) || [];
-			if (!jQuery.sap.equal(this.oList, oList) || bForceupdate) {
+			oList = this.oModel._getObject(this.sPath, this.oContext) || [];
+			if (!deepEqual(this.oList, oList) || bForceupdate) {
 				this.update();
 				this._fireChange({reason: ChangeReason.Change});
 			}
@@ -159,11 +167,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/C
 			var that = this;
 
 			//If the list has changed we need to update the indices first
-			var oList = this.oModel._getObject(this.sPath, this.oContext) || [];
+			oList = this.oModel._getObject(this.sPath, this.oContext) || [];
 			if (this.oList.length != oList.length) {
 				bChangeDetected = true;
 			}
-			if (!jQuery.sap.equal(this.oList, oList)) {
+			if (!deepEqual(this.oList, oList)) {
 				this.update();
 			}
 
@@ -173,12 +181,13 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/C
 				if (this.aLastContexts.length != aContexts.length) {
 					bChangeDetected = true;
 				} else {
-					jQuery.each(this.aLastContextData, function(iIndex, oLastData) {
+					each(this.aLastContextData, function(iIndex, oLastData) {
 						var oCurrentData = that.getContextData(aContexts[iIndex]);
 						if (oCurrentData !== oLastData) {
 							bChangeDetected = true;
 							return false;
 						}
+						return true;
 					});
 				}
 			} else {

@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.m.ActionSelect.
-sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSelectRenderer'],
-	function(Select, InvisibleText, library, ActionSelectRenderer) {
+sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', 'sap/ui/Device', 'sap/ui/core/Core', './ActionSelectRenderer'],
+	function(Select, InvisibleText, Device, Core, ActionSelectRenderer) {
 		"use strict";
 
 		/**
@@ -20,7 +20,7 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 		 * @extends sap.m.Select
 		 *
 		 * @author SAP SE
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 *
 		 * @constructor
 		 * @public
@@ -66,17 +66,16 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 		};
 
 		/**
-		 * Add additional content.
+		 * Add additional content to Select's SimpleFixFlex flexContent aggregation.
 		 *
 		 * @override
 		 * @private
 		 */
-		ActionSelect.prototype.addContent = function() {
-			var oCore = sap.ui.getCore(),
-				oPicker = this.getPicker();
+		ActionSelect.prototype.addContentToFlex = function() {
+			var oSimpleFixFlex = this.getSimpleFixFlex();
 
 			this.getButtons().forEach(function(sButtonId) {
-				oPicker.addContent(oCore.byId(sButtonId));
+				oSimpleFixFlex.addFlexContent(Core.byId(sButtonId));
 			});
 		};
 
@@ -86,6 +85,9 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 
 		ActionSelect.prototype._onBeforeRenderingPopover = function () {
 			Select.prototype._onBeforeRenderingPopover.call(this);
+			var oPicker = this.getPicker();
+			oPicker && oPicker._setAriaRoleApplication(true);
+
 			this._updateTutorMessage();
 		};
 
@@ -117,15 +119,15 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 		 * @public
 		 */
 		ActionSelect.prototype.removeButton = function(vButton) {
-			var oPicker = this.getPicker();
+			var oSimpleFixFlex = this.getSimpleFixFlex();
 
-			if (oPicker) {
+			if (oSimpleFixFlex) {
 
 				if (typeof vButton === "number") {
 					vButton = this.getButtons()[vButton];
 				}
 
-				oPicker.removeContent(vButton);
+				oSimpleFixFlex.removeFlexContent(vButton);
 			}
 
 			return this.removeAssociation("buttons", vButton);
@@ -138,11 +140,11 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 		 * @public
 		 */
 		ActionSelect.prototype.removeAllButtons = function() {
-			var oPicker = this.getPicker();
+			var oSimpleFixFlex = this.getSimpleFixFlex();
 
-			if (oPicker) {
+			if (oSimpleFixFlex) {
 				this.getButtons().forEach(function(sButtonId) {
-					oPicker.removeContent(sButtonId);
+					oSimpleFixFlex.removeFlexContent(Core.byId(sButtonId));
 				});
 			}
 
@@ -163,6 +165,8 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 				oPicker = this.getPicker(),
 				i;
 
+			this._bProcessChange = false;
+
 			// check whether event is marked or not
 			if ( oEvent.isMarked() || !this.getEnabled()) {
 				return;
@@ -173,8 +177,8 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 
 			if (oPicker && oPicker.isOpen() && aButtons.length > 0) {
 				for (i = aButtons.length - 1; i >= 0; i--) {
-					if (sap.ui.getCore().byId(aButtons[i]).getEnabled()) {
-						sap.ui.getCore().byId(aButtons[i]).focus();
+					if (Core.byId(aButtons[i]).getEnabled()) {
+						Core.byId(aButtons[i]).focus();
 						oEvent.preventDefault();
 						break;
 					}
@@ -193,6 +197,7 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 			var aButtons = this.getButtons(),
 				oPicker = this.getPicker(),
 				i;
+				this._bProcessChange = false;
 
 			// check whether event is marked or not
 			if ( oEvent.isMarked() || !this.getEnabled()) {
@@ -204,8 +209,8 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 
 			if (oPicker && oPicker.isOpen() && aButtons.length > 0) {
 				for (i = 0; i < aButtons.length; i++) {
-					if (sap.ui.getCore().byId(aButtons[i]).getEnabled()) {
-						sap.ui.getCore().byId(aButtons[i]).focus();
+					if (Core.byId(aButtons[i]).getEnabled()) {
+						Core.byId(aButtons[i]).focus();
 						oEvent.preventDefault();
 						break;
 					}
@@ -224,7 +229,7 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 			// Keep focus on Action Select's input field if does not go to
 			// the buttons in Action sheet part of the ActionSelect
 			var aButtons = this.getButtons();
-			var bKeepFocus = (aButtons.indexOf(oEvent.relatedControlId) == -1);
+			var bKeepFocus = (aButtons.indexOf(oEvent.relatedControlId) === -1);
 
 			if (bKeepFocus) {
 				Select.prototype.onsapfocusleave.apply(this, arguments);
@@ -240,7 +245,7 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 		 * @private
 		 */
 		ActionSelect.prototype.onfocusinList = function(oEvent) {
-			if (document.activeElement !== this.getList().getDomRef()) {
+			if (document.activeElement !== this.getList().getDomRef() && !Device.system.phone) {
 				this.focus();
 			}
 		};
@@ -277,9 +282,9 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 				bTutorMessageNotReferenced;
 
 			if (!this._sTutorMessageId) {
-				this._sTutorMessageId = this.getId() + "-tutorMessage";
+				this._sTutorMessageId = this._getTutorMessageId();
 				this._oTutorMessageText = new InvisibleText(this._sTutorMessageId, {
-					text: sap.ui.getCore().getLibraryResourceBundle("sap.m").getText("ACTION_SELECT_TUTOR_MESSAGE")
+					text: Core.getLibraryResourceBundle("sap.m").getText("ACTION_SELECT_TUTOR_MESSAGE")
 				}).toStatic();
 			}
 
@@ -295,11 +300,23 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', './library', './ActionSe
 		};
 
 		/**
+		 * Gets the tutor message id.
+		 *
+		 * @returns {string} The id of the tutor message.
+		 * @private
+		 */
+		ActionSelect.prototype._getTutorMessageId = function() {
+			return this.getId() + "-tutorMessage";
+		};
+
+		/**
 		 * Called when the control is destroyed
 		 *
 		 * @private
 		 */
 		ActionSelect.prototype.exit = function () {
+			Select.prototype.exit.call(this);
+
 			if (this._oTutorMessageText) {
 				this._oTutorMessageText.destroy();
 				this._oTutorMessageText = null;

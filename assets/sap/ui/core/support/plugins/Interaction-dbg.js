@@ -1,20 +1,34 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides class sap.ui.core.support.plugins.Performance
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin',
-		'sap/ui/core/support/controls/InteractionSlider',
-		'sap/ui/core/support/controls/InteractionTree',
-		'sap/ui/core/support/controls/TimelineOverview',
-		'sap/m/MessageToast',
-		'sap/ui/thirdparty/jszip',
-		'sap/ui/core/util/File',
-		'jquery.sap.trace'
+sap.ui.define([
+	'jquery.sap.global',
+	'sap/ui/core/support/Plugin',
+	'sap/ui/core/support/controls/InteractionSlider',
+	'sap/ui/core/support/controls/InteractionTree',
+	'sap/ui/core/support/controls/TimelineOverview',
+	'sap/m/MessageToast',
+	'sap/ui/thirdparty/jszip',
+	'sap/ui/core/util/File',
+	"sap/ui/performance/trace/Interaction",
+	"sap/ui/performance/Measurement"
 	],
-	function(jQuery, Plugin, InteractionSlider, InteractionTree, TimelineOverview, MessageToast, JSZip, File) {
+	function(
+		jQuery,
+		Plugin,
+		InteractionSlider,
+		InteractionTree,
+		TimelineOverview,
+		MessageToast,
+		JSZip,
+		File,
+		TraceInteraction,
+		Measurement
+	) {
 		"use strict";
 
 		/**
@@ -24,7 +38,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin',
 		 * With this plugIn the performance measurements are displayed
 		 *
 		 * @extends sap.ui.core.support.Plugin
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 * @private
 		 * @alias sap.ui.core.support.plugins.Interaction
 		 */
@@ -94,7 +108,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin',
 			rm.write("<button id=\"" + this.getId() + "-record\" class=\"sapUiSupportIntToggleRecordingBtn\"></button>");
 			rm.write("<label class='sapUiSupportIntODataLbl'><input type='checkbox' id=\"" + this.getId() + "-odata\" > Enable OData Statistics</label>");
 			rm.write("<div class='sapUiSupportIntFupInputMask'>");
-			rm.write("<input id=\"" + this.getId() + "-fileImport\" tabindex='-1' size='1' accept='application/zip' type='file'/>");
+			rm.write("<input id=\"" + this.getId() + "-fileImport\" tabindex='-1' size='1' accept='application/zip' type='file'>");
 			rm.write("</div>");
 			rm.write("<button id=\"" + this.getId() + "-import\" class=\"sapUiSupportIntImportExportBtn sapUiSupportIntImportBtn sapUiSupportRoundedButton \">Import</button>");
 			rm.write("<button id=\"" + this.getId() + "-export\" class=\"sapUiSupportIntImportExportBtn sapUiSupportIntExportBtn sapUiSupportRoundedButton sapUiSupportIntHidden \">Export</button>");
@@ -103,7 +117,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin',
 			rm.write("</div>");
 
 			rm.write('<div class="sapUiPerformanceStatsDiv sapUiSupportIntHidden">');
-			rm.write('<div class="sapUiPerformanceTimeline" style="height: 50px;"></div>');
+			rm.write('<div class="sapUiPerformanceTimeline"></div>');
 			rm.write('<div class="sapUiPerformanceTop">');
 			rm.write('</div>');
 
@@ -133,36 +147,36 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin',
 				that._oInteractionTree.setRange(arg1, arg2);
 			});
 
-			this.$("refresh").click(jQuery.proxy(function(oEvent) {
+			this.$("refresh").on("click", jQuery.proxy(function(oEvent) {
 				this._oStub.sendEvent(this.getId() + "Refresh");
 			}, this));
-			this.$("clear").click(jQuery.proxy(function(oEvent) {
+			this.$("clear").on("click", jQuery.proxy(function(oEvent) {
 				this._oStub.sendEvent(this.getId() + "Clear");
 			}, this));
 
-			this.$("export").click(jQuery.proxy(function(oEvent) {
+			this.$("export").on("click", jQuery.proxy(function(oEvent) {
 				//this._oStub.sendEvent(this.getId() + "Export");
 				this.onsapUiSupportInteractionExport();
 			}, this));
-			this.$("fileImport").change(jQuery.proxy(function(oEvent) {
+			this.$("fileImport").on("change", jQuery.proxy(function(oEvent) {
 				this.onsapUiSupportInteractionImport();
 				//this._oStub.sendEvent(this.getId() + "Import");
 			}, this));
-			this.$("active").click(jQuery.proxy(function(oEvent) {
+			this.$("active").on("click", jQuery.proxy(function(oEvent) {
 				var bActive = false;
 				if (this.$("active").prop("checked")) {
 					bActive = true;
 				}
 				this._oStub.sendEvent(this.getId() + "Activate", {"active": bActive});
 			}, this));
-			this.$("odata").attr('checked',this._bODATA_Stats_On).click(jQuery.proxy(function(oEvent) {
+			this.$("odata").attr('checked',this._bODATA_Stats_On).on("click", jQuery.proxy(function(oEvent) {
 				jQuery.sap.statistics(!jQuery.sap.statistics());
 			}, this));
 
 
 			this.$('record').attr('data-state', (!this._bFesrActive) ? 'Start recording' : 'Stop recording');
 
-			this.$('record').click(jQuery.proxy(function(oEvent) {
+			this.$('record').on("click", jQuery.proxy(function(oEvent) {
 				if (this.$('record').attr('data-state') === 'Stop recording') {
 					this._oStub.sendEvent(this.getId() + "Refresh");
 					this._oStub.sendEvent(this.getId() + "Activate", {"active": false});
@@ -191,11 +205,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin',
 		}
 
 		function getPerformanceData(oSupportStub, jsonData) {
-			var bActive = jQuery.sap.interaction.getActive() || this._bFesrActive;
+			var bActive = TraceInteraction.getActive() || this._bFesrActive;
 			var aMeasurements = [];
 
 			if (bActive || jsonData) {
-				aMeasurements = jsonData || jQuery.sap.measure.getAllInteractionMeasurements(/*bFinalize=*/true);
+				aMeasurements = jsonData || TraceInteraction.getAll(/*bFinalize=*/true);
 
 				var fetchStart = window.performance.timing.fetchStart;
 
@@ -303,7 +317,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin',
 		 */
 		Interaction.prototype.onsapUiSupportInteractionClear = function(oEvent) {
 
-			jQuery.sap.measure.clearInteractionMeasurements();
+			TraceInteraction.clear();
 			this._oStub.sendEvent(this.getId() + "SetMeasurements", {"measurements":[]});
 
 		};
@@ -316,7 +330,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin',
 		 */
 		Interaction.prototype.onsapUiSupportInteractionStart = function(oEvent) {
 
-			jQuery.sap.measure.start(this.getId() + "-perf","Measurement by support tool");
+			Measurement.start(this.getId() + "-perf","Measurement by support tool");
 
 		};
 
@@ -329,7 +343,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin',
 		Interaction.prototype.onsapUiSupportInteractionEnd = function(oEvent) {
 
 			//jQuery.sap.measure.end(this.getId() + "-perf");
-			jQuery.sap.measure.endInteraction(/* bForce= */true);
+			Interaction.end(/* bForce= */true);
 		};
 
 		/**
@@ -342,8 +356,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin',
 
 			var bActive = oEvent.getParameter("active");
 
-			if (jQuery.sap.interaction.getActive() != bActive) {
-				jQuery.sap.interaction.setActive(bActive);
+			if (TraceInteraction.getActive() != bActive) {
+				TraceInteraction.setActive(bActive);
 			}
 
 		};

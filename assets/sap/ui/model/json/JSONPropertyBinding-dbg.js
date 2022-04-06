@@ -1,12 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
+/*eslint-disable max-len */
 // Provides the JSON model implementation of a property binding
-sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/ClientPropertyBinding', 'sap/ui/model/ChangeReason'],
-	function(jQuery, ChangeReason, ClientPropertyBinding) {
+sap.ui.define([
+	'sap/ui/model/ChangeReason',
+	'sap/ui/model/ClientPropertyBinding',
+	"sap/base/util/deepEqual"
+],
+	function(ChangeReason, ClientPropertyBinding, deepEqual) {
 	"use strict";
 
 
@@ -37,7 +41,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/C
 		if (this.bSuspended) {
 			return;
 		}
-		if (!jQuery.sap.equal(this.oValue, oValue)) {
+		if (!deepEqual(this.oValue, oValue)) {
 			if (this.oModel.setProperty(this.sPath, oValue, this.oContext, true)) {
 				this.oValue = oValue;
 				this.getDataState().setValue(this.oValue);
@@ -47,10 +51,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/C
 	};
 
 	/**
-	 * Check whether this Binding would provide new values and in case it changed,
-	 * inform interested parties about this.
+	 * Check whether this Binding would provide new values and in case it changed, fire a change
+	 * event with change reason <code>Change</code>.
 	 *
 	 * @param {boolean} bForceupdate
+	 *   Whether the change event will be fired regardless of the bindings state
 	 *
 	 */
 	JSONPropertyBinding.prototype.checkUpdate = function(bForceupdate){
@@ -59,7 +64,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/ChangeReason', 'sap/ui/model/C
 		}
 
 		var oValue = this._getValue();
-		if (!jQuery.sap.equal(oValue, this.oValue) || bForceupdate) {// optimize for not firing the events when unneeded
+		if (!deepEqual(oValue, this.oValue) || bForceupdate) {// optimize for not firing the events when unneeded
 			this.oValue = oValue;
 			this.getDataState().setValue(this.oValue);
 			this.checkDataState();

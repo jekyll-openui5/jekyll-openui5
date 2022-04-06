@@ -1,21 +1,28 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	"jquery.sap.global",
+	"sap/ui/thirdparty/jquery",
 	"sap/ui/base/ManagedObject",
+	"sap/ui/fl/Layer",
 	"sap/ui/fl/Utils",
-	"sap/ui/fl/registry/Settings"
+	"sap/ui/fl/LayerUtils",
+	"sap/ui/fl/registry/Settings",
+	"sap/base/util/merge",
+	"sap/base/Log"
 ], function (
 	jQuery,
 	ManagedObject,
+	Layer,
 	Utils,
-	Settings
+	LayerUtils,
+	Settings,
+	merge,
+	Log
 ) {
-
 	"use strict";
 
 	/**
@@ -26,29 +33,28 @@ sap.ui.define([
 	 * @class Variant class.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @alias sap.ui.fl.Variant
 	 * @experimental Since 1.52.0
 	 */
-	var Variant = ManagedObject.extend("sap.ui.fl.Variant", /** @lends sap.ui.fl.Variant.prototype */
-	{
-		constructor : function(oFile){
+	var Variant = ManagedObject.extend("sap.ui.fl.Variant", /** @lends sap.ui.fl.Variant.prototype */ {
+		constructor: function(oFile) {
 			ManagedObject.apply(this);
 
 			if (!jQuery.isPlainObject(oFile)) {
-				Utils.log.error("Constructor : sap.ui.fl.Variant : oFile is not defined");
+				Log.error("Constructor : sap.ui.fl.Variant : oFile is not defined");
 			}
 
 			this._oDefinition = oFile;
-			this._oOriginDefinition = jQuery.extend(true, {}, oFile);
+			this._oOriginDefinition = merge({}, oFile);
 			this._sRequest = '';
-			this._bUserDependent = (oFile.content.layer === "USER");
+			this._bUserDependent = (oFile.content.layer === Layer.USER);
 			this._vRevertData = null;
 			this.setState(Variant.states.NEW);
 		},
-		metadata : {
-			properties : {
-				state : {
+		metadata: {
+			properties: {
+				state: {
 					type: "string"
 				}
 			}
@@ -57,7 +63,7 @@ sap.ui.define([
 
 	Variant.states = {
 		NEW: "NEW",
-		PERSISTED : "NONE",
+		PERSISTED: "NONE",
 		DELETED: "DELETE",
 		DIRTY: "UPDATE"
 	};
@@ -84,7 +90,7 @@ sap.ui.define([
 	Variant.prototype._isValidState = function(sState) {
 		//new state have to be in the Variant.states value list
 		var bStateFound = false;
-		Object.keys(Variant.states).some(function(sKey){
+		Object.keys(Variant.states).some(function(sKey) {
 			if (Variant.states[sKey] === sState) {
 				bStateFound = true;
 			}
@@ -302,7 +308,7 @@ sap.ui.define([
 	 */
 	Variant.prototype.getText = function (sTextId) {
 		if (typeof (sTextId) !== "string") {
-			Utils.log.error("sap.ui.fl.Variant.getTexts : sTextId is not defined");
+			Log.error("sap.ui.fl.Variant.getTexts : sTextId is not defined");
 		}
 		if (this._oDefinition.content.texts) {
 			if (this._oDefinition.content.texts[sTextId]) {
@@ -323,7 +329,7 @@ sap.ui.define([
 	 */
 	Variant.prototype.setText = function (sTextId, sNewText) {
 		if (typeof (sTextId) !== "string") {
-			Utils.log.error("sap.ui.fl.Variant.setTexts : sTextId is not defined");
+			Log.error("sap.ui.fl.Variant.setTexts : sTextId is not defined");
 			return;
 		}
 		if (this._oDefinition.content.texts) {
@@ -379,7 +385,7 @@ sap.ui.define([
 	 */
 	Variant.prototype._isReadOnlyDueToLayer = function () {
 		var sCurrentLayer;
-		sCurrentLayer = Utils.getCurrentLayer(this._bUserDependent);
+		sCurrentLayer = this._bUserDependent ? Layer.USER : LayerUtils.getCurrentLayer();
 		return (this._oDefinition.content.layer !== sCurrentLayer);
 	};
 
@@ -393,7 +399,8 @@ sap.ui.define([
 	 * @private
 	 */
 	Variant.prototype._isReadOnlyDueToOriginalLanguage = function () {
-		var sCurrentLanguage, sOriginalLanguage;
+		var sCurrentLanguage;
+		var sOriginalLanguage;
 
 		sOriginalLanguage = this.getOriginalLanguage();
 		if (!sOriginalLanguage) {
@@ -422,7 +429,7 @@ sap.ui.define([
 	 */
 	Variant.prototype.setRequest = function (sRequest) {
 		if (typeof (sRequest) !== "string") {
-			Utils.log.error("sap.ui.fl.Variant.setRequest : sRequest is not defined");
+			Log.error("sap.ui.fl.Variant.setRequest : sRequest is not defined");
 		}
 		this._sRequest = sRequest;
 	};
@@ -486,16 +493,6 @@ sap.ui.define([
 	 */
 	Variant.prototype.isUserDependent = function () {
 		return (this._bUserDependent);
-	};
-
-	/**
-	 * Returns the pending action on the variant item
-	 * @returns {string} contains one of these values: DELETE/NEW/UPDATE/NONE
-	 *
-	 * @public
-	 */
-	Variant.prototype.getPendingAction = function () {
-		return this.getState();
 	};
 
 	/**
@@ -563,63 +560,59 @@ sap.ui.define([
 	/**
 	 * Creates and returns an instance of change instance
 	 *
-	 * @param {Object}  [oPropertyBag] property bag
-	 * @param {Object}  [oPropertyBag.content] content of the new change
-	 * @param {String}  [oPropertyBag.content.fileName] name/id of the file. if not set implicitly created
-	 * @param {String}  [oPropertyBag.content.title] title of the variant
-	 * @param {String}  [oPropertyBag.content.fileType] file type of a variant
-	 * @param {String}  [oPropertyBag.content.variantManagementReference] Reference to the variant management control
-	 * @param {String}  [oPropertyBag.content.variantReference] Reference to another variant
-	 * @param {String}  [oPropertyBag.content.reference] Application component name
-	 * @param {String}  [oPropertyBag.content.packageName] Package name for transport
-	 * @param {String}  [oPropertyBag.content.layer] Layer of the variant
-	 * @param {Object}  [oPropertyBag.content.texts] map object with all referenced texts within the file
+	 * @param {object}  [oPropertyBag] property bag
+	 * @param {object}  [oPropertyBag.content] content of the new change
+	 * @param {string}  [oPropertyBag.content.fileName] name/id of the file. if not set implicitly created
+	 * @param {string}  [oPropertyBag.content.content.title] title of the variant
+	 * @param {string}  [oPropertyBag.content.fileType] file type of a variant
+	 * @param {string}  [oPropertyBag.content.variantManagementReference] Reference to the variant management control
+	 * @param {string}  [oPropertyBag.content.variantReference] Reference to another variant
+	 * @param {string}  [oPropertyBag.content.reference] Application component name
+	 * @param {string}  [oPropertyBag.content.packageName] Package name for transport
+	 * @param {string}  [oPropertyBag.content.layer] Layer of the variant
+	 * @param {object}  [oPropertyBag.content.texts] map object with all referenced texts within the file
 	 *                                               these texts will be connected to the translation process
-	 * @param {String}  [oPropertyBag.content.namespace] The namespace of the change file
-	 * @param {String}  [oPropertyBag.service] name of the OData service
-	 * @param {Boolean} [oPropertyBag.isVariant] ctrl_variant?
-	 * @param {Boolean} [oPropertyBag.isUserDependent] true for enduser changes
-	 * @param {String}  !!!![oPropertyBag.context] ID of the context
-	 * @param {Object}  [oPropertyBag.content.validAppVersions] Application versions where the change is active
-	 * @param {String}  [oPropertyBag.generator] Tool which is used to generate the variant change file
+	 * @param {string}  [oPropertyBag.content.namespace] The namespace of the change file
+	 * @param {string}  [oPropertyBag.service] name of the OData service
+	 * @param {boolean} [oPropertyBag.isVariant] ctrl_variant?
+	 * @param {boolean} [oPropertyBag.isUserDependent] true for enduser changes
+	 * @param {string}  !!!![oPropertyBag.context] ID of the context
+	 * @param {string}  [oPropertyBag.generator] Tool which is used to generate the variant change file
 	 *
-	 * @returns {Object} The content of the change file
+	 * @returns {object} The content of the change file
 	 *
 	 * @public
 	 */
 	Variant.createInitialFileContent = function (oPropertyBag) {
-
 		if (!oPropertyBag) {
 			oPropertyBag = {};
 		}
 
 		var sFileName = oPropertyBag.content.fileName || Utils.createDefaultFileName();
-		var sNamespace = oPropertyBag.content.namespace || Utils.createNamespace(oPropertyBag.content, "variants");
+		var sNamespace = oPropertyBag.content.namespace || Utils.createNamespace(oPropertyBag.content, "ctrl_variant");
 		var oNewFile = {
-			content : {
+			content: {
 				fileName: sFileName,
 				fileType: "ctrl_variant",
 				variantManagementReference: oPropertyBag.content.variantManagementReference,
 				variantReference: oPropertyBag.content.variantReference || "",
 				reference: oPropertyBag.content.reference || "",
 				packageName: oPropertyBag.content.packageName || "",
-				content: {
-					title: oPropertyBag.content.content.title || ""
-				},
+				content: {title: oPropertyBag.content.content.title || ""},
 				self: sNamespace + sFileName + "." + "ctrl_variant",
-				layer: oPropertyBag.content.layer || Utils.getCurrentLayer(oPropertyBag.isUserDependent),
+				layer: oPropertyBag.content.layer || (oPropertyBag.isUserDependent ? Layer.USER : LayerUtils.getCurrentLayer()),
 				texts: oPropertyBag.content.texts || {},
 				namespace: sNamespace, //TODO: we need to think of a better way to create namespaces from Adaptation projects.
 				creation: "",
 				originalLanguage: Utils.getCurrentLanguage(),
 				conditions: {},
+				contexts: oPropertyBag.content.contexts || {},
 				support: {
 					generator: oPropertyBag.generator || "Change.createInitialFileContent",
 					service: oPropertyBag.service || "",
 					user: "",
 					sapui5Version: sap.ui.version
-				},
-				validAppVersions: oPropertyBag.content.validAppVersions || {}
+				}
 			},
 			controlChanges: oPropertyBag.controlChanges || [],
 			variantChanges: {} //should be empty for new variant

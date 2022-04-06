@@ -1,9 +1,9 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-sap.ui.define(['jquery.sap.global', 'sap/ui/rta/command/FlexCommand'], function(jQuery, FlexCommand) {
+sap.ui.define(["sap/ui/rta/command/FlexCommand"], function(FlexCommand) {
 	"use strict";
 
 	/**
@@ -12,7 +12,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/command/FlexCommand'], function(
 	 * @class
 	 * @extends sap.ui.rta.command.FlexCommand
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @constructor
 	 * @private
 	 * @since 1.34
@@ -21,38 +21,33 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/command/FlexCommand'], function(
 	 *               changed in future.
 	 */
 	var Rename = FlexCommand.extend("sap.ui.rta.command.Rename", {
-		metadata : {
-			library : "sap.ui.rta",
-			properties : {
-				renamedElement : {
-					type : "object"
+		metadata: {
+			library: "sap.ui.rta",
+			properties: {
+				renamedElement: {
+					type: "object"
 				},
-				newValue : {
-					type : "string",
-					defaultValue : "new text"
+				newValue: {
+					type: "string",
+					defaultValue: "new text"
 				}
 			},
-			associations : {},
-			events : {}
+			associations: {},
+			events: {}
 		}
 	});
 
 	Rename.prototype._getChangeSpecificData = function() {
-
 		var mSpecificInfo = {
-				changeType : this.getChangeType(),
-				selector : {
-					id : this.getElement().getId()
-				},
-				renamedElement : {
-					id : this.getRenamedElement().getId()
-				},
-				value : this.getNewValue()
+			changeType: this.getChangeType(),
+			renamedElement: {
+				id: this.getRenamedElement().getId()
+			},
+			value: this.getNewValue()
 		};
 
 		return mSpecificInfo;
 	};
 
 	return Rename;
-
-}, /* bExport= */true);
+});

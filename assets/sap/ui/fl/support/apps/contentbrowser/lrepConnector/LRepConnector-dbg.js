@@ -1,10 +1,10 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
+sap.ui.define(["sap/ui/fl/Utils", "sap/ui/thirdparty/jquery"], function(Utils, jQuery) {
 	"use strict";
 
 	/**
@@ -13,7 +13,7 @@ sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
 	 * @constructor
 	 * @alias sap.ui.fl.support.apps.contentbrowser.lrepConnector.LRepConnector
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @experimental Since 1.45
 	 */
 	var LrepConnector = {};
@@ -27,9 +27,9 @@ sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
 	 *
 	 * @param {String} sLayer - determines the layer for obtaining the content
 	 * @param {String} sContentSuffix - namespace plus filename and file type of content
-	 * @param {Boolean} bReadContextMetadata - read content plus metadata information
-	 * @param {Boolean} bReadRuntimeContext - gets the content in runtime instead of design time
-	 * @param {Boolean} bRequestAsText - gets content data as plain text
+	 * @param {boolean} bReadContextMetadata - read content plus metadata information
+	 * @param {boolean} bReadRuntimeContext - gets the content in runtime instead of design time
+	 * @param {boolean} bRequestAsText - gets content data as plain text
 	 * @returns {Promise} Promise of GET content request to the back end
 	 * @public
 	 */
@@ -56,12 +56,12 @@ sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
 	 * @param {String} sFilename - name of the file
 	 * @param {String} sFileType - type of the file
 	 * @param {String} sContent - content of the file saved to the layered repository
+	 * @param [String] sTransportId - id of an ABAP transport or ATO_NOTIFICATION
+	 * @param [String] sPackageName - name of an ABAP package
 	 * @returns {Promise} Promise of the SAVE content request to the back end
 	 * @public
 	 */
-	LrepConnector.saveFile = function (sLayer, sNamespace, sFilename, sFileType, sContent) {
-		var that = this;
-
+	LrepConnector.saveFile = function (sLayer, sNamespace, sFilename, sFileType, sContent, sTransportId, sPackageName) {
 		return new Promise(function (fnResolve, fnReject) {
 			if (!sLayer || sNamespace === undefined || !sFilename || !sFileType) {
 				fnReject();
@@ -69,10 +69,12 @@ sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
 
 			var sContentSuffix = sNamespace + sFilename + "." + sFileType;
 			sContentSuffix = encodeURI(sContentSuffix);
-			var sLayerSuffix = that._getLayerSuffix(sLayer);
-			var sUrl = LrepConnector.sContentPathPrefix + sContentSuffix + sLayerSuffix;
-			that._getTokenAndSendPutRequest.call(that, sUrl, sContent, fnResolve, fnReject);
-		});
+			var sLayerSuffix = this._getLayerSuffix(sLayer);
+			var sChangeListSuffix = this._getChangeListSuffix(sTransportId);
+			var sPackageSuffix = this._getPackageSuffix(sPackageName);
+			var sUrl = LrepConnector.sContentPathPrefix + sContentSuffix + sLayerSuffix + sChangeListSuffix + sPackageSuffix;
+			this._getTokenAndSendPutRequest(sUrl, sContent, fnResolve, fnReject);
+		}.bind(this));
 	};
 
 	/**
@@ -82,12 +84,11 @@ sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
 	 * @param {String} sNamespace - namespace of the file
 	 * @param {String} sFileName - name of the file
 	 * @param {String} sFileType - type of the file
+	 * @param [String] sTransportId - id of the ABAP transport or ATO_NOTIFICATION
 	 * @returns {Promise} Promise of DELETE content request to the back end
 	 * @public
 	 */
-	LrepConnector.deleteFile = function (sLayer, sNamespace, sFileName, sFileType) {
-		var that = this;
-
+	LrepConnector.deleteFile = function (sLayer, sNamespace, sFileName, sFileType, sTransportId) {
 		return new Promise(function (fnResolve, fnReject) {
 			if (!sLayer || sNamespace === undefined || !sFileName || !sFileType) {
 				fnReject();
@@ -95,10 +96,11 @@ sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
 
 			var sContentSuffix = sNamespace + sFileName + "." + sFileType;
 			sContentSuffix = encodeURI(sContentSuffix);
-			var sLayerSuffix = that._getLayerSuffix(sLayer);
-			var sUrl = LrepConnector.sContentPathPrefix + sContentSuffix + sLayerSuffix;
-			that._getTokenAndSendDeletionRequest.call(that, sUrl, fnResolve, fnReject);
-		});
+			var sLayerSuffix = this._getLayerSuffix(sLayer);
+			var sChangeListSuffix = this._getChangeListSuffix(sTransportId);
+			var sUrl = LrepConnector.sContentPathPrefix + sContentSuffix + sLayerSuffix + sChangeListSuffix;
+			this._getTokenAndSendDeletionRequest(sUrl, fnResolve, fnReject);
+		}.bind(this));
 	};
 
 	/**
@@ -144,18 +146,38 @@ sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
 	 * @private
 	 */
 	LrepConnector._getLayerSuffix = function (sLayer) {
-		if (sLayer === "All"){
+		if (sLayer === "All") {
 			return "";
 		}
 		return "?layer=" + sLayer;
 	};
 
 	/**
+	 * Get changelist suffix for request URL;
+	 * @param {String} sChangeList - transport id
+	 * @returns {String} correct changelist suffix
+	 * @private
+	 */
+	LrepConnector._getChangeListSuffix = function (sChangeList) {
+		return sChangeList ? "&changelist=" + sChangeList : "";
+	};
+
+	/**
+	 * Get package suffix for request URL;
+	 * @param {String} sPackage - package name
+	 * @returns {String} correct package suffix
+	 * @private
+	 */
+	LrepConnector._getPackageSuffix = function (sPackage) {
+		return sPackage ? "&package=" + sPackage : "";
+	};
+
+	/**
 	 * Get context suffix for request URL.
 	 *
 	 * @param {String} sLayerSuffix - layer suffix based on selected layer
-	 * @param {Boolean} bReadRuntimeContext - gets content in runtime instead of design time
-	 * @param {Boolean} bReadContextMetadata - reads content plus metadata information
+	 * @param {boolean} bReadRuntimeContext - gets content in runtime instead of design time
+	 * @param {boolean} bReadContextMetadata - reads content plus metadata information
 	 * @returns {String} correct context suffix for URL request
 	 * @private
 	 */
@@ -165,7 +187,7 @@ sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
 			sReadRuntimeContextSuffix += (sLayerSuffix ? "&" : "?");
 			sReadRuntimeContextSuffix += "dt=true";
 		}
-		if (!!bReadContextMetadata) {
+		if (bReadContextMetadata) {
 			sReadRuntimeContextSuffix += (sLayerSuffix || sReadRuntimeContextSuffix ? "&" : "?");
 			sReadRuntimeContextSuffix += "metadata=true";
 		}
@@ -192,7 +214,7 @@ sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
 	 * @param {String} sUrl - request URL
 	 * @param {Function} fnResolve - callback function if request was resolved
 	 * @param {Function} fnReject - callback function if request was rejected
-	 * @param {Boolean} bRequestAsText - sends ajax request with data type as plain text
+	 * @param {boolean} bRequestAsText - sends ajax request with data type as plain text
 	 * @private
 	 */
 	LrepConnector._sendContentRequest = function (sUrl, fnResolve, fnReject, bRequestAsText) {
@@ -208,7 +230,7 @@ sap.ui.define(["sap/ui/fl/Utils"], function (Utils) {
 			}
 		};
 		//code extension content should be treated as plain text to avoid parser error.
-		if (!!bRequestAsText){
+		if (bRequestAsText) {
 			oRequest.dataType = "text";
 		}
 		jQuery.ajax(oRequest);

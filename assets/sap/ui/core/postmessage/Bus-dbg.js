@@ -1,23 +1,19 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
 	"sap/ui/core/EventBus",
-	"sap/base/util/equal",
 	"sap/base/util/includes",
 	"sap/base/util/isPlainObject",
-	"sap/base/util/isWindow",
 	"sap/base/Log"
 ],
 function (
 	EventBus,
-	equal,
 	includes,
 	isPlainObject,
-	isWindow,
 	Log
 ) {
 	"use strict";
@@ -27,22 +23,22 @@ function (
 
 	/**
 	 * @class
-	 * <h3>Overview</h3>
-	 * This class is responsible for the communication between different window objects.
+	 * Responsible for the communication between different window objects.
 	 *
+	 * <h3>Overview</h3>
 	 * This class is a singleton. The class instance can be retrieved as follows:
 	 * <ul>
 	 *   <li>via the constructor <code>new sap.ui.core.postmessage.Bus()</code></li>
 	 *   <li>via the static method <code>sap.ui.core.postmessage.Bus.getInstance()</code></li>
 	 * </ul>
 	 *
-	 * For supported data types for payload messages see {@link https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm}
+	 * For supported data types for payload messages, see {@link https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm}.
 	 *
 	 * @extends sap.ui.core.EventBus
 	 * @alias sap.ui.core.postmessage.Bus
 	 * @author SAP SE
 	 * @since 1.56.0
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @private
 	 * @ui5-restricted sap.ui.core.support, sap.ui.support, sap.ui.rta
 	 */
@@ -85,8 +81,8 @@ function (
 	};
 
 	/**
-	 * Returns an instance of the class
-	 * @return {sap.ui.core.postmessage.Bus}
+	 * Returns an instance of the class.
+	 * @returns {sap.ui.core.postmessage.Bus} An instance of the class.
 	 * @static
 	 * @public
 	 */
@@ -133,7 +129,7 @@ function (
 
 		// Validation
 		if (
-			!isWindow(oTarget)
+			(typeof window === "undefined") || !(oTarget != null && oTarget === oTarget.window)
 			|| oTarget === window // avoid self-messaging
 		) {
 			throw TypeError("Target must be a window object and has to differ from current window");
@@ -205,7 +201,7 @@ function (
 	 * @param {object}
 	 *            [oListener] Object that wants to be notified when the event occurs (<code>this</code> context within the
 	 *                        handler function). If it is not specified, the handler function is called in the context of the event bus.
-	 * @return {sap.ui.core.postmessage.Bus} Returns <code>this</code> to allow method chaining
+	 * @return {this} Returns <code>this</code> to allow method chaining
 	 * @public
 	 */
 
@@ -221,7 +217,8 @@ function (
 	 * @private
 	 */
 	PostMessageBus.prototype._getText = function (sKey, aParameters) {
-		return sap.ui.getCore().getLibraryResourceBundle().getText(sKey, aParameters);
+		return sap.ui.getCore().getLibraryResourceBundle(true)
+		.then(function(oLibraryResourceBundle) { return oLibraryResourceBundle.getText(sKey, aParameters); });
 	};
 
 	/**
@@ -254,7 +251,7 @@ function (
 	 * @private
 	 */
 	PostMessageBus.prototype._processEvent = function (oEvent) {
-		return new Promise(function (fnResolve) {
+		return new Promise(function (fnResolve, fnReject) {
 			var mData = oEvent.data;
 			var sOrigin = oEvent.origin;
 
@@ -285,9 +282,10 @@ function (
 					} else {
 						// Show dialog
 						sap.ui.require(["sap/ui/core/postmessage/confirmationDialog"], function (confirmationDialog) {
-							confirmationDialog(
-								this._getText('PostMessage.Message', [mData.data, sOrigin])
-							)
+							this._getText('PostMessage.Message', [mData.data, sOrigin])
+							.then(function(sText) {
+								return confirmationDialog(sText);
+							})
 							.then(
 								function () {
 									this.addAcceptedOrigin(sOrigin);
@@ -309,7 +307,7 @@ function (
 								}.bind(this)
 							)
 							.then(fnResolve);
-						}.bind(this));
+						}.bind(this), fnReject);
 					}
 					break;
 				}

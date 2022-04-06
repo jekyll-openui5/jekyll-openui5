@@ -1,11 +1,11 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides functionality for activity detection
-sap.ui.define(['sap/ui/ActivityDetection', 'jquery.sap.global'],
+sap.ui.define(['sap/ui/util/ActivityDetection', 'jquery.sap.global'],
 function(ActivityDetection, jQuery) {
 	"use strict";
 
@@ -14,13 +14,12 @@ function(ActivityDetection, jQuery) {
 	 * @name jQuery.sap.act
 	 * @namespace
 	 * @static
+	 * @deprecated since 1.58 use {@link module:sap/ui/util/ActivityDetection} instead
 	 */
 	jQuery.sap.act = ActivityDetection;
 
 	/**
 	 * Registers the given handler to the activity event, which is fired when an activity was detected after a certain period of inactivity.
-	 *
-	 * The Event is not fired for Internet Explorer 8.
 	 *
 	 * @param {Function} fnFunction The function to call, when an activity event occurs.
 	 * @param {Object} [oListener] The 'this' context of the handler function.

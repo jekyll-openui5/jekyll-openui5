@@ -1,19 +1,13 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 /**
  * Provides a private class <code>sap.f.semantic.SemanticTitle</code>.
  */
-sap.ui.define([
-	"jquery.sap.global",
-	"sap/m/library",
-	"./SemanticContainer"
-], function(jQuery,
-			mobileLibrary,
-			SemanticContainer) {
+sap.ui.define(["sap/m/library", "./SemanticContainer"], function(mobileLibrary, SemanticContainer) {
 	"use strict";
 
 	// shortcut for sap.m.ButtonType
@@ -210,7 +204,7 @@ sap.ui.define([
 	*
 	* @private
 	* @param {sap.f.semantic.SemanticControl} oSemanticControl
-	* @returns {sap.f.semantic.SemanticTitle}
+	* @returns {this}
 	*/
 	SemanticTitle.prototype._insertSemanticTextContent = function(oSemanticControl) {
 		var oControl = this._getControl(oSemanticControl),
@@ -220,7 +214,7 @@ sap.ui.define([
 		this._aSemanticTextActions.push(oSemanticControl);
 
 		if (bIsMainAction) {
-			this._iMainActionCount ++;
+			this._iMainActionCount++;
 			iInsertIndex = this._getSemanticTextMainActionInsertIndex();
 		} else {
 			iInsertIndex = this._getSemanticTextActionInsertIndex(oSemanticControl);
@@ -235,7 +229,7 @@ sap.ui.define([
 	*
 	* @private
 	* @param {sap.f.semantic.SemanticControl} oSemanticControl
-	* @returns {sap.f.semantic.SemanticTitle}
+	* @returns {this}
 	*/
 	SemanticTitle.prototype._removeSemanticTextContent = function(oSemanticControl) {
 		var oControl = this._getControl(oSemanticControl),
@@ -243,7 +237,7 @@ sap.ui.define([
 			bIsMainAction = this._isMainAction(oSemanticControl);
 
 		if (bIsMainAction) {
-			this._iMainActionCount --;
+			this._iMainActionCount--;
 		}
 
 		this._aSemanticTextActions.splice(iControlIndex, 1);
@@ -256,7 +250,7 @@ sap.ui.define([
 	*
 	* @private
 	* @param {sap.f.semantic.SemanticControl} oSemanticControl
-	* @returns {sap.f.semantic.SemanticTitle}
+	* @returns {this}
 	*/
 	SemanticTitle.prototype._insertSemanticIconContent = function(oSemanticControl) {
 		var oControl = this._getControl(oSemanticControl),
@@ -282,7 +276,7 @@ sap.ui.define([
 	*
 	* @private
 	* @param {sap.f.semantic.SemanticControl} oSemanticControl
-	* @returns {sap.f.semantic.SemanticTitle}
+	* @returns {this}
 	*/
 	SemanticTitle.prototype._removeSemanticIconContent = function(oSemanticControl) {
 		var oControl = this._getControl(oSemanticControl),
@@ -308,7 +302,7 @@ sap.ui.define([
 	*
 	* @private
 	* @param {sap.f.semantic.SemanticControl} oSemanticControl
-	* @returns {sap.f.semantic.SemanticTitle}
+	* @returns {this}
 	*/
 	SemanticTitle.prototype._insertSemanticShareContent = function(oSemanticControl) {
 		var oControl = this._getControl(oSemanticControl),
@@ -323,7 +317,7 @@ sap.ui.define([
 	*
 	* @private
 	* @param {sap.f.semantic.SemanticControl} oSemanticControl
-	* @returns {sap.f.semantic.SemanticTitle}
+	* @returns {this}
 	*/
 	SemanticTitle.prototype._removeSemanticShareContent = function(oSemanticControl) {
 		var oControl = this._getControl(oSemanticControl);

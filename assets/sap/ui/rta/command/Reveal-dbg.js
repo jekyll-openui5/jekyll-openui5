@@ -1,9 +1,9 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-sap.ui.define(['sap/ui/rta/command/FlexCommand'], function(FlexCommand) {
+sap.ui.define(["sap/ui/rta/command/FlexCommand"], function(FlexCommand) {
 	"use strict";
 
 	/**
@@ -12,7 +12,7 @@ sap.ui.define(['sap/ui/rta/command/FlexCommand'], function(FlexCommand) {
 	 * @class
 	 * @extends sap.ui.rta.command.FlexCommand
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @constructor
 	 * @private
 	 * @since 1.44
@@ -21,20 +21,20 @@ sap.ui.define(['sap/ui/rta/command/FlexCommand'], function(FlexCommand) {
 	 *               changed in future.
 	 */
 	var Reveal = FlexCommand.extend("sap.ui.rta.command.Reveal", {
-		metadata : {
-			library : "sap.ui.rta",
-			properties : {
-				revealedElementId : {
-					type : "string"
+		metadata: {
+			library: "sap.ui.rta",
+			properties: {
+				revealedElementId: {
+					type: "string"
 				},
-				directParent : "object"
+				directParent: "object"
 			}
 		}
 	});
 
 	Reveal.prototype._getChangeSpecificData = function() {
 		var mSpecificChangeInfo = {
-			changeType : this.getChangeType()
+			changeType: this.getChangeType()
 		};
 		if (this.getRevealedElementId()) {
 			mSpecificChangeInfo.revealedElementId = this.getRevealedElementId();
@@ -43,5 +43,4 @@ sap.ui.define(['sap/ui/rta/command/FlexCommand'], function(FlexCommand) {
 	};
 
 	return Reveal;
-
-}, /* bExport= */true);
+});

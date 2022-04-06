@@ -1,21 +1,25 @@
 /*
- * ! UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * ! OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides class sap.ui.base.ManagedObjectObserver.
 sap.ui.define([
-	'jquery.sap.global', 'sap/ui/base/Object', 'sap/ui/base/ManagedObject', 'sap/ui/base/EventProvider', 'jquery.sap.script'
-], function (jQuery, BaseObject, ManagedObject, EventProvider/*, jQuerySap1*/) {
+	'sap/ui/base/Object',
+	'sap/ui/base/ManagedObject',
+	'sap/ui/base/EventProvider',
+	"sap/base/util/array/uniqueSort",
+	'sap/base/util/deepExtend'
+], function(BaseObject, ManagedObject, EventProvider, uniqueSort, deepExtend) {
 	"use strict";
 
 	/**
 	 * Constructor for a new ManagedObjectObserver.
 	 *
 	 * @classdesc
-	 * Use the ManagedObjectObserver to get notified when properties, aggregations or associations of a
-	 * ManagedObject instance have changed.
+	 * Use the <code>ManagedObjectObserver</code> to get notified when properties, aggregations or associations of a
+	 * <code>ManagedObject</code> instance have changed.
 	 *
 	 * Use the {@link #observe} method to add instances of ManagedObject that should be observed or to enhance
 	 * the set of observed properties, aggregations etc. for an already observed instance.
@@ -103,9 +107,9 @@ sap.ui.define([
 	 *
 	 * @param {function} fnCallback Callback function for this observer, to be called whenever a change happens
 	 *
-	 * @private
 	 * @since 1.50.0
-	 * @sap-restricted sap.ui.model.base
+	 * @private
+	 * @ui5-restricted sap.ui.model.base
 	 * @constructor
 	 * @alias sap.ui.base.ManagedObjectObserver
 	 */
@@ -139,10 +143,12 @@ sap.ui.define([
 	 *     true if all events should be observed or list of the event names to observe
 	 * @param {boolean} [oConfiguration.destroy]
 	 *     true if destroy should be observed
+	 * @param {boolean} [oConfiguration.parent]
+	 *     true if an API parent change should be observed
 	 * @throws {TypeError} if the given object is not a ManagedObject and not <code>null</code> or <code>undefined</code>
 	 *
 	 * @private
-	 * @sap-restricted sap.ui.model.base
+	 * @ui5-restricted sap.ui.model.base
 	 */
 	ManagedObjectObserver.prototype.observe = function (oObject, oConfiguration) {
 		if (!(oObject instanceof ManagedObject)) {
@@ -177,10 +183,12 @@ sap.ui.define([
 	 *     true if all events should be stopped observing or list of the event names to stop observing
 	 * @param {boolean} [oConfiguration.destroy]
 	 *     true if destroy should be stopped observing
+	 * @param {boolean} [oConfiguration.parent]
+	 *     true if a parent change should be stopped observing
 	 * @throws {TypeError} if the given object is not a ManagedObject and not <code>null</code> or <code>undefined</code>
 	 *
 	 * @private
-	 * @sap-restricted sap.ui.model.base
+	 * @ui5-restricted sap.ui.model.base
 	 */
 	ManagedObjectObserver.prototype.unobserve = function (oObject, oConfiguration) {
 		if (!(oObject instanceof ManagedObject)) {
@@ -217,7 +225,7 @@ sap.ui.define([
 	 * @throws {TypeError} if the given object is not a ManagedObject and not <code>null</code> or <code>undefined</code>
 	 *
 	 * @private
-	 * @sap-restricted sap.ui.model.base
+	 * @ui5-restricted sap.ui.model.base
 	 */
 	ManagedObjectObserver.prototype.isObserved = function (oObject, oConfiguration) {
 		if (!(oObject instanceof ManagedObject)) {
@@ -233,7 +241,7 @@ sap.ui.define([
 	/**
 	 * Disconnect the observer from all objects.
 	 * @private
-	 * @sap-restricted sap.ui.model.base
+	 * @ui5-restricted sap.ui.model.base
 	 */
 	ManagedObjectObserver.prototype.disconnect = function () {
 		destroy(this);
@@ -263,7 +271,7 @@ sap.ui.define([
 	 * @param {any} vOld the old value of the property
 	 * @param {any} vNew the new value of the property
 	 * @private
-	 * @sap-restricted sap.ui.base.ManagedObject
+	 * @ui5-restricted sap.ui.base.ManagedObject
 	 */
 	Observer.propertyChange = function (oManagedObject, sName, vOld, vNew) {
 		// managed object does a propertyChange.call(this, sName, vOld, vNew)
@@ -284,7 +292,7 @@ sap.ui.define([
 	 * @param {string} sMutation "remove" or "insert"
 	 * @param {sap.ui.base.ManagedObject|sap.ui.base.ManagedObject[]} vObjects the removed or inserted object or objects array
 	 * @private
-	 * @sap-restricted sap.ui.base.ManagedObject
+	 * @ui5-restricted sap.ui.base.ManagedObject
 	 */
 	Observer.aggregationChange = function (oManagedObject, sName, sMutation, vObjects) {
 		// managed object does an aggregationChange.call(this, sName, sMutation, vObjects)
@@ -299,6 +307,32 @@ sap.ui.define([
 	};
 
 	/**
+	 * Called from sap.ui.base.ManagedObject if a parent is changed.
+	 *
+	 * @param {sap.ui.base.ManagedObject} oManagedObject Object that reports a change
+	 * @param {string} sName the name of the triggering parent aggregation
+	 * @param {string} sMutation "set" or "unset"
+	 * @param {sap.ui.base.ManagedObject} oParent the changed parent
+	 * @private
+	 * @ui5-restricted sap.ui.base.ManagedObject
+	 */
+	Observer.parentChange = function(oManagedObject, sName, sMutation, oParent) {
+		//managed object does a parent change handle this
+		handleChange("parent", oManagedObject, sName, function () {
+			return {
+				type: "parent",
+				mutation: sMutation,
+				parent: oParent
+			};
+		});
+
+		//As the change of a parent is only possible when an aggregation change is applied
+		//handle this change
+		var sParentMutation = sMutation === "unset" ? "remove" : "insert";
+		Observer.aggregationChange(oParent, sName, sParentMutation, oManagedObject);
+	};
+
+	/**
 	 * Called from sap.ui.base.ManagedObject if an association is changed.
 	 *
 	 * @param {sap.ui.base.ManagedObject} oManagedObject Object that reports a change
@@ -306,7 +340,7 @@ sap.ui.define([
 	 * @param {string} sMutation "remove" or "insert"
 	 * @param {string|string[]} vIds the removed or inserted id or list of ids
 	 * @private
-	 * @sap-restricted sap.ui.base.ManagedObject
+	 * @ui5-restricted sap.ui.base.ManagedObject
 	 */
 	Observer.associationChange = function (oManagedObject, sName, sMutation, vIds) {
 		// managed object does an associationChange.call(this, sName, sMutation, vIds)
@@ -345,7 +379,7 @@ sap.ui.define([
 	/**
 	 * Called from sap.ui.base.ManagedObject if a binding changed for a property or aggregation.
 	 *
-	 * @param {string} sName the name of the the name property or aggregation of which the binding is changed
+	 * @param {string} sName The name of the property or aggregation of which the binding is changed
 	 * @param {string} sMutation "prepared", "ready", "removed"
 	 * @param {object} oBindingInfo the binding info
 	 * @param {string} sMemberType 'aggregation' or 'property'
@@ -368,7 +402,7 @@ sap.ui.define([
 	 *
 	 * @param {sap.ui.base.ManagedObject} oManagedObject Object that reports a change
 	 * @private
-	 * @sap-restricted sap.ui.base.ManagedObject
+	 * @ui5-restricted sap.ui.base.ManagedObject
 	 */
 	Observer.objectDestroyed = function(oManagedObject) {
 		handleChange("destroy", oManagedObject, null, function () {
@@ -414,7 +448,7 @@ sap.ui.define([
 			return false;
 		}
 
-		if (sType != "destroy" && !sName) {
+		if (sType != "destroy" && sType != "parent" && !sName) {
 			return false;
 		}
 
@@ -436,7 +470,7 @@ sap.ui.define([
 			var iIndex = oTargetConfig.listeners.indexOf(oListener);
 			if (iIndex >= 0) {
 				//return the current configuration
-				var oConfiguration = jQuery.extend(true,{}, oTargetConfig.configurations[iIndex]);
+				var oConfiguration = deepExtend({}, oTargetConfig.configurations[iIndex]);
 				return oConfiguration;
 			}
 		}
@@ -471,8 +505,8 @@ sap.ui.define([
 				isSubArray(oTargetConfig.configurations[iIndex].associations, oConfiguration.associations) &&
 				isSubArray(oTargetConfig.configurations[iIndex].bindings, oConfiguration.bindings) &&
 				isSubArray(oTargetConfig.configurations[iIndex].events, oConfiguration.events) &&
-				isBooleanEqual(oTargetConfig.configurations[iIndex].destroy, oConfiguration.destroy);
-
+				isBooleanEqual(oTargetConfig.configurations[iIndex].destroy, oConfiguration.destroy) &&
+				isBooleanEqual(oTargetConfig.configurations[iIndex].parent, oConfiguration.parent);
 		}
 	}
 
@@ -551,6 +585,14 @@ sap.ui.define([
 					oCurrentConfig.destroy = oConfiguration.destroy;
 				}
 			}
+
+			if (oConfiguration.parent != null) {
+				if (bRemove) {
+					delete oCurrentConfig.parent;
+				} else {
+					oCurrentConfig.parent = oConfiguration.parent;
+				}
+			}
 		}
 		var bEventsObserved = hasObserverFor(oTarget, "events");
 
@@ -564,6 +606,7 @@ sap.ui.define([
 					!hasObserverFor(oTarget, "aggregations") &&
 					!hasObserverFor(oTarget, "associations") &&
 					!hasObserverFor(oTarget, "destroy") &&
+					!hasObserverFor(oTarget, "parent") &&
 					!hasObserverFor(oTarget, "bindings")) {
 				delete oTarget._observer;
 				delete mTargets[sId];
@@ -631,7 +674,7 @@ sap.ui.define([
 			return false;
 		}
 
-		var aUnion = jQuery.sap.unique(aFullArray.concat(aSubArray)); // merge arrays, remove duplicates
+		var aUnion = uniqueSort(aFullArray.concat(aSubArray)); // merge arrays, remove duplicates
 
 		//in case aSubArray is inside aFullArray the length did not change
 		return aFullArray.length === aUnion.length;
@@ -653,7 +696,7 @@ sap.ui.define([
 			aProperties = Object.keys(oMetadata.getAllProperties()),
 			aAggregations = Object.keys(oMetadata.getAllAggregations()),
 			aAssociations = Object.keys(oMetadata.getAllAssociations()),
-			aBindings = jQuery.sap.unique(aProperties.concat(aAggregations)),
+			aBindings = uniqueSort(aProperties.concat(aAggregations)),
 			aEvents = Object.keys(oMetadata.getAllEvents());
 
 		oConfiguration.properties = oConfiguration.properties === true ? aProperties : oConfiguration.properties;
@@ -663,6 +706,7 @@ sap.ui.define([
 		oConfiguration.bindings = oConfiguration.bindings === true ? aBindings : oConfiguration.bindings;
 		oConfiguration.events = oConfiguration.events === true ? aEvents : oConfiguration.events;
 		oConfiguration.destroy = (oConfiguration.destroy == null) ? false : oConfiguration.destroy;
+		oConfiguration.parent = (oConfiguration.parent == null) ? false : oConfiguration.parent;
 	}
 
 	return ManagedObjectObserver;

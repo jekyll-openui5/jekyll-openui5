@@ -1,4 +1,4 @@
-ace.define("ace/mode/tex_highlight_rules",["require","exports","module","ace/lib/oop","ace/lib/lang","ace/mode/text_highlight_rules"], function(require, exports, module) {
+ace.define("ace/mode/tex_highlight_rules",[], function(require, exports, module) {
 "use strict";
 
 var oop = require("../lib/oop");
@@ -77,7 +77,7 @@ oop.inherits(TexHighlightRules, TextHighlightRules);
 exports.TexHighlightRules = TexHighlightRules;
 });
 
-ace.define("ace/mode/r_highlight_rules",["require","exports","module","ace/lib/oop","ace/lib/lang","ace/mode/text_highlight_rules","ace/mode/tex_highlight_rules"], function(require, exports, module)
+ace.define("ace/mode/r_highlight_rules",[], function(require, exports, module)
 {
 
    var oop = require("../lib/oop");
@@ -235,7 +235,7 @@ ace.define("ace/mode/r_highlight_rules",["require","exports","module","ace/lib/o
    exports.RHighlightRules = RHighlightRules;
 });
 
-ace.define("ace/mode/matching_brace_outdent",["require","exports","module","ace/range"], function(require, exports, module) {
+ace.define("ace/mode/matching_brace_outdent",[], function(require, exports, module) {
 "use strict";
 
 var Range = require("../range").Range;
@@ -275,9 +275,10 @@ var MatchingBraceOutdent = function() {};
 exports.MatchingBraceOutdent = MatchingBraceOutdent;
 });
 
-ace.define("ace/mode/r",["require","exports","module","ace/range","ace/lib/oop","ace/mode/text","ace/mode/text_highlight_rules","ace/mode/r_highlight_rules","ace/mode/matching_brace_outdent"], function(require, exports, module) {
+ace.define("ace/mode/r",[], function(require, exports, module) {
    "use strict";
 
+   var unicode = require("../unicode");
    var Range = require("../range").Range;
    var oop = require("../lib/oop");
    var TextMode = require("./text").Mode;
@@ -292,10 +293,20 @@ ace.define("ace/mode/r",["require","exports","module","ace/range","ace/lib/oop",
    };
    oop.inherits(Mode, TextMode);
 
-   (function()
-   {
+   (function() {
       this.lineCommentStart = "#";
+      this.tokenRe = new RegExp("^[" + unicode.wordChars + "._]+", "g");
+
+      this.nonTokenRe = new RegExp("^(?:[^" + unicode.wordChars + "._]|\s])+", "g");
        this.$id = "ace/mode/r";
+       this.snippetFileId = "ace/snippets/r";
    }).call(Mode.prototype);
    exports.Mode = Mode;
-});
+});                (function() {
+                    ace.require(["ace/mode/r"], function(m) {
+                        if (typeof module == "object" && typeof exports == "object" && module) {
+                            module.exports = m;
+                        }
+                    });
+                })();
+            

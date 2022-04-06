@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides class sap.ui.dt.plugin.MouseSelection.
 sap.ui.define([
-	'sap/ui/dt/Plugin'
+	"sap/ui/dt/Plugin"
 ],
 function(Plugin) {
 	"use strict";
@@ -22,7 +22,7 @@ function(Plugin) {
 	 * @extends sap.ui.dt.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @private
@@ -31,16 +31,13 @@ function(Plugin) {
 	 * @experimental Since 1.30. This class is experimental and provides only limited functionality. Also the API might be changed in future.
 	 */
 	var MouseSelection = Plugin.extend("sap.ui.dt.plugin.MouseSelection", /** @lends sap.ui.dt.plugin.MouseSelection.prototype */ {
-		metadata : {
-			// ---- object ----
-
-			// ---- control specific ----
-			library : "sap.ui.dt",
-			properties : {
+		metadata: {
+			library: "sap.ui.dt",
+			properties: {
 			},
-			associations : {
+			associations: {
 			},
-			events : {
+			events: {
 			}
 		}
 	});
@@ -69,7 +66,7 @@ function(Plugin) {
 	/*
 	 * @private
 	 */
-	 MouseSelection.prototype._onClick = function(oEvent) {
+	MouseSelection.prototype._onClick = function(oEvent) {
 		this.setSelected(!this.getSelected());
 
 		oEvent.preventDefault();
@@ -77,4 +74,4 @@ function(Plugin) {
 	};
 
 	return MouseSelection;
-}, /* bExport= */ true);
+});

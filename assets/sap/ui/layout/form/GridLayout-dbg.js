@@ -1,12 +1,11 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.layout.form.GridLayout.
-sap.ui.define(['jquery.sap.global', './FormLayout', 'sap/ui/layout/library', './GridLayoutRenderer'],
-	function(jQuery, FormLayout, library, GridLayoutRenderer) {
+sap.ui.define(['sap/ui/layout/library', './FormLayout', './GridLayoutRenderer'], function(library, FormLayout, GridLayoutRenderer) {
 	"use strict";
 
 	/**
@@ -29,17 +28,21 @@ sap.ui.define(['jquery.sap.global', './FormLayout', 'sap/ui/layout/library', './
 	 * @extends sap.ui.layout.form.FormLayout
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
 	 * @since 1.16.0
+	 * @deprecated Since version 1.67.0.
+	 * as <code>sap.ui.commons</code> library is deprecated and the <code>GridLayout</code> must not be used in responsive applications.
+	 * Please use <code>ResponsiveGridLayout</code> or <code>ColumnLayout</code> instead.
 	 * @alias sap.ui.layout.form.GridLayout
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */
 	var GridLayout = FormLayout.extend("sap.ui.layout.form.GridLayout", /** @lends sap.ui.layout.form.GridLayout.prototype */ { metadata : {
 
 		library : "sap.ui.layout",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -110,7 +113,7 @@ sap.ui.define(['jquery.sap.global', './FormLayout', 'sap/ui/layout/library', './
 			return null;
 		}
 
-		var aFields = oElement.getFields();
+		var aFields = oElement.getFieldsForRendering();
 		var oNewDomRef;
 
 		var iIndex = aFields.length;
@@ -224,7 +227,7 @@ sap.ui.define(['jquery.sap.global', './FormLayout', 'sap/ui/layout/library', './
 			var oContainerData = this.getLayoutDataForElement(oContainer, "sap.ui.layout.form.GridContainerData");
 
 			if ((bSingleColumn || !oContainerData || !oContainerData.getHalfGrid()) && !this.getRenderer().checkFullSizeElement(this, oElement) ) {
-				return jQuery.sap.domById(oElement.getId());
+				return oElement.getDomRef();
 			}
 		}
 

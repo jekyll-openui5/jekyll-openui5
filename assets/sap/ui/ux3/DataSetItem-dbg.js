@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.ux3.DataSetItem.
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/Element', './library'],
-	function(jQuery, Element, library) {
+sap.ui.define(['sap/ui/core/Element', './library'],
+	function(Element, library) {
 	"use strict";
 
 
@@ -20,7 +20,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Element', './library'],
 	 * @class
 	 * DataSet Item
 	 * @extends sap.ui.core.Element
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -30,6 +30,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Element', './library'],
 	 */
 	var DataSetItem = Element.extend("sap.ui.ux3.DataSetItem", /** @lends sap.ui.ux3.DataSetItem.prototype */ { metadata : {
 
+		deprecated: true,
 		library : "sap.ui.ux3",
 		properties : {
 
@@ -101,4 +102,4 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Element', './library'],
 
 	return DataSetItem;
 
-}, /* bExport= */ true);
+});

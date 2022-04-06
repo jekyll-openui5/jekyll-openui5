@@ -1,16 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.uxap.ObjectPageLazyLoader.
 sap.ui.define([
-	'jquery.sap.global',
 	'./library',
 	'sap/ui/core/Element',
-	'sap/ui/core/StashedControlSupport'
-], function (jQuery, library, Element, StashedControlSupport) {
+	'sap/ui/core/StashedControlSupport',
+	"sap/base/assert"
+], function (library, Element, StashedControlSupport, assert) {
 	"use strict";
 
 	/**
@@ -37,7 +37,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -63,7 +63,7 @@ sap.ui.define([
 
 	LazyLoader.prototype.setParent = function (oParent) {
 		if (!(oParent === null || oParent instanceof sap.uxap.ObjectPageSubSection)) {
-			jQuery.sap.assert(false, "setParent(): oParent must be an instance of sap.uxap.ObjectPageSubSection or null");
+			assert(false, "setParent(): oParent must be an instance of sap.uxap.ObjectPageSubSection or null");
 		}
 
 		return Element.prototype.setParent.apply(this, arguments);

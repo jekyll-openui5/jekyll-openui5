@@ -1,10 +1,15 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(['sap/m/semantic/SemanticControl', 'sap/m/Button', 'sap/m/semantic/SemanticOverflowToolbarButton'], function(SemanticControl, Button, SemanticOverflowToolbarButton) {
+sap.ui.define([
+	'sap/m/semantic/SemanticControl',
+	'sap/m/Button',
+	'sap/m/semantic/SemanticOverflowToolbarButton',
+	"sap/ui/thirdparty/jquery"
+], function(SemanticControl, Button, SemanticOverflowToolbarButton, jQuery) {
 	"use strict";
 
 	/**
@@ -20,7 +25,7 @@ sap.ui.define(['sap/m/semantic/SemanticControl', 'sap/m/Button', 'sap/m/semantic
 	 * @abstract
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -46,7 +51,7 @@ sap.ui.define(['sap/m/semantic/SemanticControl', 'sap/m/Button', 'sap/m/semantic
 			},
 			events : {
 				/**
-				* See {@link sap.m.Button#press}
+				* See {@link sap.m.Button#event:press}
 				*/
 				press : {}
 			}
@@ -54,18 +59,24 @@ sap.ui.define(['sap/m/semantic/SemanticControl', 'sap/m/Button', 'sap/m/semantic
 	});
 
 	SemanticButton.prototype._getControl = function() {
+		var oControl,
+			oClass,
+			oNewInstance,
+			oConfig = this._getConfiguration();
 
-		var oControl = this.getAggregation('_control');
+		if (!oConfig) {
+			return null;
+		}
+
+		oControl = this.getAggregation('_control');
+
 		if (!oControl) {
+			oClass = this._getClass(oConfig);
+			oNewInstance = this._createInstance(oClass);
+			oNewInstance.applySettings(oConfig.getSettings());
 
-			var oClass = this._getConfiguration()
-				&& this._getConfiguration().constraints === "IconOnly" ? SemanticOverflowToolbarButton : Button;
-
-			var oNewInstance = this._createInstance(oClass);
-
-			oNewInstance.applySettings(this._getConfiguration().getSettings());
-			if (typeof this._getConfiguration().getEventDelegates === "function") {
-				oNewInstance.addEventDelegate(this._getConfiguration().getEventDelegates(oNewInstance));
+			if (typeof oConfig.getEventDelegates === "function") {
+				oNewInstance.addEventDelegate(oConfig.getEventDelegates(oNewInstance));
 			}
 
 			this.setAggregation('_control', oNewInstance, true); // don't invalidate - this is only called before/during rendering, where invalidation would lead to double rendering,  or when invalidation anyway happens
@@ -74,6 +85,10 @@ sap.ui.define(['sap/m/semantic/SemanticControl', 'sap/m/Button', 'sap/m/semantic
 		}
 
 		return oControl;
+	};
+
+	SemanticButton.prototype._getClass = function(oConfig) {
+		return oConfig && oConfig.constraints === "IconOnly" ? SemanticOverflowToolbarButton : Button;
 	};
 
 	SemanticButton.prototype._createInstance = function(oClass) {

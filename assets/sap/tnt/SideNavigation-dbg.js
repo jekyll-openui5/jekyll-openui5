@@ -1,21 +1,19 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.t.SideNavigation.
 sap.ui.define([
-    'jquery.sap.global',
-    './library',
-    'sap/ui/core/Control',
-    'sap/ui/core/ResizeHandler',
-    'sap/ui/core/Icon',
-    'sap/ui/core/delegate/ScrollEnablement',
-    "./SideNavigationRenderer"
+	'./library',
+	'sap/ui/core/Control',
+	'sap/ui/core/ResizeHandler',
+	'sap/ui/core/Icon',
+	'sap/ui/core/delegate/ScrollEnablement',
+	"./SideNavigationRenderer"
 ],
 	function(
-	    jQuery,
 		library,
 		Control,
 		ResizeHandler,
@@ -42,7 +40,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 *
 		 * @constructor
 		 * @public
@@ -58,7 +56,19 @@ sap.ui.define([
 					/**
 					 * Specifies if the control is expanded.
 					 */
-					expanded: {type: 'boolean', group: 'Misc', defaultValue: true}
+					expanded: {type: 'boolean', group: 'Misc', defaultValue: true},
+					/**
+					 * Specifies the currently selected key.
+					 *
+					 * @since 1.62.0
+					 */
+					selectedKey: {type: "string", group: "Data"},
+					/**
+					 * Specifies an optional aria-label that can be used by the screen readers.
+					 *
+                                         * @since 1.96.2
+					 */
+					ariaLabel: {type : "string", group : "Accessibility", defaultValue : null}
 				},
 				defaultAggregation: "item",
 				aggregations: {
@@ -83,7 +93,7 @@ sap.ui.define([
 					 */
 					_bottomArrowControl: {type: "sap.ui.core.Icon", multiple: false, visibility: "hidden"}
 				},
-				associations : {
+				associations: {
 					/**
 					 * The selected <code>NavigationListItem</code>.
 					 *
@@ -118,12 +128,12 @@ sap.ui.define([
 			this.data('sap-ui-fastnavgroup', 'true', true);
 		};
 
-		SideNavigation.prototype.setAggregation = function (aggregationName, object, suppressInvalidate) {
+		SideNavigation.prototype.setAggregation = function (aggregationName, object) {
 			if (object && object.attachItemSelect) {
 				object.attachItemSelect(this._itemSelectionHandler.bind(this));
 			}
 
-			return sap.ui.base.ManagedObject.prototype.setAggregation.apply(this, arguments);
+			return Control.prototype.setAggregation.apply(this, arguments);
 		};
 
 		/**
@@ -131,7 +141,7 @@ sap.ui.define([
 		 *
 		 * @public
 		 * @param {boolean} isExpanded Indication if the SideNavigation is expanded.
-		 * @returns {sap.tnt.SideNavigation} this SideNavigation reference for chaining.
+		 * @returns {this} this SideNavigation reference for chaining.
 		 */
 		SideNavigation.prototype.setExpanded = function (isExpanded) {
 
@@ -139,15 +149,27 @@ sap.ui.define([
 				return this;
 			}
 
-			this.setProperty('expanded', isExpanded, true);
+			var that = this,
+				$this = this.$(),
+				itemAggregation = that.getAggregation('item'),
+				fixedItemAggregation = that.getAggregation('fixedItem'),
+				width;
 
 			if (!this.getDomRef()) {
+				this.setProperty('expanded', isExpanded);
+
+				if (itemAggregation) {
+					itemAggregation.setExpanded(isExpanded);
+				}
+
+				if (fixedItemAggregation) {
+					fixedItemAggregation.setExpanded(isExpanded);
+				}
+
 				return this;
 			}
 
-			var that = this,
-				$this = this.$(),
-				width;
+			this.setProperty('expanded', isExpanded, true);
 
 			if (that._hasActiveAnimation) {
 				that._finishAnimation(!isExpanded);
@@ -155,15 +177,18 @@ sap.ui.define([
 			}
 
 			if (isExpanded) {
-				that.$().toggleClass('sapTntSideNavigationNotExpanded', !isExpanded);
+				$this.toggleClass('sapTntSideNavigationNotExpanded', !isExpanded);
 
-				if (that.getAggregation('item')) {
-					that.getAggregation('item').setExpanded(isExpanded);
+				if (itemAggregation) {
+					itemAggregation.setExpanded(isExpanded);
 				}
 
-				if (that.getAggregation('fixedItem')) {
-					that.getAggregation('fixedItem').setExpanded(isExpanded);
+				if (fixedItemAggregation) {
+					fixedItemAggregation.setExpanded(isExpanded);
 				}
+			} else {
+				// hide scroller during collapsing animation
+				this._scroller.setVertical(false);
 			}
 
 			that._hasActiveAnimation = true;
@@ -203,22 +228,29 @@ sap.ui.define([
 				if (this.getAggregation('fixedItem')) {
 					this.getAggregation('fixedItem').setExpanded(isExpanded);
 				}
+
+				// enable back the scroller after collapsing animation
+				this._scroller.setVertical(true);
 			}
 
 			this.$().css('width', '');
 			this._hasActiveAnimation = false;
 
-			this._toggleArrows();
+			// wait for any re-rendering after the animation, before calling toggle arrows
+			setTimeout(this._toggleArrows.bind(this), 0);
 		};
 
 		/**
 		 * @private
 		 */
 		SideNavigation.prototype.onBeforeRendering = function () {
-			var selectedItem = this.getSelectedItem();
+			var selectedItem = this.getSelectedItem(),
+				selectedKey = this.getSelectedKey();
 
-			if (selectedItem) {
-			    this.setSelectedItem(selectedItem, true);
+			if (selectedKey) {
+				this.setSelectedKey(selectedKey);
+			} else if (selectedItem) {
+				this.setSelectedItem(selectedItem);
 			}
 
 			this._deregisterControl();
@@ -233,23 +265,52 @@ sap.ui.define([
 		};
 
 		/**
+		 * Sets the selected item based on a key.
+		 * @public
+		 * @param {string} selectedKey The key of the item to be selected
+		 * @return {this} this pointer for chaining
+		 */
+		SideNavigation.prototype.setSelectedKey = function (selectedKey) {
+
+			var selectedItem,
+				navigationList = this.getItem(),
+				fixedNavigationList = this.getFixedItem();
+
+			if (selectedKey && navigationList) {
+				selectedItem = navigationList._findItemByKey(selectedKey);
+
+				if (!selectedItem && fixedNavigationList) {
+					selectedItem = fixedNavigationList._findItemByKey(selectedKey);
+				}
+			}
+
+			if (selectedItem) {
+				this.setSelectedItem(selectedItem);
+			}
+
+			this.setProperty('selectedKey', selectedKey, true);
+
+			return this;
+		};
+
+		/**
 		 * Sets the association for selectedItem
 		 * @public
 		 * @param {string|sap.tnt.NavigationListItem} selectedItem The control to be set as selected
-		 * @param {boolean} suppressInvalidate If true, the managed object's invalidate method is not called
 		 * @return {sap.tnt.SideNavigation|null} The <code>selectedItem</code> association
 		 */
-		SideNavigation.prototype.setSelectedItem = function (selectedItem, suppressInvalidate) {
+		SideNavigation.prototype.setSelectedItem = function (selectedItem) {
 			var navigationList = this.getAggregation('item');
 			var fixedNavigationList = this.getAggregation('fixedItem');
 			var listItemToSelect;
+			var selectedKey;
 
 			if (!selectedItem) {
-				if (navigationList.setSelectedItem) {
-					navigationList.setSelectedItem(null, true);
+				if (navigationList) {
+					navigationList.setSelectedItem(null);
 				}
-				if (fixedNavigationList.setSelectedItem) {
-					fixedNavigationList.setSelectedItem(null, true);
+				if (fixedNavigationList) {
+					fixedNavigationList.setSelectedItem(null);
 				}
 			}
 
@@ -259,24 +320,27 @@ sap.ui.define([
 				listItemToSelect = selectedItem;
 			}
 
+			selectedKey = listItemToSelect ? listItemToSelect._getUniqueKey() : '';
+			this.setProperty('selectedKey', selectedKey, true);
+
 			var selectedInFlexibleList = listItemToSelect && listItemToSelect.getNavigationList && listItemToSelect.getNavigationList() === navigationList;
 			var selectedInFixedList = listItemToSelect && listItemToSelect.getNavigationList && listItemToSelect.getNavigationList() === fixedNavigationList;
 
 			if (selectedInFlexibleList) {
-				navigationList.setSelectedItem(listItemToSelect, suppressInvalidate);
+				navigationList.setSelectedItem(listItemToSelect);
 				if (fixedNavigationList) {
-					fixedNavigationList.setSelectedItem(null, true);
+					fixedNavigationList.setSelectedKey(null);
 				}
 			}
 
 			if (selectedInFixedList) {
-				fixedNavigationList.setSelectedItem(listItemToSelect, suppressInvalidate);
-				navigationList.setSelectedItem(null, true);
+				fixedNavigationList.setSelectedItem(listItemToSelect);
+				if (navigationList) {
+					navigationList.setSelectedKey(null);
+				}
 			}
 
-
-
-			return sap.ui.core.Control.prototype.setAssociation.call(this, 'selectedItem', listItemToSelect, true);
+			return Control.prototype.setAssociation.call(this, 'selectedItem', listItemToSelect, true);
 		};
 
 		/**
@@ -298,20 +362,8 @@ sap.ui.define([
 		 * @private
 		 */
 		SideNavigation.prototype._itemSelectionHandler = function (event) {
-			var listId = event.getSource().getId();
-			var itemAggregation = this.getAggregation('item');
-			var fixedItemAggregation = this.getAggregation('fixedItem');
 			var item = event.getParameter('item');
-
-			if (itemAggregation && fixedItemAggregation && listId === itemAggregation.getId()) {
-				fixedItemAggregation.setSelectedItem(null);
-			}
-
-			if (itemAggregation && fixedItemAggregation && listId === fixedItemAggregation.getId()) {
-				itemAggregation.setSelectedItem(null);
-			}
-
-			sap.ui.core.Control.prototype.setAssociation.call(this, 'selectedItem', item, true);
+			this.setSelectedItem(item);
 
 			this.fireItemSelect({
 				item: item
@@ -406,7 +458,7 @@ sap.ui.define([
 		SideNavigation.prototype._arrowPress = function (event) {
 			event.preventDefault();
 
-			var source = document.getElementById(event.oSource.sId);
+			var source = event.getSource().getDomRef();
 			var isDirectionForward = source.classList.contains('sapTntSideNavigationScrollIconDown') ? true : false;
 
 			var $container = this.$('Flexible');
@@ -417,5 +469,5 @@ sap.ui.define([
 
 		return SideNavigation;
 
-	}, /* bExport= */ true
+	}
 );

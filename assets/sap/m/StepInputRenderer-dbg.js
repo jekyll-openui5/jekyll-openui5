@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([], function () {
@@ -10,35 +10,33 @@ sap.ui.define([], function () {
 	 * <code>StepInput renderer</code>
 	 * @namespace
 	 */
-	var StepInputRenderer = {};
+	var StepInputRenderer = {
+		apiVersion: 2
+	};
 
+	StepInputRenderer.render = function (oRm, oControl) {
+		var oInput = oControl._getInput(),
+			sWidth = oControl.getWidth(),
+			bEnabled = oControl.getEnabled(),
+			bEditable = oControl.getEditable(),
+			sValueState = oControl.getValueState();
 
-		StepInputRenderer.render = function (oRm, oControl) {
-			var oInput = oControl._getInput(),
-				sWidth = oControl.getWidth(),
-				bEnabled = oControl.getEnabled(),
-				bEditable = oControl.getEditable();
+		oRm.openStart("div", oControl);
 
-			oRm.write("<div ");
-			if (bEnabled && bEditable) {
-				oRm.write("tabindex='-1'");
-			}
+		oRm.style("width", sWidth);
+		oRm.class("sapMStepInput");
+		oRm.class("sapMStepInput-CTX");
+		!bEnabled && oRm.class("sapMStepInputReadOnly");
+		!bEditable && oRm.class("sapMStepInputNotEditable");
+		if (sValueState === "Error" || sValueState === "Warning") {
+			oRm.class("sapMStepInput" + sValueState);
+		}
+		oRm.openEnd();
 
-			oRm.addStyle("width", sWidth);
-			oRm.writeStyles();
-			oRm.writeControlData(oControl);
-			oRm.writeAccessibilityState(oControl);
-			oRm.addClass("sapMStepInput");
-			oRm.addClass("sapMStepInput-CTX");
-			!bEnabled && oRm.addClass("sapMStepInputReadOnly");
-			!bEditable && oRm.addClass("sapMStepInputNotEditable");
-			oRm.writeClasses();
-			oRm.write(">");
+		oRm.renderControl(oInput);
 
-			oRm.renderControl(oInput);
-
-			oRm.write("</div>");
-		};
+		oRm.close("div");
+	};
 
 	return StepInputRenderer;
 

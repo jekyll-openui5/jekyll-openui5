@@ -1,19 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.m.ToggleButton.
 sap.ui.define([
-	'jquery.sap.global',
 	'./Button',
 	'./library',
 	'sap/ui/core/EnabledPropagator',
 	'./ToggleButtonRenderer',
-	'jquery.sap.keycodes'
+	"sap/ui/events/KeyCodes"
 ],
-	function(jQuery, Button, library, EnabledPropagator, ToggleButtonRenderer) {
+	function(Button, library, EnabledPropagator, ToggleButtonRenderer, KeyCodes) {
 	"use strict";
 
 
@@ -33,7 +32,7 @@ sap.ui.define([
 	 * @extends sap.m.Button
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -51,6 +50,20 @@ sap.ui.define([
 			 * The property is “true” when the control is toggled. The default state of this property is "false".
 			 */
 			pressed : {type : "boolean", group : "Data", defaultValue : false}
+		},
+		events: {
+			/**
+			 * Fired when the user clicks or taps on the control.
+			 */
+			press: {
+				parameters: {
+
+					/**
+					 * The current pressed state of the control.
+					 */
+					pressed: { type: "boolean" }
+				}
+			}
 		}
 	}});
 
@@ -74,7 +87,7 @@ sap.ui.define([
 	ToggleButton.prototype.setPressed = function(bPressed) {
 		bPressed = !!bPressed;
 		if (bPressed != this.getPressed()) {
-			this.setProperty("pressed", bPressed, true);
+			this.setProperty("pressed", bPressed);
 			this.$().attr("aria-pressed", bPressed);
 			this.$("inner").toggleClass("sapMToggleBtnPressed",bPressed && !this._isUnstyled());
 		}
@@ -88,7 +101,7 @@ sap.ui.define([
 	 */
 	ToggleButton.prototype.onkeydown = function(oEvent) {
 
-		if (oEvent.which === jQuery.sap.KeyCodes.SPACE || oEvent.which === jQuery.sap.KeyCodes.ENTER) {
+		if (oEvent.which === KeyCodes.ENTER) {
 			this.ontap(oEvent);
 		}
 	};
@@ -98,14 +111,18 @@ sap.ui.define([
 	 * @param {jQuery.Event} oEvent The fired event
 	 */
 	ToggleButton.prototype.onkeyup = function(oEvent) {
-		if (oEvent.which === jQuery.sap.KeyCodes.SPACE || oEvent.which === jQuery.sap.KeyCodes.ENTER) {
+		if (oEvent.which === KeyCodes.SPACE || oEvent.which === KeyCodes.ENTER) {
 			oEvent.setMarked();
+		}
+
+		if (oEvent.which === KeyCodes.SPACE) {
+			this.ontap(oEvent);
 		}
 	};
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
-	 * @returns {Object} Current accessibility state of the control.
+	 * @returns {object} Current accessibility state of the control.
 	 * @protected
 	 */
 	ToggleButton.prototype.getAccessibilityInfo = function() {

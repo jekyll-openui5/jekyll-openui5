@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -13,22 +13,23 @@
  * where CONTROL is a camel-cased version of the getMetadata().getName() value, f.e. "sap.m.Button" becomes "sapMButton"
  */
 
-sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata', './OverflowToolbarButton', './OverflowToolbarToggleButton', './ToggleButton', './Button', 'sap/m/library'],
-	function(jQuery, Metadata, OverflowToolbarButton, OverflowToolbarToggleButton, ToggleButton, Button, library) {
+sap.ui.define(['sap/ui/base/Object', './OverflowToolbarButton', './OverflowToolbarToggleButton', './ToggleButton', './Button', 'sap/m/library', "sap/base/Log"],
+	function(BaseObject, OverflowToolbarButton, OverflowToolbarToggleButton, ToggleButton, Button, library, Log) {
 		"use strict";
-
-		// shortcut for sap.m.SelectType
-		var SelectType = library.SelectType;
 
 		// shortcut for sap.m.ButtonType
 		var ButtonType = library.ButtonType;
 
-		var OverflowToolbarAssociativePopoverControls = Metadata.createClass("sap.m._overflowToolbarHelpers.OverflowToolbarAssociativePopoverControls", {
+		var OverflowToolbarAssociativePopoverControls = BaseObject.extend("sap.m._overflowToolbarHelpers.OverflowToolbarAssociativePopoverControls", {
 			/**
 			 * @private
 			 */
 			constructor: function() {
 				this._mControlsCache = {};
+			},
+
+			getInterface: function() {
+				return this; // no facade
 			}
 		});
 
@@ -44,13 +45,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata', './OverflowToolbarBu
 				oControl.setProperty("type", ButtonType.Transparent, true);
 			}
 
-			// Set some css classes to apply the proper paddings in cases of buttons with/without icons
-			if (oControl.getIcon()) {
-				oControl.addStyleClass("sapMOTAPButtonWithIcon");
-			} else {
-				oControl.addStyleClass("sapMOTAPButtonNoIcon");
-			}
-
 			oControl.attachEvent("_change", this._onSapMButtonUpdated, this);
 		};
 
@@ -60,9 +54,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata', './OverflowToolbarBu
 			if (oControl.getType() !== oPrevState.buttonType) {
 				oControl.setProperty("type", oPrevState.buttonType, true);
 			}
-
-			oControl.removeStyleClass("sapMOTAPButtonNoIcon");
-			oControl.removeStyleClass("sapMOTAPButtonWithIcon");
 
 			oControl.detachEvent("_change", this._onSapMButtonUpdated, this);
 		};
@@ -115,36 +106,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata', './OverflowToolbarBu
 			this._postProcessSapMToggleButton(oControl);
 		};
 
-
-		// SegmentedButton - switch to/from select mode
-		OverflowToolbarAssociativePopoverControls.prototype._preProcessSapMSegmentedButton = function(oControl) {
-			oControl._toSelectMode();
-		};
-
-		OverflowToolbarAssociativePopoverControls.prototype._postProcessSapMSegmentedButton = function(oControl) {
-			oControl._toNormalMode();
-		};
-
-		// Select - turn off icon only mode while in the popover
-		OverflowToolbarAssociativePopoverControls.prototype._preProcessSapMSelect = function(oControl) {
-			this._mControlsCache[oControl.getId()] = {
-				selectType: oControl.getType()
-			};
-
-			if (oControl.getType() !== SelectType.Default) {
-				oControl.setProperty("type", SelectType.Default, true);
-			}
-		};
-
-		OverflowToolbarAssociativePopoverControls.prototype._postProcessSapMSelect = function(oControl) {
-			var oPrevState = this._mControlsCache[oControl.getId()];
-
-
-			if (oControl.getType() !== oPrevState.selectType) {
-				oControl.setProperty("type", oPrevState.selectType, true);
-			}
-		};
-
 		/******************************   STATIC properties and methods   ****************************/
 
 		/**
@@ -158,7 +119,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata', './OverflowToolbarBu
 			"sap.m.Button": {
 				canOverflow: true,
 				listenForEvents: ["press"],
-				noInvalidationProps: ["enabled", "type"]
+				noInvalidationProps: ["enabled"]
 			},
 			"sap.m.MenuButton": {
 				canOverflow: true,
@@ -185,25 +146,15 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata', './OverflowToolbarBu
 				listenForEvents: ["press"],
 				noInvalidationProps: ["enabled", "pressed"]
 			},
-			"sap.m.Select": {
-				canOverflow: true,
-				listenForEvents: ["change"],
-				noInvalidationProps: ["enabled", "selectedKey"]
-			},
 			"sap.m.ComboBox": {
 				canOverflow: true,
 				listenForEvents: [],
-				noInvalidationProps: ["enabled", "value", "selectedItemId", "selectedKey"]
+				noInvalidationProps: ["enabled", "value", "selectedItemId", "selectedKey", "open"]
 			},
 			"sap.m.SearchField": {
 				canOverflow: true,
 				listenForEvents: ["search"],
 				noInvalidationProps: ["enabled", "value", "selectOnFocus"]
-			},
-			"sap.m.SegmentedButton": {
-				canOverflow: true,
-				listenForEvents: ["select"],
-				noInvalidationProps: ["enabled", "selectedKey"]
 			},
 			"sap.m.Input": {
 				canOverflow: true,
@@ -269,13 +220,13 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata', './OverflowToolbarBu
 			// First check if the control's class implements the sap.m.IOverflowToolbarContent interface
 			if (oControl.getMetadata().getInterfaces().indexOf("sap.m.IOverflowToolbarContent") !== -1) {
 				if (typeof oControl.getOverflowToolbarConfig !== "function") {
-					jQuery.sap.log.error("Required method getOverflowToolbarConfig not implemented by: " + oControl.getMetadata().getName());
+					Log.error("Required method getOverflowToolbarConfig not implemented by: " + oControl.getMetadata().getName());
 					return;
 				}
 
 				oConfig = oControl.getOverflowToolbarConfig();
 				if (typeof oConfig !== "object") {
-					jQuery.sap.log.error("Method getOverflowToolbarConfig implemented, but does not return an object in: " + oControl.getMetadata().getName());
+					Log.error("Method getOverflowToolbarConfig implemented, but does not return an object in: " + oControl.getMetadata().getName());
 					return;
 				}
 
@@ -347,4 +298,4 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata', './OverflowToolbarBu
 		}
 
 		return OverflowToolbarAssociativePopoverControls;
-	}, /* bExport= */ false);
+	});

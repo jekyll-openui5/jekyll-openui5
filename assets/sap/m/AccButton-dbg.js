@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -21,7 +21,7 @@ sap.ui.define(['./Button','./AccButtonRenderer'],
 	 * @extends sap.m.Button
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @private
@@ -33,7 +33,8 @@ sap.ui.define(['./Button','./AccButtonRenderer'],
 			library : "sap.m",
 			properties : {
 				"tabIndex": {type : "string", defaultValue : null, bindable : "bindable"},
-				"ariaHidden": {type : "string", defaultValue : null, bindable : "bindable"}
+				"ariaHidden": {type : "string", defaultValue : null, bindable : "bindable"},
+				"ariaHaspopup": {type : "string", defaultValue : null, bindable : "bindable"}
 			}
 		}
 	});

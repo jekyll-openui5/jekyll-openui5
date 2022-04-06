@@ -1,16 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	"jquery.sap.global",
 	"sap/uxap/library",
 	"sap/ui/core/UIComponent",
 	"sap/ui/core/library",
+	"sap/base/Log",
 	"sap/ui/core/Component"
-], function (jQuery, library, UIComponent, coreLibrary) {
+], function (library, UIComponent, coreLibrary, Log) {
 	"use strict";
 
 	// shortcut for sap.ui.core.mvc.ViewType
@@ -52,7 +52,7 @@ sap.ui.define([
 					this._oViewConfig.type = ViewType.XML;
 					break;
 				default:
-					jQuery.sap.log.error("UxAPComponent :: missing bootstrap information. Expecting one of the following: JsonURL, JsonModel and FacetsAnnotation");
+					Log.error("UxAPComponent :: missing bootstrap information. Expecting one of the following: JsonURL, JsonModel and FacetsAnnotation");
 			}
 			//create the UIComponent
 			UIComponent.prototype.init.call(this);

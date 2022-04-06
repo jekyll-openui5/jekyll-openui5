@@ -1,25 +1,27 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.ux3.DataSetSimpleView.
 sap.ui.define([
-	'jquery.sap.global',
+	'sap/ui/thirdparty/jquery',
 	'sap/ui/core/Control',
 	'sap/ui/core/ResizeHandler',
 	'./library',
-	"./DataSetSimpleViewRenderer",
-	'jquery.sap.script'
+	'./DataSetSimpleViewRenderer',
+	'sap/base/Log',
+	"sap/ui/model/ChangeReason"
 ],
 	function(
 		jQuery,
 		Control,
 		ResizeHandler,
 		library,
-		DataSetSimpleViewRenderer
-		/* jQuerySap */
+		DataSetSimpleViewRenderer,
+		Log,
+		ChangeReason
 	) {
 	"use strict";
 
@@ -35,7 +37,7 @@ sap.ui.define([
 	 * DataSetSimpleView provides a simple view example for DataSet usage.
 	 * @extends sap.ui.core.Control
 	 * @implements sap.ui.ux3.DataSetView
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -45,6 +47,7 @@ sap.ui.define([
 	 */
 	var DataSetSimpleView = Control.extend("sap.ui.ux3.DataSetSimpleView", /** @lends sap.ui.ux3.DataSetSimpleView.prototype */ { metadata : {
 
+		deprecated: true,
 		interfaces : [
 			"sap.ui.ux3.DataSetView"
 		],
@@ -122,10 +125,6 @@ sap.ui.define([
 	}});
 
 
-	///**
-	// * This file defines behavior for the control,
-	// */
-
 	/**
 	 * Initialization of DataSetSimpleView
 	 *
@@ -199,7 +198,7 @@ sap.ui.define([
 	 * @protected
 	 */
 	DataSetSimpleView.prototype.isItemSelected = function(oItem) {
-		var iIndex = jQuery.inArray(oItem,this.items);
+		var iIndex = this.items.indexOf(oItem);
 		if (iIndex == -1) {
 			return false;
 		}
@@ -257,7 +256,7 @@ sap.ui.define([
 						/*eslint-disable no-loop-func */
 						onAfterRendering: function() {
 							this.calculateItemCounts();
-							this.getParent().updateItems(sap.ui.model.ChangeReason.Change);
+							this.getParent().updateItems(ChangeReason.Change);
 							template.removeDelegate(oDelegate);
 						}
 						/*eslint-enable no-loop-func */
@@ -302,10 +301,10 @@ sap.ui.define([
 			that = this;
 
 		var fnScroll = function(oEvent) {
-			that.getParent().updateItems(sap.ui.model.ChangeReason.Change);
+			that.getParent().updateItems(ChangeReason.Change);
 		};
 		if (typeof $scrollArea === 'string') {
-			$scrollArea = jQuery.sap.byId($scrollArea);
+			$scrollArea = jQuery(document.getElementById($scrollArea));
 		}
 		if (!$scrollArea) {
 			$scrollArea = this.$();
@@ -341,7 +340,7 @@ sap.ui.define([
 			return iAppendItems;
 		}
 		if (typeof $scrollArea === 'string') {
-			$scrollArea = jQuery.sap.byId($scrollArea);
+			$scrollArea = jQuery(document.getElementById($scrollArea));
 		}
 		if (!$scrollArea) {
 			$scrollArea = this.$();
@@ -394,6 +393,7 @@ sap.ui.define([
 	DataSetSimpleView.prototype.setInitialItemCount = function(iValue) {
 		this.setProperty("initialItemCount", iValue);
 		this._bUsePagination = (iValue != 0);
+		return this;
 	};
 
 	/**
@@ -427,7 +427,7 @@ sap.ui.define([
 	DataSetSimpleView.prototype.onThemeChanged = function(){
 		if (this._bRendered) {
 			this.calculateItemCounts();
-			this.getParent().updateItems(sap.ui.model.ChangeReason.Change);
+			this.getParent().updateItems(ChangeReason.Change);
 		}
 	};
 
@@ -453,7 +453,7 @@ sap.ui.define([
 		}
 		if (this._bUsePagination && this.items.length > 0) {
 			this.calculateItemCounts();
-			this.getParent().updateItems(sap.ui.model.ChangeReason.Change);
+			this.getParent().updateItems(ChangeReason.Change);
 		}
 	};
 
@@ -463,6 +463,7 @@ sap.ui.define([
 		if (this.getParent()) {
 			this.getParent().updateItems();
 		}
+		return this;
 	};
 
 	/**
@@ -523,12 +524,13 @@ sap.ui.define([
 	 */
 	DataSetSimpleView.prototype.setScrollArea = function(aScrollArea, bSupress) {
 		if (typeof aScrollArea !== 'string' && !(aScrollArea instanceof jQuery)) {
-			jQuery.sap.log.error('You can only pass a string (ID of scroll area DOM) or a jQuery object as scrollarea');
+			Log.error('You can only pass a string (ID of scroll area DOM) or a jQuery object as scrollarea');
 		}
 		this.setProperty('scrollArea', aScrollArea, bSupress);
+		return this;
 	};
 
 
 	return DataSetSimpleView;
 
-}, /* bExport= */ true);
+});

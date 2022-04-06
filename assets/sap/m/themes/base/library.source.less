@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -8,10 +8,12 @@
 @import "../../../../sap/ui/core/themes/base/global.less";
 @import "shared.less";
 
+@import "AbstractContainer.less";
 @import "ActionListItem.less";
 @import "ActionSelect.less";
 @import "ActionSheet.less";
 @import "App.less";
+@import "Avatar.less";
 @import "Bar.less";
 @import "BarBase.less";
 @import "Breadcrumbs.less";
@@ -20,15 +22,17 @@
 @import "Button.less";
 @import "Carousel.less";
 @import "CheckBox.less";
-@import "ColumnHeader.less";
 @import "ColumnListItem.less";
 @import "ColorPalette.less";
 @import "CustomTile.less";
 @import "DateRangeSelection.less";
+@import "DatePicker.less";
 @import "DateTimePicker.less";
 @import "Dialog.less";
 @import "DisplayListItem.less";
 @import "DraftIndicator.less";
+@import "DynamicDateRange.less";
+@import "ExpandableText.less";
 @import "MessagePage.less";
 @import "FacetFilter.less";
 @import "FacetFilterItem.less";
@@ -38,6 +42,7 @@
 @import "FeedListItem.less";
 @import "FlexBox.less";
 @import "FormattedText.less";
+@import "GenericTag.less";
 @import "GenericTile.less";
 @import "GroupHeaderListItem.less";
 @import "HeaderContainer.less";
@@ -90,6 +95,9 @@
 @import "P13nColumnsPanel.less";
 @import "P13nConditionPanel.less";
 @import "P13nDialog.less";
+@import "p13n.Container.less";
+@import "p13n.QueryPanel.less";
+@import "p13n.SelectionPanel.less";
 @import "P13nFilterPanel.less";
 @import "P13nSortPanel.less";
 @import "Page.less";
@@ -97,6 +105,7 @@
 @import "Panel.less";
 @import "PDFViewer.less";
 @import "PlanningCalendar.less";
+@import "PlanningCalendarHeader.less";
 @import "PlanningCalendarLegend.less";
 @import "Popover.less";
 @import "ProgressIndicator.less";
@@ -106,6 +115,7 @@
 @import "RadioButtonGroup.less";
 @import "RangeSlider.less";
 @import "RatingIndicator.less";
+@import "ScrollBar.less";
 @import "ScrollContainer.less";
 @import "SearchField.less";
 @import "SegmentedButton.less";
@@ -115,7 +125,13 @@
 @import "SelectionDetails.less";
 @import "SelectionDetailsItem.less";
 @import "SemanticPage.less";
+@import "SimpleFixFlex.less";
+@import "SuggestionsPopover.less";
+@import "ValueStateHeader.less";
 @import "Shell.less";
+@import "SinglePlanningCalendar.less";
+@import "SinglePlanningCalendarGrid.less";
+@import "SinglePlanningCalendarMonthGrid.less";
 @import "Slider.less";
 @import "SliderTooltip.less";
 @import "SliderTooltipContainer.less";
@@ -140,6 +156,9 @@
 @import "TileContent.less";
 @import "TileContainer.less";
 @import "TimePicker.less";
+@import "TimePickerInputs.less";
+@import "TimePickerClock.less";
+@import "TimePickerClocks.less";
 @import "TimePickerSliders.less";
 @import "Title.less";
 @import "ToggleButton.less";
@@ -150,9 +169,15 @@
 @import "ToolbarSpacer.less";
 @import "TreeItemBase.less";
 @import "UploadCollection.less";
+@import "UploadSet.less";
 @import "ValueStateMessage.less";
 @import "ViewSettingsDialog.less";
+@import "WheelSlider.less";
+@import "WheelSliderContainer.less";
 @import "Wizard.less";
 @import "WizardProgressNavigator.less";
 @import "WizardStep.less";
-@import "ViewSettingsPopover.less";
+
+/* import plugin less files */
+@import "ColumnResizer.less";
+@import "PasteProvider.less";

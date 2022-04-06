@@ -1,13 +1,20 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
 	"sap/ui/support/library",
+	"sap/ui/support/supportRules/Storage",
+	"sap/ui/support/supportRules/util/EvalUtils",
 	"sap/ui/model/json/JSONModel"
-], function (library, JSONModel) {
+], function (
+	library,
+	Storage,
+	EvalUtils,
+	JSONModel
+) {
 	"use strict";
 
 	var Audiences = library.Audiences,
@@ -80,7 +87,7 @@ sap.ui.define([
 		executionScopeTitle: "Execution scope",
 		lastAnalysisElapsedTime: "",
 		analysisDurationTitle: "Last analysis duration",
-		costants: "",
+		constants: "",
 		executionScopeComponents: [],
 		persistingSettings: false,
 		loadingAdditionalRuleSets: false,
@@ -88,10 +95,27 @@ sap.ui.define([
 		selectedRules: true,
 		filteredIssues: null,
 		issuesCount: 0,
+		selectedRulesCount: 0,
 		visibleRowCount: 5,
 		supportAssistantOrigin: "",
 		supportAssistantVersion: "",
-		initialRulesLoading: true
+		initialRulesLoading: true,
+		selectionPresets: [
+			{
+				id: "MySelectionPreset",
+				title: "My Selection",
+				description: "My Current/Last Selection",
+				isMySelection: true,
+				selected: true,
+				disableDelete: true
+			}
+		],
+		customPresets: [
+			// presets added by the user via import
+		],
+		selectionPresetsCurrent: null,
+		tempRulesDisabled: !EvalUtils.isEvalAllowed(),
+		tempRulesDisabledWarned: !!Storage.getTempRulesDisabledWarned()
 	});
 
 	return model;

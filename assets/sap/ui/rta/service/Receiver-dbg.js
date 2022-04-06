@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -159,18 +159,16 @@ sap.ui.define([
 			}
 		};
 
-		oRta.attachEventOnce("start", function () {
-			oPostMessageBus = PostMessageBus.getInstance();
-			oPostMessageBus.publish({
-				channelId: CHANNEL_ID,
-				eventId: PostMessageBus.event.READY
-			});
-
-			oPostMessageBus.subscribe(CHANNEL_ID, "getService", fnReceiver);
-			oPostMessageBus.subscribe(CHANNEL_ID, "callMethod", fnReceiver);
-			oPostMessageBus.subscribe(CHANNEL_ID, "subscribe", fnReceiver);
-			oPostMessageBus.subscribe(CHANNEL_ID, "unsubscribe", fnReceiver);
+		oPostMessageBus = PostMessageBus.getInstance();
+		oPostMessageBus.publish({
+			channelId: CHANNEL_ID,
+			eventId: PostMessageBus.event.READY
 		});
+
+		oPostMessageBus.subscribe(CHANNEL_ID, "getService", fnReceiver);
+		oPostMessageBus.subscribe(CHANNEL_ID, "callMethod", fnReceiver);
+		oPostMessageBus.subscribe(CHANNEL_ID, "subscribe", fnReceiver);
+		oPostMessageBus.subscribe(CHANNEL_ID, "unsubscribe", fnReceiver);
 
 		return {
 			destroy: function () {

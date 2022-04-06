@@ -1,9 +1,9 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
+/*eslint-disable max-len */
 // Provides the JSON model implementation of a property binding
 sap.ui.define(['./PropertyBinding'],
 	function(PropertyBinding) {
@@ -51,15 +51,17 @@ sap.ui.define(['./PropertyBinding'],
 	 */
 	ClientPropertyBinding.prototype._getValue = function(){
 		var sProperty = this.sPath.substr(this.sPath.lastIndexOf("/") + 1);
-		if (sProperty == "__name__") {
-			var aPath = this.oContext.split("/");
+		if (this.oContext && sProperty == "__name__") {
+			var aPath = this.oContext.getPath().split("/");
 			return aPath[aPath.length - 1];
 		}
 		return this.oModel.getProperty(this.sPath, this.oContext); // ensure to survive also not set model object
 	};
 
 	/**
-	 * Setter for context
+	 * Setter for context.
+	 *
+	 * @param {sap.ui.model.Context} oContext The new context to set
 	 */
 	ClientPropertyBinding.prototype.setContext = function(oContext) {
 		if (this.oContext != oContext) {

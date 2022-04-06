@@ -1,14 +1,38 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides controller extension class (part of MVC concept)
-sap.ui.define(['sap/ui/base/Object', 'sap/ui/base/Metadata', 'sap/ui/core/mvc/ControllerMetadata', 'sap/ui/core/mvc/OverrideExecution', 'sap/base/util/uid'],
-	function(BaseObject, Metadata, ControllerMetadata, OverrideExecution, uid) {
+sap.ui.define([
+	'sap/ui/base/Object',
+	'sap/ui/base/Metadata',
+	'sap/ui/core/mvc/ControllerMetadata',
+	'sap/ui/core/mvc/OverrideExecution',
+	'sap/base/util/uid',
+	"sap/base/Log"
+],
+	function(BaseObject, Metadata, ControllerMetadata, OverrideExecution, uid, Log) {
 	"use strict";
-		var ControllerExtension = BaseObject.extend("sap.ui.core.mvc.ControllerExtension", {
+
+		/**
+		 * @class Base class for controller extensions.
+		 *
+		 * All controller extensions must {@link #.extend extend} from this base class.
+		 * It provides access to the {@link #getView view} of the extended controller as well as
+		 * to the view's {@link #byId controls}.
+		 *
+		 * For a more detailed description how to develop controller extensions, see section
+		 * {@link topic:21515f09c0324218bb705b27407f5d61 Using Controller Extension} in the documentation.
+		 *
+		 * @hideconstructor
+		 * @alias sap.ui.core.mvc.ControllerExtension
+		 * @public
+		 * @extends sap.ui.base.Object
+		 */
+		var ControllerExtension = BaseObject.extend("sap.ui.core.mvc.ControllerExtension",
+			/** @lends sap.ui.core.mvc.ControllerExtension.prototype */ {
 			metadata: {
 				stereotype: "controllerextension",
 				methods: {
@@ -33,12 +57,12 @@ sap.ui.define(['sap/ui/base/Object', 'sap/ui/base/Metadata', 'sap/ui/core/mvc/Co
 			 *
 			 * Views automatically prepend their own ID as a prefix to created Elements
 			 * to make the IDs unique even in the case of multiple view instances.
-			 * For Controller extension the namespace of the control id gets also
+			 * For a controller extension, the namespace of the control ID gets also
 			 * prefixed with the namespace of the extension.
 			 * This method helps to find an element by its local ID only.
 			 *
 			 * If no view is connected or if the view doesn't contain an element with
-			 * the given local ID, undefined is returned.
+			 * the given local ID, <code>undefined</code> is returned.
 			 *
 			 * @param {string} sId View-local ID
 			 * @return {sap.ui.core.Element} Element by its (view local) ID
@@ -51,16 +75,17 @@ sap.ui.define(['sap/ui/base/Object', 'sap/ui/base/Metadata', 'sap/ui/core/mvc/Co
 			},
 
 			/**
-			 * Returns the View from the corresponding controller
+			 * Returns the View from the corresponding controller.
 			 *
 			 * @return {sap.ui.core.mvc.View} oView The corresponding view instance
+			 * @public
 			 */
 			getView: function() {
 				return this.base.getView();
 			},
 
 			/**
-			 * Returns the public interface for this exetension
+			 * Returns the public interface for this extension.
 			 *
 			 * @returns {object} oInterface The public interface for this extension
 			 * @private
@@ -80,20 +105,22 @@ sap.ui.define(['sap/ui/base/Object', 'sap/ui/base/Metadata', 'sap/ui/core/mvc/Co
 					}
 					//}
 				}.bind(this));
-				this.getInterface = jQuery.sap.getter(mMethods);
+				this.getInterface = function() {
+					return mMethods;
+				};
 				return mMethods;
 			}
 		}, ControllerMetadata);
 
 		/**
-		 * Override the ControllerExtension class with the given custom extension
-		 * definition. Only public methods that are not final could be overridden.
-		 * The lifecycle methods <code>onInit</code>, <code>onExit</code>,
-		 * <code>onBeforeRendering</code> and <code>onAfterRendering</code>
-		 * are added before or after the lifecycle functions of the original
-		 * extension:
+		 * Override the ControllerExtension class with the given custom extension definition.
 		 *
-		 * Example for oExtension:
+		 * Only public methods that are not final could be overridden. The lifecycle methods
+		 * <code>onInit</code>, <code>onExit</code>, <code>onBeforeRendering</code> and
+		 * <code>onAfterRendering</code> are added before or after the lifecycle functions
+		 * of the original extension.
+		 *
+		 * Example for <code>oExtension</code>:
 		 * <pre>
 		 * {
 		 *     onInit: function() {
@@ -102,7 +129,12 @@ sap.ui.define(['sap/ui/base/Object', 'sap/ui/base/Metadata', 'sap/ui/core/mvc/Co
 		 *     ...
 		 * }
 		 * </pre>
+		 *
+		 * <b>Note:</b> This static method is automatically propagated to subclasses of
+		 * <code>ControllerExtension</code>.
+		 *
 		 * @param {object} oExtension The custom extension definition
+		 * @return {function} A controller extension class
 		 * @public
 		 */
 		ControllerExtension.override = function(oExtension) {
@@ -154,7 +186,7 @@ sap.ui.define(['sap/ui/base/Object', 'sap/ui/base/Metadata', 'sap/ui/core/mvc/Co
 					} else if (typeof fnCust === "function") {
 						oOrigDef[sMemberName] = fnCust;
 					} else {
-						jQuery.sap.log.error("Controller extension failed: lifecycleMethod '" + sMemberName + "', is not a function");
+						Log.error("Controller extension failed: lifecycleMethod '" + sMemberName + "', is not a function");
 					}
 					break;
 				case OverrideExecution.After:
@@ -163,17 +195,17 @@ sap.ui.define(['sap/ui/base/Object', 'sap/ui/base/Metadata', 'sap/ui/core/mvc/Co
 					} else if (typeof fnCust === "function") {
 						oOrigDef[sMemberName] = fnCust;
 					} else {
-						jQuery.sap.log.error("Controller extension failed: lifecycleMethod '" + sMemberName + "', is not a function");
+						Log.error("Controller extension failed: lifecycleMethod '" + sMemberName + "', is not a function");
 					}
 					break;
 				case OverrideExecution.Instead:
 				default:
 					if (sMemberName in oOrigDef) {
-						jQuery.sap.log.debug("Overriding  member '" + sMemberName + "' of extension " + this.getMetadata().getName());
+						Log.debug("Overriding  member '" + sMemberName + "' of extension " + this.getMetadata().getName());
 						if (!this.getMetadata().isMethodFinal(sMemberName)) {
 							oOrigDef[sMemberName] = fnCust;
 						}  else {
-							jQuery.sap.log.error("Error in ControllerExtension.override: Method '" + sMemberName + "' of extension '" + this.getMetadata().getName() + "' is flagged final and cannot be overridden!");
+							Log.error("Error in ControllerExtension.override: Method '" + sMemberName + "' of extension '" + this.getMetadata().getName() + "' is flagged final and cannot be overridden!");
 						}
 					} else {
 						oOrigDef[sMemberName] = fnCust;

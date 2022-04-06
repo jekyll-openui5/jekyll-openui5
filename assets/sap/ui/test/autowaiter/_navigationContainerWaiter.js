@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-sap.ui.define(["jquery.sap.global","sap/ui/test/_OpaLogger","sap/ui/test/_opaCorePlugin"],function($,_,a){"use strict";var h=_.getLogger("sap.ui.test.autowaiter._navigationContainerWaiter#hasPending");function b(){var c="sap.m.NavContainer";var n=$.sap.getObject(c);if(sap.ui.lazyRequire._isStub(c)||!n){return false;}return a.getAllControls(n).some(function(N){if(N._bNavigating){h.debug("The NavContainer "+N+" is currently navigating");}return N._bNavigating;});}return{hasPending:b};});
+sap.ui.define(["sap/ui/core/Element","./WaiterBase"],function(E,W){"use strict";var N=W.extend("sap.ui.test.autowaiter._navigationContainerWaiter",{hasPending:function(){var n=sap.ui.require("sap/m/NavContainer");if(!n){return false;}function i(c){return c instanceof n;}return E.registry.filter(i).some(function(o){if(o._bNavigating){this._oHasPendingLogger.debug("The NavContainer "+o+" is currently navigating");}return o._bNavigating;}.bind(this));}});return new N();});

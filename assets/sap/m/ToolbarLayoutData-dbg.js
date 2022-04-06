@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -20,10 +20,12 @@ sap.ui.define(['./library', 'sap/ui/core/LayoutData'],
 	 * @class
 	 * Defines layout data for the {@link sap.m.Toolbar} items.
 	 *
-	 * <b>Note:</b> <code>ToolbarLayoutData</code> should not be used together with {@link sap.m.ToolbarSpacer}.
+	 * <b>Note:</b> The {@link sap.m.ToolbarSpacer} is a flex control that is intended to
+	 * control its own behavior, thus <code>sap.m.ToolbarLayoutData</code> is not supported as value for the
+	 * <code>layoutData</code> aggregation of {@link sap.m.ToolbarSpacer} and if set it's ignored.
 	 *
 	 * @extends sap.ui.core.LayoutData
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -76,7 +78,7 @@ sap.ui.define(['./library', 'sap/ui/core/LayoutData'],
 	 * If the control that is using ToolbarLayoutData has been already rendered,
 	 * then this function can be used to apply layout data properties to the related control
 	 *
-	 * @returns {sap.m.ToolbarLayoutData}
+	 * @returns {this}
 	 * @protected
 	 */
 	ToolbarLayoutData.prototype.applyProperties = function() {

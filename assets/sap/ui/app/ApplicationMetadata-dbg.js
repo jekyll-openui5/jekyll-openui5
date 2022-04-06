@@ -1,14 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides class sap.ui.app.ApplicationMetadata
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/ComponentMetadata', 'jquery.sap.sjax'],
-	function(jQuery, ComponentMetadata/*, jQuerySap1 */) {
+sap.ui.define([
+	'sap/base/Log',
+	'sap/ui/core/ComponentMetadata',
+	'jquery.sap.sjax'
+], function(Log, ComponentMetadata, jQuery) {
 	"use strict";
-
 
 	/**
 	 * Creates a new metadata object for a Application subclass.
@@ -20,9 +22,10 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/ComponentMetadata', 'jquery.sap
 	 * @deprecated Since 1.15.1. The Component class is enhanced to take care about the Application code.
 	 * @class
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @since 1.13.2
-	 * @name sap.ui.app.ApplicationMetadata
+	 * @alias sap.ui.app.ApplicationMetadata
+	 * @extends sap.ui.core.ComponentMetadata
 	 */
 	var ApplicationMetadata = function(sClassName, oClassInfo) {
 		// call super constructor
@@ -30,7 +33,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/ComponentMetadata', 'jquery.sap
 	};
 
 	//chain the prototypes
-	ApplicationMetadata.prototype = jQuery.sap.newObject(ComponentMetadata.prototype);
+	ApplicationMetadata.prototype = Object.create(ComponentMetadata.prototype);
+	ApplicationMetadata.prototype.constructor = ApplicationMetadata;
 
 	ApplicationMetadata.preprocessClassInfo = function(oClassInfo) {
 		// if the component is a string we convert this into a "_src" metadata entry
@@ -54,14 +58,14 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/ComponentMetadata', 'jquery.sap
 		// the application metadata will be loaded from the specified file
 		// which needs to be located next to the application script file.
 		if (oStaticInfo._src) {
-			jQuery.sap.log.warning("The metadata of the application " + this.getName() + " is loaded from file " + oStaticInfo._src + ". This is a design time feature and not for productive usage!");
+			Log.warning("The metadata of the application " + this.getName() + " is loaded from file " + oStaticInfo._src + ". This is a design time feature and not for productive usage!");
 			var sPackage = this.getName().replace(/\.\w+?$/, "");
-			var sUrl = jQuery.sap.getModulePath(sPackage, "/" + oStaticInfo._src);
+			var sUrl = sap.ui.require.toUrl(sPackage.replace(/\./g, "/") + "/" + oStaticInfo._src);
 			var oResponse = jQuery.sap.syncGetJSON(sUrl);
 			if (oResponse.success) {
-				jQuery.extend(oStaticInfo, oResponse.data);
+				Object.assign(oStaticInfo, oResponse.data);
 			} else {
-				jQuery.sap.log.error("Failed to load application metadata from \"" + oStaticInfo._src + "\"! Reason: " + oResponse.error);
+				Log.error("Failed to load application metadata from \"" + oStaticInfo._src + "\"! Reason: " + oResponse.error);
 			}
 		}
 

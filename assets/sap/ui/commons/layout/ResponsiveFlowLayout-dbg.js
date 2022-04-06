@@ -1,17 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.layout.ResponsiveFlowLayout.
 sap.ui.define([
- 'jquery.sap.global',
  'sap/ui/commons/library',
  'sap/ui/layout/ResponsiveFlowLayout',
- "./ResponsiveFlowLayoutRenderer"
+ './ResponsiveFlowLayoutRenderer'
 ],
-	function(jQuery, library, ResponsiveFlowLayout1, ResponsiveFlowLayoutRenderer) {
+	function(library, LayoutResponsiveFlowLayout, ResponsiveFlowLayoutRenderer) {
 	"use strict";
 
 
@@ -27,7 +26,7 @@ sap.ui.define([
 	 * @extends sap.ui.layout.ResponsiveFlowLayout
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -37,7 +36,7 @@ sap.ui.define([
 	 * @alias sap.ui.commons.layout.ResponsiveFlowLayout
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */
-	var ResponsiveFlowLayout = ResponsiveFlowLayout1.extend("sap.ui.commons.layout.ResponsiveFlowLayout", /** @lends sap.ui.commons.layout.ResponsiveFlowLayout.prototype */ { metadata : {
+	var ResponsiveFlowLayout = LayoutResponsiveFlowLayout.extend("sap.ui.commons.layout.ResponsiveFlowLayout", /** @lends sap.ui.commons.layout.ResponsiveFlowLayout.prototype */ { metadata : {
 
 		deprecated : true,
 		library : "sap.ui.commons"
@@ -47,4 +46,4 @@ sap.ui.define([
 
 	return ResponsiveFlowLayout;
 
-}, /* bExport= */ true);
+});

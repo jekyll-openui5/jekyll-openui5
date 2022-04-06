@@ -1,9 +1,9 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-sap.ui.define(['jquery.sap.global', 'sap/ui/rta/command/FlexCommand'], function(jQuery, FlexCommand) {
+sap.ui.define(["sap/ui/rta/command/FlexCommand"], function(FlexCommand) {
 	"use strict";
 
 	/**
@@ -12,7 +12,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/command/FlexCommand'], function(
 	 * @class
 	 * @extends sap.ui.rta.command.FlexCommand
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @constructor
 	 * @private
 	 * @since 1.34
@@ -21,40 +21,36 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/command/FlexCommand'], function(
 	 *               changed in future.
 	 */
 	var CreateContainer = FlexCommand.extend("sap.ui.rta.command.CreateContainer", {
-		metadata : {
-			library : "sap.ui.rta",
-			properties : {
-				index : {
-					type : "int"
+		metadata: {
+			library: "sap.ui.rta",
+			properties: {
+				index: {
+					type: "int",
+					group: "content"
 				},
-				newControlId : {
-					type : "string"
+				newControlId: {
+					type: "string",
+					group: "content"
 				},
-				label : {
-					type : "string"
+				label: { //legacy property => exposed in tests
+					type: "string"
 				},
-				parentId : {
-					type : "string"
+				parentId: {
+					type: "string",
+					group: "content"
 				}
 			},
-			associations : {},
-			events : {}
+			associations: {},
+			events: {}
 		}
 	});
 
-	CreateContainer.prototype._getChangeSpecificData = function(bForward) {
+	CreateContainer.prototype._getChangeSpecificData = function() {
+		var mSpecificInfo = FlexCommand.prototype._getChangeSpecificData.apply(this);
 
-		var mSpecificInfo = {
-			changeType : this.getChangeType(),
-			index : this.getIndex(),
-			newControlId : this.getNewControlId(),
-			newLabel : this.getLabel(),
-			parentId : this.getParentId()
-		};
+		mSpecificInfo.newLabel = this.getLabel();
 
 		return mSpecificInfo;
 	};
-
 	return CreateContainer;
-
-}, /* bExport= */true);
+});

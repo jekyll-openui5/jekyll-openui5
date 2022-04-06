@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([], function() {
@@ -25,13 +25,16 @@ sap.ui.define([], function() {
 			return this._oTargetHandler._chainNavigation(function() {
 				return oPromise.then(function(oViewInfo) {
 					that._oTargetHandler.addNavigation({
-						navigationIdentifier : that._oOptions.name,
+						navigationIdentifier : that._oOptions._name,
 						transition: that._oOptions.transition,
 						transitionParameters: that._oOptions.transitionParameters,
 						eventData: vData,
 						targetControl: oViewInfo.control,
+						aggregationName: that._oOptions.controlAggregation,
 						view: oViewInfo.view,
-						preservePageInSplitContainer: that._oOptions.preservePageInSplitContainer
+						preservePageInSplitContainer: that._oOptions.preservePageInSplitContainer,
+						placeholderConfig: oViewInfo.placeholderConfig,
+						placeholderShown: oViewInfo.placeholderShown
 					});
 
 					// do not forward the route config to navigation
@@ -41,7 +44,17 @@ sap.ui.define([], function() {
 
 					return oViewInfo;
 				});
-			});
+			}, this._oOptions._name);
+		},
+
+		showPlaceholder : function(mSettings) {
+			return this._oTargetHandler.showPlaceholder(mSettings);
+		},
+		hidePlaceholder : function() {
+		/**
+		 * Overriding the hidePlaceholder to empty function because the placeholder is removed
+		 * after all targets are displayed
+		 */
 		}
 	};
 }, /* bExport= */ true);

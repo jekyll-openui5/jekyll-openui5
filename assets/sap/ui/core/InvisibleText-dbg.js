@@ -1,12 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.core.InvisibleText.
-sap.ui.define(['jquery.sap.global', './Control', './library', 'jquery.sap.encoder'],
-	function(jQuery, Control, library/*, jQuerySap1 */) {
+sap.ui.define([
+	"./Control",
+	"sap/base/Log",
+	"sap/base/security/encodeXML",
+	"./library" // ensure loading of CSS
+], function(Control, Log, encodeXML) {
 	"use strict";
 
 
@@ -25,7 +29,7 @@ sap.ui.define(['jquery.sap.global', './Control', './library', 'jquery.sap.encode
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @public
 	 * @since 1.27.0
@@ -45,40 +49,41 @@ sap.ui.define(['jquery.sap.global', './Control', './library', 'jquery.sap.encode
 			}
 		},
 
-		renderer : function(oRm, oControl) {
-			// The text is hidden through "display: none" in the shared CSS class
-			// "sapUiInvisibleText", as an alternative in case screen readers have trouble with
-			// "display: none", the following class definition could be used:
-			//	.sapUiInvisibleText {
-			//		display: inline-block !important;
-			//		visibility: hidden !important;
-			//		width: 0 !important;
-			//		height: 0 !important;
-			//		overflow: hidden !important;
-			//		position: absolute !important;
-			//	}
+		renderer : {
+			apiVersion : 2,
+			render: function(oRm, oControl) {
+				// The text is hidden through "display: none" in the shared CSS class
+				// "sapUiInvisibleText", as an alternative in case screen readers have trouble with
+				// "display: none", the following class definition could be used:
+				//	.sapUiInvisibleText {
+				//		display: inline-block !important;
+				//		visibility: hidden !important;
+				//		width: 0 !important;
+				//		height: 0 !important;
+				//		overflow: hidden !important;
+				//		position: absolute !important;
+				//	}
 
-			oRm.write("<span");
-			oRm.writeControlData(oControl);
-			oRm.addClass("sapUiInvisibleText");
-			oRm.writeClasses();
-			oRm.writeAttribute("aria-hidden", "true");
-			oRm.write(">");
-			oRm.writeEscaped(oControl.getText() || "");
-			oRm.write("</span>");
+				oRm.openStart("span", oControl);
+				oRm.class("sapUiInvisibleText");
+				oRm.attr("aria-hidden", "true");
+				oRm.openEnd();
+				oRm.text(oControl.getText() || "");
+				oRm.close("span");
+			}
 		}
 	});
 
 	// helper to create a dummy setter that logs a warning
 	function makeNotSupported(what) {
 		return function() {
-			jQuery.sap.log.warning(what + " is not supported by control sap.ui.core.InvisibleText.");
+			Log.warning(what + " is not supported by control sap.ui.core.InvisibleText.");
 			return this;
 		};
 	}
 
 	/**
-	 * @return {sap.ui.core.InvisibleText} Returns <code>this</code> to allow method chaining
+	 * @return {this} Returns <code>this</code> to allow method chaining
 	 * @public
 	 * @deprecated As of version 1.27, local BusyIndicator is not supported by control.
 	 * @function
@@ -86,7 +91,7 @@ sap.ui.define(['jquery.sap.global', './Control', './library', 'jquery.sap.encode
 	InvisibleText.prototype.setBusy = makeNotSupported("Property busy");
 
 	/**
-	 * @return {sap.ui.core.InvisibleText} Returns <code>this</code> to allow method chaining
+	 * @return {this} Returns <code>this</code> to allow method chaining
 	 * @public
 	 * @deprecated As of version 1.27, local BusyIndicator is not supported by control.
 	 * @function
@@ -94,7 +99,7 @@ sap.ui.define(['jquery.sap.global', './Control', './library', 'jquery.sap.encode
 	InvisibleText.prototype.setBusyIndicatorDelay = makeNotSupported("Property busy");
 
 	/**
-	 * @return {sap.ui.core.InvisibleText} Returns <code>this</code> to allow method chaining
+	 * @return {this} Returns <code>this</code> to allow method chaining
 	 * @public
 	 * @deprecated As of version 1.54, local BusyIndicator is not supported by control.
 	 * @function
@@ -102,7 +107,7 @@ sap.ui.define(['jquery.sap.global', './Control', './library', 'jquery.sap.encode
 	InvisibleText.prototype.setBusyIndicatorSize = makeNotSupported("Property busy");
 
 	/**
-	 * @return {sap.ui.core.InvisibleText} Returns <code>this</code> to allow method chaining
+	 * @return {this} Returns <code>this</code> to allow method chaining
 	 * @public
 	 * @deprecated As of version 1.27, property <code>visible</code> is not supported by control.
 	 * @function
@@ -110,7 +115,7 @@ sap.ui.define(['jquery.sap.global', './Control', './library', 'jquery.sap.encode
 	InvisibleText.prototype.setVisible = makeNotSupported("Property visible");
 
 	/**
-	 * @return {sap.ui.core.InvisibleText} Returns <code>this</code> to allow method chaining
+	 * @return {this} Returns <code>this</code> to allow method chaining
 	 * @public
 	 * @deprecated As of version 1.27, tooltip is not supported by control.
 	 * @function
@@ -118,15 +123,25 @@ sap.ui.define(['jquery.sap.global', './Control', './library', 'jquery.sap.encode
 	InvisibleText.prototype.setTooltip = makeNotSupported("Aggregation tooltip");
 
 	InvisibleText.prototype.setText = function(sText) {
+		// For performance reasons, we suppress the invalidation and update the DOM directly.
+		// A lot of controls don't really render the invisible Text in their own DOM,
+		// but use it to store aria information and then call toStatic().
 		this.setProperty("text", sText, true);
-		this.$().html(jQuery.sap.encodeHTML(this.getText() || ""));
+		this.$().html(encodeXML(this.getText() || ""));
 		return this;
+	};
+
+	InvisibleText.prototype.getRendererMarkup = function() {
+		var sId = this.getId();
+		return	'<span id="' + sId + '" data-sap-ui="' + sId + '" class="sapUiInvisibleText" aria-hidden="true">' +
+					encodeXML(this.getText()) +
+				'</span>';
 	};
 
 	/**
 	 * Adds <code>this</code> control into the static, hidden area UI area container.
 	 *
-	 * @return {sap.ui.core.InvisibleText} Returns <code>this</code> to allow method chaining
+	 * @return {this} Returns <code>this</code> to allow method chaining
 	 * @public
 	 * @see sap.ui.core.Control#placeAt
 	 */
@@ -135,9 +150,8 @@ sap.ui.define(['jquery.sap.global', './Control', './library', 'jquery.sap.encode
 
 		try {
 			var oStatic = oCore.getStaticAreaRef();
-			var oRM = oCore.createRenderManager();
-			oRM.render(this, oStatic);
-			oRM.destroy();
+			oStatic.insertAdjacentHTML("beforeend", this.getRendererMarkup());
+			this.bOutput = true;
 		} catch (e) {
 			this.placeAt("sap-ui-static");
 		}
@@ -149,7 +163,7 @@ sap.ui.define(['jquery.sap.global', './Control', './library', 'jquery.sap.encode
 	var mTextIds = Object.create(null);
 
 	/**
-	 * Returns the ID of a shared <code>InvisibleText<code> instance whose <code>text</code> property
+	 * Returns the ID of a shared <code>InvisibleText</code> instance whose <code>text</code> property
 	 * is retrieved from the given library resource bundle and text key.
 	 *
 	 * Calls with the same library and text key will return the same instance. The instance will be

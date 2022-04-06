@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -15,171 +15,141 @@ sap.ui.define(['sap/ui/core/InvisibleText', 'sap/ui/core/Renderer', './InputBase
 
 	/**
 	 * Input renderer.
-	 * @namespace
 	 *
 	 * InputRenderer extends the InputBaseRenderer
+	 *
+	 * @namespace
 	 */
 	var InputRenderer = Renderer.extend(InputBaseRenderer);
+	InputRenderer.apiVersion = 2;
 
 	/**
 	 * Adds control specific class
 	 *
+	 * @protected
 	 * @param {sap.ui.core.RenderManager} oRm the RenderManager that can be used for writing to the render output buffer
 	 * @param {sap.ui.core.Control} oControl an object representation of the control that should be rendered
 	 */
-	InputRenderer.addOuterClasses = function(oRm, oControl) {
-		oRm.addClass("sapMInput");
-		if (oControl.getShowValueHelp() && oControl.getEnabled() && oControl.getEditable()) {
-			oRm.addClass("sapMInputVH");
-			if (oControl.getValueHelpOnly()) {
-				oRm.addClass("sapMInputVHO");
-			}
-		}
-		if (oControl.getDescription()) {
-				oRm.addClass("sapMInputDescription");
-		}
-	};
+	InputRenderer.addOuterClasses = function (oRm, oControl) {
+		oRm.class("sapMInput");
 
-	/**
-	 * Add extra styles for input container
-	 *
-	 * @param {sap.ui.core.RenderManager} oRm the RenderManager that can be used for writing to the render output buffer
-	 * @param {sap.ui.core.Control} oControl an object representation of the control that should be rendered
-	 */
-	InputRenderer.addOuterStyles = function(oRm, oControl) {
+		if (oControl.getDescription()) {
+			oRm.class("sapMInputWithDescription");
+		}
 	};
 
 	/**
 	 * add extra attributes to Input
 	 *
+	 * @protected
 	 * @param {sap.ui.core.RenderManager} oRm the RenderManager that can be used for writing to the render output buffer
 	 * @param {sap.ui.core.Control} oControl an object representation of the control that should be rendered
 	 */
-	InputRenderer.writeInnerAttributes = function(oRm, oControl) {
-		oRm.writeAttribute("type", oControl.getType().toLowerCase());
+	InputRenderer.writeInnerAttributes = function (oRm, oControl) {
+		var bShowSuggestions = oControl.getShowSuggestion();
+
+		oRm.attr("type", oControl.getType().toLowerCase());
 		//if Input is of type "Number" step attribute should be "any" allowing input of floating point numbers
 		if (oControl.getType() == InputType.Number) {
-			oRm.writeAttribute("step", "any");
+			oRm.attr("step", "any");
 		}
 		if (oControl.getType() == InputType.Number && sap.ui.getCore().getConfiguration().getRTL()) {
-			oRm.writeAttribute("dir", "ltr");
-			oRm.addStyle("text-align", "right");
+			oRm.attr("dir", "ltr").style("text-align", "right");
 		}
 
-		if (oControl.getShowSuggestion()) {
-			oRm.writeAttribute("autocomplete", "off");
+		if (bShowSuggestions || oControl.getShowValueStateMessage()) {
+			oRm.attr("autocomplete", "off"); // autocomplete="off" needed so the native browser autocomplete is not shown?
 		}
 
 		if ((!oControl.getEnabled() && oControl.getType() == "Password")
-				|| (oControl.getShowSuggestion() && oControl._bUseDialog)
-				|| (oControl.getValueHelpOnly() && oControl.getEnabled() && oControl.getEditable() && oControl.getShowValueHelp())) {
+			|| (oControl.getShowSuggestion() && oControl.isMobileDevice())
+			|| (oControl.getValueHelpOnly() && oControl.getEnabled() && oControl.getEditable() && oControl.getShowValueHelp())) {
 			// required for JAWS reader on password fields on desktop and in other cases:
-			oRm.writeAttribute("readonly", "readonly");
+			oRm.attr("readonly", "readonly");
 		}
 	};
 
 	/**
 	 * Adds inner css classes to the input field
 	 *
+	 * @protected
 	 * @param {sap.ui.core.RenderManager} oRm the RenderManager that can be used for writing to the render output buffer
 	 * @param {sap.ui.core.Control} oControl an object representation of the control that should be rendered
 	 */
-	InputRenderer.addInnerClasses = function(oRm, oControl) {
+	InputRenderer.addInnerClasses = function (oRm, oControl) {
+	};
+
+	InputRenderer.writeDescription = function (oRm, oControl) {
+		oRm.openStart("div")
+			.class("sapMInputDescriptionWrapper")
+			.style("width", "calc(100% - " + oControl.getFieldWidth() + ")")
+			.openEnd();
+
+		oRm.openStart("span", oControl.getId() + "-descr")
+			.class("sapMInputDescriptionText")
+			.openEnd()
+			.text(oControl.getDescription())
+			.close("span");
+		oRm.close("div");
 	};
 
 	/**
-	 * Add inner styles to the input field
+	 * Write the decorations of the input - description and value-help icon.
 	 *
-	 * @param {sap.ui.core.RenderManager} oRm the RenderManager that can be used for writing to the render output buffer
-	 * @param {sap.ui.core.Control} oControl an object representation of the control that should be rendered
-	 */
-	InputRenderer.addWrapperStyles = function(oRm, oControl) {
-
-		if (oControl.getDescription()) {
-			oRm.addStyle("width", oControl.getFieldWidth() || "50%");
-		}
-	};
-
-	/**
-	 * Write the decorations of the input.
-	 *
+	 * @protected
 	 * @param {sap.ui.core.RenderManager} oRm The RenderManager that can be used for writing to the render output buffer.
 	 * @param {sap.ui.core.Control} oControl An object representation of the control that should be rendered.
 	 */
-	InputRenderer.writeDecorations = function(oRm, oControl) {
-
-		var id = oControl.getId(),
-			description = oControl.getDescription();
-
-		if (!description) {
-			this.writeValueHelpIcon(oRm, oControl);
-		} else {
-			oRm.write("<span>");
-			this.writeValueHelpIcon(oRm, oControl);
-			oRm.write('<span id="' + oControl.getId() + '-Descr" class="sapMInputDescriptionText">');
-			oRm.writeEscaped(description);
-			oRm.write("</span></span>");
+	InputRenderer.writeDecorations = function (oRm, oControl) {
+		if (oControl.getDescription()) {
+			this.writeDescription(oRm, oControl);
 		}
 
 		if (sap.ui.getCore().getConfiguration().getAccessibility()) {
 			if (oControl.getShowSuggestion() && oControl.getEnabled() && oControl.getEditable()) {
-				oRm.write("<span id=\"" + id + "-SuggDescr\" class=\"sapUiPseudoInvisibleText\" role=\"status\" aria-live=\"polite\"></span>");
+				oRm.openStart("span", oControl.getId() + "-SuggDescr").class("sapUiPseudoInvisibleText")
+					.attr("role", "status").attr("aria-live", "polite")
+					.openEnd()
+					.close("span");
 			}
 		}
-
-	};
-
-	InputRenderer.writeValueHelpIcon = function(oRm, oControl) {
-
-		if (oControl.getShowValueHelp() && oControl.getEnabled() && oControl.getEditable()) {
-			// Set tabindex to -1 to prevent the focus from going to the underlying list row,
-			// in case when the input is placed inside of a list/table.
-			oRm.write('<div class="sapMInputValHelp" tabindex="-1">');
-			oRm.renderControl(oControl._getValueHelpIcon());
-			oRm.write("</div>");
-		}
-
 	};
 
 	/**
-	 * Add inner styles to the placeholder
+	 * Adds extra styles to the wrapper of the input field.
 	 *
-	 * @param {sap.ui.core.RenderManager} oRm the RenderManager that can be used for writing to the render output buffer
-	 * @param {sap.ui.core.Control} oControl an object representation of the control that should be rendered
+	 * @protected
+	 * @param {sap.ui.core.RenderManager} oRm The RenderManager that can be used for writing to the render output buffer.
+	 * @param {sap.ui.core.Control} oControl An object representation of the control that should be rendered.
 	 */
-	InputRenderer.addPlaceholderStyles = function(oRm, oControl) {
-
-		if (oControl.getDescription()) {
-			oRm.addStyle("width", oControl.getFieldWidth() || "50%");
-		}
-
+	InputRenderer.addWrapperStyles = function (oRm, oControl) {
+		oRm.style("width", oControl.getDescription() ? oControl.getFieldWidth() : "100%");
 	};
 
-	InputRenderer.getAriaLabelledBy = function(oControl) {
-		var ariaLabels = InputBaseRenderer.getAriaLabelledBy.call(this, oControl) || "";
-		if (oControl.getDescription()) {
-			ariaLabels = ariaLabels + " " + oControl.getId() + "-Descr";
-		}
-		return ariaLabels;
-	};
-
-	InputRenderer.getAriaDescribedBy = function(oControl) {
+	/**
+	 * Returns the inner aria describedby ids for the accessibility.
+	 *
+	 * @protected
+	 * @param {sap.ui.core.Control} oControl an object representation of the control.
+	 * @returns {String|undefined}
+	 */
+	InputRenderer.getAriaDescribedBy = function (oControl) {
 
 		var sAriaDescribedBy = InputBaseRenderer.getAriaDescribedBy.apply(this, arguments);
 
-		function append( s ) {
+		function append(s) {
 			sAriaDescribedBy = sAriaDescribedBy ? sAriaDescribedBy + " " + s : s;
 		}
 
-		if (oControl.getShowValueHelp() && oControl.getEnabled() && oControl.getEditable()) {
-			append( InvisibleText.getStaticId("sap.m", "INPUT_VALUEHELP") );
-			if (oControl.getValueHelpOnly()) {
-				append( InvisibleText.getStaticId("sap.m", "INPUT_DISABLED") );
-			}
+		if (oControl.getDescription()) {
+			append(oControl.getId() + "-descr");
 		}
 
-		if (oControl.getShowSuggestion() && oControl.getEnabled() && oControl.getEditable()) {
-			append( oControl.getId() + "-SuggDescr" );
+		if (oControl.getShowValueHelp() && oControl.getEnabled() && oControl.getEditable()) {
+			append(InvisibleText.getStaticId("sap.m", "INPUT_VALUEHELP"));
+			if (oControl.getValueHelpOnly()) {
+				append(InvisibleText.getStaticId("sap.m", "INPUT_DISABLED"));
+			}
 		}
 
 		return sAriaDescribedBy;
@@ -190,20 +160,23 @@ sap.ui.define(['sap/ui/core/InvisibleText', 'sap/ui/core/Renderer', './InputBase
 	 * Returns aria accessibility role for the control.
 	 * Hook for the subclasses.
 	 *
+	 * @protected
 	 * @param {sap.ui.core.Control} oControl an object representation of the control
 	 * @returns {String}
 	 */
-	InputRenderer.getAriaRole = function(oControl) {
+	InputRenderer.getAriaRole = function (oControl) {
 		return "";
 	};
 
-	InputRenderer.getAccessibilityState = function(oControl) {
+	InputRenderer.getAccessibilityState = function (oControl) {
+		var bShowSuggestions = oControl.getShowSuggestion();
 
 		var mAccessibilityState = InputBaseRenderer.getAccessibilityState.apply(this, arguments);
 
-		if (oControl.getShowSuggestion() && oControl.getEnabled() && oControl.getEditable()) {
-			mAccessibilityState.autocomplete = "list";
+		if (bShowSuggestions) {
+			mAccessibilityState["haspopup"] = "listbox";
 		}
+
 
 		return mAccessibilityState;
 

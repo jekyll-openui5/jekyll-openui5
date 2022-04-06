@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -76,7 +76,8 @@ sap.ui.define([
 					contentDesign: {
 						type: "sap.uxap.ObjectPageHeaderDesign",
 						group: "Misc",
-						defaultValue: ObjectPageHeaderDesign.Light
+						defaultValue: ObjectPageHeaderDesign.Light,
+						deprecated: true
 					}
 				},
 				aggregations: {
@@ -94,7 +95,7 @@ sap.ui.define([
 
 					_objectImage: {type: "sap.ui.core.Control", multiple: false, visibility: "hidden"},
 
-					_placeholder: {type: "sap.ui.core.Icon", multiple: false, visibility: "hidden"}
+					_placeholder: {type: "sap.m.Avatar", multiple: false, visibility: "hidden"}
 				}
 			}
 		});
@@ -129,7 +130,7 @@ sap.ui.define([
 		ObjectPageHeaderContent.prototype._getInternalBtnAggregation = function (sAggregationName, sBtnText, sBtnIdText, sBtnType) {
 			if (!this.getAggregation(sAggregationName)) {
 				var oBtn = new Button({
-					text: library.i18nModel.getResourceBundle().getText(sBtnText),
+					text: sap.ui.getCore().getLibraryResourceBundle("sap.uxap").getText(sBtnText),
 					type: sBtnType,
 					id: this.getId() + sBtnIdText
 				});
@@ -200,17 +201,26 @@ sap.ui.define([
 			}
 		};
 
+
+		ObjectPageHeaderContent.prototype.setVisible = function (bVisible) {
+			this.getParent() && this.getParent().toggleStyleClass("sapUxAPObjectPageLayoutNoHeaderContent", !bVisible);
+			return this.setProperty("visible", bVisible);
+		};
+
 		/**
 		 * Required by the {@link sap.uxap.IHeaderContent} interface.
 		 * @param aContent
 		 * @param bVisible
 		 * @param sContentDesign
+		 * @param bPinnable
+		 * @param sStableId
 		 */
-		ObjectPageHeaderContent.createInstance = function (aContent, bVisible, sContentDesign) {
+		ObjectPageHeaderContent.createInstance = function (aContent, bVisible, sContentDesign, bPinnable, sStableId) {
 			return new ObjectPageHeaderContent({
 				content: aContent,
 				visible: bVisible,
-				contentDesign: sContentDesign
+				contentDesign: sContentDesign,
+				id: sStableId
 			});
 		};
 

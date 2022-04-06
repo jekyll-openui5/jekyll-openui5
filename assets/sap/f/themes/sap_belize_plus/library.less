@@ -1,8 +1,8 @@
 /* NOTE: This file was generated as an optimized version of "library.source.less" for the Theme Designer. */
 
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -11,14 +11,17 @@
 
 @import "../../../../sap/ui/core/themes/sap_belize_plus/global.less";
 
-/* START "Avatar.less" */
+/* START "Card.less" */
 /* ============================= */
-/* CSS for control sap.f/Avatar  */
-/* Belize Plus theme             */
+/* CSS for control sap.f/Card  */
+/* Contrast Dark theme     */
 /* ============================= */
 
-@_sap_f_Avatar_Color: lighten(@sapUiBaseText, 2);
-/* END "Avatar.less" */
+@_sap_f_Card_Header_Icon_Color: @sapUiContentIconColor;
+@_sap_f_Card_Header_Border_Bottom: 1px solid lighten(@sapUiTileBackground, 20);
+@_sap_f_Card_Header_Hover_Color: lighten(@sapUiTileBackground, 2);
+@_sap_f_Card_Header_Active_Color: lighten(@sapUiTileBackground, 3);
+/* END "Card.less" */
 
 /* START "DynamicPage.less" */
 /* ================================== */
@@ -36,9 +39,16 @@
 .sapFDynamicPage {
 	// DynamicPageTitle and Toggle Header Visual Indicator hover state
 	&.sapFDynamicPageTitleClickEnabled {
-		.sapFDynamicPageTitle:hover,
 		&.sapFDynamicPageTitleForceHovered .sapFDynamicPageTitle {
-			background-color: darken(@sapUiObjectHeaderBackground, 3);
+			.title-hover(@sapUiObjectHeaderBackground);
+		}
+
+		&.sapFDynamicPageTitleForceHovered .sapFDynamicPageTitle.sapFDynamicPageTitleTranslucent {
+			.title-hover(fade(@sapUiObjectHeaderBackground, 60%));
+		}
+
+		&.sapFDynamicPageTitleForceHovered .sapFDynamicPageTitle.sapFDynamicPageTitleTransparent {
+			.title-hover(transparent);
 		}
 
 		&.sapFDynamicPageTitleForceHovered {
@@ -65,6 +75,7 @@
 		}
 
 		// active state
+		& .sapMBtnInner.sapMFocusable.sapMBtnActive,
 		&:focus > .sapMBtnInner.sapMFocusable.sapMBtnActive {
 			background: @sapUiSelected;
 			color: @sapUiButtonActiveBackground;
@@ -75,10 +86,17 @@
 .sapUshellShell {
 	.sapFDynamicPage {
 		// DynamicPageTitle and Toggle Header Visual Indicator hover state
-		&.sapFDynamicPageTitleClickEnabled:not(.sapFDynamicPageHeaderPinned) {
-			.sapFDynamicPageTitle:hover,
+		&.sapFDynamicPageTitleClickEnabled {
 			&.sapFDynamicPageTitleForceHovered .sapFDynamicPageTitle {
-				background-color: fade(@sapUiObjectHeaderBackground, 75%);
+				.title-hover(fade(@sapUiObjectHeaderBackground, 60%));
+			}
+
+			&.sapFDynamicPageTitleForceHovered .sapFDynamicPageTitle.sapFDynamicPageTitleSolid {
+				.title-hover(@sapUiObjectHeaderBackground);
+			}
+
+			&.sapFDynamicPageTitleForceHovered .sapFDynamicPageTitle.sapFDynamicPageTitleTransparent {
+				.title-hover(transparent);
 			}
 		}
 	}
@@ -92,9 +110,18 @@
 /* ======================================= */
 
 .sapUshellShell {
-	.sapFDynamicPageTitle {
+	.sapFDynamicPageTitle,
+	.sapFDynamicPageTitle.sapFDynamicPageTitleTranslucent {
 		background: fade(@sapUiObjectHeaderBackground, 60%);
 	}
+}
+
+.sapFDynamicPageTitle.sapFDynamicPageTitleSolid {
+	background: @sapUiObjectHeaderBackground;
+}
+
+.sapFDynamicPage .sapFDynamicPageTitle.sapFDynamicPageTitleTranslucent {
+	background: fade(@sapUiObjectHeaderBackground, 60%);
 }
 /* END "DynamicPageTitle.less" */
 
@@ -105,9 +132,18 @@
 /* ======================================== */
 
 .sapUshellShell {
-	.sapFDynamicPageHeader {
+	.sapFDynamicPageHeader,
+	.sapFDynamicPageHeader.sapFDynamicPageHeaderTranslucent {
 		background: fade(@sapUiObjectHeaderBackground, 60%);
 	}
+}
+
+.sapFDynamicPageHeader.sapFDynamicPageHeaderSolid {
+	background: @sapUiObjectHeaderBackground;
+}
+
+.sapFDynamicPage .sapFDynamicPageHeader.sapFDynamicPageHeaderTranslucent {
+	background: fade(@sapUiObjectHeaderBackground, 60%);
 }
 /* END "DynamicPageHeader.less" */
 
@@ -117,6 +153,34 @@
 /* Belize Plus theme                           */
 /* =========================================== */
 
-@_sap_f_FlexibleColumnLayout_ButtonBackground: lighten(@sapUiObjectHeaderBackground, 3);
-@_sap_f_FlexibleColumnLayout_ButtonHoverBackground: lighten(@sapUiObjectHeaderBackground, 8);
+.sapContrastPlus {
+	.sapFFCLNavigationButton {
+		.sapMBtnInner {
+			text-shadow: none;
+		}
+	}
+}
+
+.sapFFCLBackgroundDesignSolid .sapFFCLArrow {
+	background: fade(@sapUiObjectHeaderBackground, 60%);
+}
+
+.sapFFCLBackgroundDesignTranslucent .sapFFCLArrow {
+	background: @sapUiShellBackgroundGradient;
+}
+
 /* END "FlexibleColumnLayout.less" */
+
+/* START "ShellBar.less" */
+/* ============================= */
+/* CSS for control sap.f/Shellbar  */
+/* Belize Plus theme             */
+/* ============================= */
+
+.sapFButtonNotifications[data-notifications],
+.sapFShellBarOverflowButton[data-notifications] {
+	&:after {
+        color: @sapUiBaseText;
+    }
+}
+/* END "ShellBar.less" */

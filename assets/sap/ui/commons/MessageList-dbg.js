@@ -1,16 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.MessageList.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/ui/thirdparty/jquery',
     './library',
     'sap/ui/core/Control',
     'sap/ui/core/Popup',
-    "./MessageListRenderer"
+    './MessageListRenderer'
 ],
 	function(jQuery, library, Control, Popup, MessageListRenderer) {
 	"use strict";
@@ -26,7 +26,7 @@ sap.ui.define([
 	 * @class
 	 * Instantiated by the "MessageBar" Control if the user requests to generate the corresponding "MessageList".
 	 * @extends sap.ui.core.Control
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -141,7 +141,7 @@ sap.ui.define([
 		var anchor = null;
 		var anchorId = this.getAnchorId();
 		if (anchorId) {
-			anchor = jQuery.sap.domById(anchorId);
+			anchor = document.getElementById(anchorId);
 		}
 		if (!anchor) {
 			anchor = document.body;
@@ -194,7 +194,7 @@ sap.ui.define([
 	 * in order to invoke the open() and close() of the MessageList Popup.
 	 *
 	 * @param {boolean} bVisible New value for property <code>visible</code>
-	 * @return {sap.ui.commons.MessageList} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	MessageList.prototype.setVisible = function(bVisible) {
@@ -214,4 +214,4 @@ sap.ui.define([
 
 	return MessageList;
 
-}, /* bExport= */ true);
+});

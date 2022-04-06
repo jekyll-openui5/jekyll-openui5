@@ -1,12 +1,30 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
+/*eslint-disable max-len */
 // Provides class sap.ui.model.odata.TreeBindingAdapter
-sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/TreeAutoExpandMode', 'sap/ui/model/ChangeReason', 'sap/ui/model/TreeBindingUtils'],
-	function(jQuery, TreeBinding, TreeAutoExpandMode, ChangeReason, TreeBindingUtils) {
+sap.ui.define([
+	'sap/ui/model/TreeBinding',
+	'sap/ui/model/TreeAutoExpandMode',
+	'sap/ui/model/ChangeReason',
+	'sap/ui/model/TreeBindingUtils',
+	"sap/base/assert",
+	"sap/base/Log",
+	"sap/base/util/each",
+	"sap/base/util/isEmptyObject"
+],
+	function(
+		TreeBinding,
+		TreeAutoExpandMode,
+		ChangeReason,
+		TreeBindingUtils,
+		assert,
+		Log,
+		each,
+		isEmptyObject
+	) {
 		"use strict";
 
 		/**
@@ -60,30 +78,34 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 		/**
 		 * Returns a tree state handle to encapsulate the actual tree state.
-		 * TODO: Encode the list to avoid conflicts with delimiters in the flat expanded list? Re-Check this when back-end support is implemented.
+		 * TODO: Encode the list to avoid conflicts with delimiters in the flat expanded list?
+		 *       Re-Check this when back-end support is implemented.
 		 *
-		 * This function is exposed in the sub-classes/adapters (e.g. ODataTreeBindingAdapter) if necessary/possible.
+		 * This function is exposed in the sub-classes/adapters (e.g. ODataTreeBindingAdapter) if
+		 * necessary/possible.
 		 *
+		 * @returns {object} The current tree state
 		 * @private
 		 */
 		TreeBindingAdapter.prototype.getCurrentTreeState = function () {
-			var sDelimiter = ";";
+			var sDelimiter = ";",
+				sGroupID;
 
 			//expanded
 			var mExpandedEntriesGroupIDs = {};
-			for (var sGroupID in this._mTreeState.expanded) {
+			for (sGroupID in this._mTreeState.expanded) {
 				mExpandedEntriesGroupIDs[sGroupID] = true;
 			}
 
 			//collapsed
 			var mCollapsedEntriesGroupIDs = {};
-			for (var sGroupID in this._mTreeState.collapsed) {
+			for (sGroupID in this._mTreeState.collapsed) {
 				mCollapsedEntriesGroupIDs[sGroupID] = true;
 			}
 
 			//selected
 			var mSelectedEntriesGroupIDs = {};
-			for (var sGroupID in this._mTreeState.selected) {
+			for (sGroupID in this._mTreeState.selected) {
 				mSelectedEntriesGroupIDs[sGroupID] = true;
 			}
 
@@ -114,7 +136,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		/**
 		 * Sets the given as a start point for the tree.
 		 * Only in OperationMode.Client.
-		 * @param oTreeState Only valid tree states from the same binding are accepted
+		 *
+		 * @param {object} oTreeState Only valid tree states from the same binding are accepted
 		 * @private
 		 */
 		TreeBindingAdapter.prototype.setTreeState = function (oTreeState) {
@@ -122,15 +145,19 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Sets the AutoExpand Mode for this Adapter. Default is "Bundled".
-		 * @param {sap.ui.model.TreeAutoExpandMode} sAutoExpandMode
+		 * Sets the auto expand mode for this Adapter. Default is "Bundled".
+		 *
+		 * @param {sap.ui.model.TreeAutoExpandMode} sAutoExpandMode The new auto expand mode to set
 		 */
 		TreeBindingAdapter.prototype.setAutoExpandMode = function (sAutoExpandMode) {
 			this._autoExpandMode = sAutoExpandMode;
 		};
 
 		/**
-		 * @override
+		 * Returns the number of entries in the tree.
+		 *
+		 * @return {number} Returns the number of entries in the tree
+		 * @public
 		 */
 		TreeBindingAdapter.prototype.getLength = function() {
 			if (!this._oRootNode) {
@@ -142,25 +169,29 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * @override
+		 * Gets the context of the node at the given index.
+		 *
+		 * @param {number} iIndex
+		 *   The index of the node
+		 *
+		 * @returns {sap.ui.model.Context|undefined}
+		 *   The context of the node at the given index or <code>undefined</code> if the binding is
+		 *   initial or no node was found at the given index
 		 */
 		TreeBindingAdapter.prototype.getContextByIndex = function (iIndex) {
 			//step out if the binding is initial (as long as the metadata is not yet loaded)
 			if (this.isInitial()) {
-				return;
+				return undefined;
 			}
 
 			var oNode = this.findNode(iIndex);
 			return oNode ? oNode.context : undefined;
 		};
 
-		/**
-		 * @override
-		 */
 		TreeBindingAdapter.prototype.getNodeByIndex = function(iIndex) {
 			//step out if the binding is initial (as long as the metadata is not yet loaded)
 			if (this.isInitial()) {
-				return;
+				return undefined;
 			}
 
 			// if the requested index is bigger than the magnitude of the tree, the index can never
@@ -173,32 +204,40 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Find node retrieves an actual tree nodes.
-		 * However if there are sum rows cached (meaning, they are currently displayed), these will also be returned.
+		 * Gets the tree node matching the given search parameters. However, if there are sum rows
+		 * cached (meaning, they are currently displayed), these will also be returned.
+		 *
+		 * @param {number} iRowIndex
+		 *   The row index of the node
+		 *
+		 * @returns {object|undefined}
+		 *   The found node or <code>undefined</code> if the binding is initial or no node is found
 		 */
-		TreeBindingAdapter.prototype.findNode = function (vParam) {
+		TreeBindingAdapter.prototype.findNode = function (iRowIndex) {
 
 			//step out if the binding is initial (as long as the metadata is not yet loaded)
 			if (this.isInitial()) {
-				return;
+				return undefined;
 			}
 
-			var sParameterType = typeof vParam;
+			var sParameterType = typeof iRowIndex;
 			var oFoundNode;
 
 			var aSearchResult = [];
 
 			//if the parameter is an index -> first check the cache, and then search the tree if necessary
 			if (sParameterType === "number") {
-				oFoundNode = this._aRowIndexMap[vParam];
+				oFoundNode = this._aRowIndexMap[iRowIndex];
 
 				if (!oFoundNode) {
 					var iIndexCounter = -1;
 					this._match(this._oRootNode, aSearchResult, 1, function (oNodeToCheck) {
-						if (iIndexCounter === vParam) {
+						if (iIndexCounter === iRowIndex) {
 							return true;
 						}
 						iIndexCounter += 1;
+
+						return false;
 					});
 
 					oFoundNode = aSearchResult[0];
@@ -253,10 +292,20 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 			return oNodeStateInSource;
 		};
 
+
+		/**
+		 * Creates a new node state using supplied parameters.
+		 *
+		 * @param {object} mParameters
+		 *   Parameters for the new node state
+		 *
+		 * @returns {object|undefined}
+		 *   The created node state or <code>undefined</code> if no group id is given
+		 */
 		TreeBindingAdapter.prototype._createNodeState = function (mParameters) {
 			if (!mParameters.groupID) {
-				jQuery.sap.assert(false, "To create a node state a group ID is mandatory!");
-				return;
+				assert(false, "To create a node state a group ID is mandatory!");
+				return undefined;
 			}
 
 			// check if the tree has an initial expansion state for the given groupID
@@ -304,23 +353,31 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 		/**
 		 * Merges the new section with all currently known sections.
-		 * Makes sure, that only non overlapping sections are kept.
+		 * Makes sure that only non overlapping sections are kept.
+		 *
+		 * @param {string} sGroupID
+		 *   The group ID of the node below which the new section should be merged
+		 * @param {object} oNewSection
+		 *   The new section to merge
+		 *
+		 * @returns {object|undefined}
+		 *   The merged sections
 		 */
 		TreeBindingAdapter.prototype._updateNodeSections = function (sGroupID, oNewSection) {
 			var oNodeState = this._getNodeState(sGroupID);
 
 			if (!oNodeState) {
-				jQuery.sap.assert(false, "No Node State for Group ID '" + sGroupID + "' found!");
-				return;
+				assert(false, "No Node State for Group ID '" + sGroupID + "' found!");
+				return undefined;
 			} else if (!oNewSection) {
-				jQuery.sap.assert(false, "No Section given!");
-				return;
+				assert(false, "No Section given!");
+				return undefined;
 			} else if (oNewSection.length <= 0) {
-				jQuery.sap.assert(false, "The length of the given section must be positive greater than 0.");
-				return;
+				assert(false, "The length of the given section must be positive greater than 0.");
+				return undefined;
 			} else if (oNewSection.startIndex < 0) {
-				jQuery.sap.assert(false, "The sections start index must be greater/equal to 0.");
-				return;
+				assert(false, "The sections start index must be greater/equal to 0.");
+				return undefined;
 			}
 
 			// Iterate over all known/loaded sections of the node
@@ -360,6 +417,10 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		/**
 		 * Calculates the maximum possible group-size for a given node.
 		 * Not the same as the direct number of children.
+		 *
+		 * @param {object} oNode The node to calculate the group-size for
+		 *
+		 * @returns {number} The maximum possible group-size
 		 */
 		TreeBindingAdapter.prototype._getMaxGroupSize = function (oNode) {
 			var iMaxGroupSize = 0;
@@ -380,12 +441,48 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Retrieves the requested part from the tree.
+		 * Gets an array of contexts for the requested part of the tree.
+		 *
+		 * @param {number} [iStartIndex=0]
+		 *   The index of the first requested context
+		 * @param {number} [iLength]
+		 *   The maximum number of returned contexts; if not given the model's size limit is used;
+		 *   see {@link sap.ui.model.Model#setSizeLimit}
+		 * @param {number} [iThreshold=0]
+		 *   The maximum number of contexts to read to read additionally as buffer
+		 * @return {sap.ui.model.Context[]}
+		 *   The requested tree contexts
+		 *
+		 * @protected
 		 */
-		TreeBindingAdapter.prototype.getContexts = function(iStartIndex, iLength, iThreshold, bReturnNodes) {
+		TreeBindingAdapter.prototype.getContexts = function (iStartIndex, iLength, iThreshold) {
+			return this._getContextsOrNodes(false, iStartIndex, iLength, iThreshold);
+		};
 
-			//step out if the binding is initial (as long as the metadata is not yet loaded)
-			if (this.isInitial()) {
+		/**
+		 * Gets an array of either node objects or contexts for the requested part of the tree.
+		 *
+		 * @param {boolean} bReturnNodes
+		 *   Whether to return node objects or contexts
+		 * @param {number} [iStartIndex=0]
+		 *   The index of the first requested node or context
+		 * @param {number} [iLength]
+		 *   The maximum number of returned nodes or contexts; if not given the model's size limit
+		 *   is used; see {@link sap.ui.model.Model#setSizeLimit}
+		 * @param {number} [iThreshold=0]
+		 *   The maximum number of nodes or contexts to read additionally as buffer
+		 * @return {object[]|sap.ui.model.Context[]}
+		 *   The requested tree nodes or contexts
+		 *
+		 * @private
+		 */
+		TreeBindingAdapter.prototype._getContextsOrNodes = function (bReturnNodes, iStartIndex,
+				iLength, iThreshold) {
+			var mMissingSections, oNode,
+				aContexts = [],
+				aNodes = [];
+
+			if (!this.isResolved() || this.isInitial()) {
 				return [];
 			}
 
@@ -411,7 +508,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 			this._buildTree(iStartIndex, iLength);
 
 			// retrieve the requested section of nodes from the tree
-			var aNodes = [];
 			if (this._oRootNode) {
 				aNodes = this._retrieveNodeSection(this._oRootNode, iStartIndex, iLength);
 			}
@@ -420,10 +516,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 			this._updateRowIndexMap(aNodes, iStartIndex);
 
 			//find missing sections
-			var aContexts = [];
-			var mMissingSections;
 			for (var i = 0; i < aNodes.length; i++) {
-				var oNode = aNodes[i];
+				oNode = aNodes[i];
 				// we found a gap because the node is empty (context is undefined)
 				if (!oNode.context) {
 					mMissingSections = mMissingSections || {};
@@ -443,7 +537,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 				var that = this;
 
 				//if we have a missing section inside a subtree, we need to reload this subtree
-				jQuery.each(mMissingSections, function (sGroupID, oNode) {
+				each(mMissingSections, function (sGroupID, oNode) {
 					// reset the root of the subtree
 					oNode.magnitude = 0;
 					oNode.numberOfTotals = 0;
@@ -454,7 +548,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 				// try to fill gaps in our return array if we already have new data (thanks to thresholding)
 				aContexts = [];
 				for (var j = 0; j < aNodes.length; j++) {
-					var oNode = aNodes[j];
+					oNode = aNodes[j];
 					aContexts.push(oNode.context);
 				}
 			}
@@ -467,19 +561,29 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Retrieves the requested part from the tree and returns node objects.
-		 * @param {int} iStartIndex
-		 * @param {int} iLength
-		 * @param {int} iThreshold
-		 * @return {Object} Tree Node
+		 * Gets an array of nodes for the requested part of the tree.
+		 *
+		 * @param {number} iStartIndex
+		 *   The index of the first requested node
+		 * @param {number} iLength
+		 *   The maximum number of returned nodes; if not given the model's size limit is used; see
+		 *   {@link sap.ui.model.Model#setSizeLimit}
+		 * @param {number} [iThreshold=0]
+		 *   The maximum number of nodes to read additionally as buffer
+		 * @return {object[]}
+		 *   The requested tree nodes
+		 *
 		 * @protected
 		 */
 		TreeBindingAdapter.prototype.getNodes = function (iStartIndex, iLength, iThreshold) {
-			return this.getContexts(iStartIndex, iLength, iThreshold, true);
+			return this._getContextsOrNodes(true, iStartIndex, iLength, iThreshold);
 		};
 
 		/**
-		 * Synchronize a node section from the tree with our RowIndex Mapping table.
+		 * Updates a node section from the tree with our RowIndex Mapping table.
+		 *
+		 * @param {object[]} aNodes The nodes to update
+		 * @param {number} iStartIndex The position where the update should start
 		 */
 		TreeBindingAdapter.prototype._updateRowIndexMap = function (aNodes, iStartIndex) {
 			//throw away the old mapping index
@@ -491,15 +595,21 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Depth-First traversal of a sub-tree object structure starting with the given node as the root.
-		 * Retrieves all found nodes (including gaps). Gaps will be filled with placeholder nodes.
-		 * These placeholders are later used to automatically update the tree after invalidating and refreshing the
-		 * sub-tree(s) containing the gaps.
-		 * @param {object} oNode the root node of the sub-tree for which the section will be retrieved
-		 * @param {int} iStartIndex the start of the tree section which should be retrieved
-		 * @param {int} iLength the start of the tree section which should be retrieved
-		 * @return {object[]} an array containing all collected nodes, for which the absolute node index is greater than iStartIndex
-		 *                    the length of the array will be iLength (or less if the tree does not have that many nodes).
+		 * Depth-First traversal of a sub-tree object structure starting with the given node as the
+		 * root. Retrieves all found nodes (including gaps). Gaps will be filled with placeholder
+		 * nodes. These placeholders are later used to automatically update the tree after
+		 * invalidating and refreshing the sub-tree(s) containing the gaps.
+		 *
+		 * @param {object} oNode
+		 *   Ignored; the root node is always used as starting point
+		 * @param {number} iStartIndex
+		 *   The start of the tree section which should be retrieved
+		 * @param {number} iLength
+		 *   The length of the tree section which should be retrieved
+		 *
+		 * @return {object[]} An array containing all collected nodes, for which the absolute node
+		 *   index is greater than iStartIndex; the length of the array will be iLength (or less if
+		 *   the tree does not have that many nodes).
 		 * @private
 		 */
 		TreeBindingAdapter.prototype._retrieveNodeSection = function (oNode, iStartIndex, iLength) {
@@ -522,11 +632,19 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 					aNodes.push(oNode);
 					return true;
 				}
+
+				return false;
 			});
 
 			return aNodes;
 		};
 
+		/**
+		 * Builds the tree from start index with the specified number of nodes.
+		 *
+		 * @param {int} iStartIndex Index from which the tree shall be built
+		 * @param {int} iLength Number of Nodes
+		 */
 		TreeBindingAdapter.prototype._buildTree = function(iStartIndex, iLength) {
 			//throw away our tree
 			this._oRootNode = undefined;
@@ -541,7 +659,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 			// create root node state if none exists
 			if (!oRootNodeState) {
 
-				var oRootNodeState = this._createNodeState({
+				oRootNodeState = this._createNodeState({
 					groupID: sRootGroupID,
 					sum: true,
 					sections: [{
@@ -581,13 +699,18 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Calculate the request length based on the given information
+		 * Calculate the request length based on the given information.
 		 *
-		 * @param {int} iMaxGroupSize the maximum group size
-		 * @param {object} oSection the information of the current section
+		 * @param {number} iMaxGroupSize The maximum group size
+		 * @param {object} oSection The information of the current section
+		 *
+		 * @returns {number} The calculated request length
+		 *
 		 * @protected
-		 * @deprecated since version 1.52. This method is marked as 'protected' which was meant to be overwritten
-		 *  by its subclasses. It may be renamed or deleted and should only be called from this class or its subclasses.
+		 * @deprecated
+		 *   since version 1.52. This method is marked as 'protected' which was meant to
+		 *   be overwritten by its subclasses. It may be renamed or deleted and should only be
+		 *   called from this class or its subclasses.
 		 */
 		TreeBindingAdapter.prototype._calculateRequestLength = function(iMaxGroupSize, oSection) {
 			var iRequestedLength;
@@ -743,6 +866,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		/**
 		 * Returns if the Binding is grouped, default is true.
 		 * AnalyticalBindings might differ.
+		 *
+		 * @returns {boolean} true
 		 */
 		TreeBindingAdapter.prototype.isGrouped = function () {
 			return true;
@@ -752,10 +877,9 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		 * Hook which needs to be implemented by subclasses
 		 * Calculates a unique group ID for a given node
 		 * @param {Object} oNode Node of which the group ID shall be calculated
-		 * @returns {string} Group ID for oNode
 		 */
 		TreeBindingAdapter.prototype._calculateGroupID = function (oNode) {
-			jQuery.sap.log.error("TreeBindingAdapter#_calculateGroupID: Not implemented. Needs to be implemented in respective sub-classes.");
+			Log.error("TreeBindingAdapter#_calculateGroupID: Not implemented. Needs to be implemented in respective sub-classes.");
 		};
 
 		/**
@@ -805,7 +929,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 			var oNode = this.findNode(iIndex);
 
 			if (!oNode) {
-				jQuery.sap.assert(false, "No node found for index " + iIndex);
+				assert(false, "No node found for index " + iIndex);
 				return;
 			}
 
@@ -829,7 +953,10 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 		/**
 		 * Retrieves the expanded state of the row sitting at the given index.
-		 * @param {int} iIndex the index for which the expansion state should be retrieved
+		 *
+		 * @param {number} iIndex The index for which the expansion state should be retrieved
+		 *
+		 * @returns {boolean} Whether the node at the given index is expanded
 		 */
 		TreeBindingAdapter.prototype.isExpanded = function (iIndex) {
 			var oNode = this.findNode(iIndex);
@@ -851,7 +978,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 			} else if (typeof vParam === "number") {
 				var oNode = this.findNode(vParam);
 				if (!oNode) {
-					jQuery.sap.assert(false, "No node found for index " + vParam);
+					assert(false, "No node found for index " + vParam);
 					return;
 				}
 				oNodeStateForCollapsingNode = oNode.nodeState;
@@ -867,8 +994,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 				// Collapse all subsequent child nodes, this is determined by a common groupID prefix, e.g.: "/A100-50/" is the parent of "/A100-50/Finance/"
 				// All expanded nodes which start with 'sGroupIDforCollapsingNode', are basically children of it and also need to be collapsed
-				jQuery.each(this._mTreeState.expanded, function (sGroupID, oNodeState) {
-					if (jQuery.sap.startsWith(sGroupID, sGroupIDforCollapsingNode)) {
+				each(this._mTreeState.expanded, function (sGroupID, oNodeState) {
+					if (typeof sGroupIDforCollapsingNode == "string" && sGroupIDforCollapsingNode.length > 0 && sGroupID.startsWith(sGroupIDforCollapsingNode)) {
 						that._updateTreeState({groupID: sGroupID, expanded: false});
 					}
 				});
@@ -876,8 +1003,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 				var aDeselectedNodeIds = [];
 
 				// always remove selections from child nodes of the collapsed node
-				jQuery.each(this._mTreeState.selected, function (sGroupID, oNodeState) {
-					if (jQuery.sap.startsWith(sGroupID, sGroupIDforCollapsingNode) && sGroupID !== sGroupIDforCollapsingNode) {
+				each(this._mTreeState.selected, function (sGroupID, oNodeState) {
+					if (typeof sGroupIDforCollapsingNode == "string" && sGroupIDforCollapsingNode.length > 0 && sGroupID.startsWith(sGroupIDforCollapsingNode) && sGroupID !== sGroupIDforCollapsingNode) {
 						//removes the selectAllMode from child nodes
 						oNodeState.selectAllMode = false;
 						that.setNodeSelection(oNodeState, false);
@@ -928,12 +1055,16 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 			//collapse all expanded nodes if they sit on the same level as the one the user wants to collapse to
 			var that = this;
-			jQuery.each(this._mTreeState.expanded, function (sGroupID, oNodeState) {
+			each(this._mTreeState.expanded, function (sGroupID, oNodeState) {
 				var iNodeLevel = that._getGroupIdLevel(sGroupID) - 1;
 				if (iNodeLevel === iLevel) {
 					that.collapse(oNodeState, true);
 				}
 			});
+
+			if (this.bCollapseRecursive) {
+				this.setNumberOfExpandedLevels(iLevel);
+			}
 
 			this._fireChange({reason: ChangeReason.Collapse});
 		};
@@ -966,15 +1097,27 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 		/**
 		 * Calls the given matching function on every child node in the sub tree with root "oNode".
-		 * Inside the map function "this" is bound to the TreeBindingAdapter instance.
-		 * The matching function must return "true" if the node should be collected as a match, and false otherwise.
+		 * Inside the map function "this" is bound to the TreeBindingAdapter instance. The matching
+		 * function must return "true" if the node should be collected as a match, and false
+		 * otherwise.
 		 *
-		 * @param {object} oNode the starting node of the sub-tree which will be traversed, handed to the fnMatchFunction
-		 * @param {array} aResults the collected nodes for which the matching function returns true
-		 * @param {int} iMaxNumberOfMatches the maximum number of matched nodes, _match() will stopp if this boundary is reached
-		 * @param {function} fnMatchFunction the match function is called for every traversed nodes
-		 * @param {int} [iPositionInParent] the relative position of the oNode parameter to its parent nodes children array, handed to the fnMatchFunction
-		 * @param {object} [oParentNode] the parent node of the oNode parameter, handed to the fnMatchFunction
+		 * @param {object} oNode
+		 *   The starting node of the sub-tree which will be traversed, handed to the
+		 *   fnMatchFunction
+		 * @param {array} aResults
+		 *   The collected nodes for which the matching function returns true
+		 * @param {number} iMaxNumberOfMatches
+		 *   The maximum number of matched nodes, _match() will stopp if this boundary is reached
+		 * @param {function} fnMatchFunction
+		 *   The match function is called for every traversed nodes
+		 * @param {number} [iPositionInParent]
+		 *   The relative position of the oNode parameter to its parent nodes children array, handed
+		 *   to the fnMatchFunction
+		 * @param {object} [oParentNode]
+		 *   The parent node of the oNode parameter, handed to the fnMatchFunction
+		 *
+		 * @returns {boolean}
+		 *   Whether the <code>iMaxNumberOfMatches</code> has been reached
 		 */
 		TreeBindingAdapter.prototype._match = function (oNode, aResults, iMaxNumberOfMatches, fnMatchFunction, iPositionInParent, oParentNode) {
 
@@ -1017,7 +1160,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 			var oNode = this.findNode(iIndex);
 
 			if (!oNode) {
-				jQuery.sap.assert(false, "There is no node at index " + iIndex + ".");
+				assert(false, "There is no node at index " + iIndex + ".");
 				return;
 			}
 
@@ -1030,19 +1173,25 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 		/**
 		 * A group ID starts and ends with a "/".
-		 * @override
+		 *
+		 * @param {string} sGroupID The group ID to get the level from
+		 *
+		 * @returns {number} The level of the group ID
 		 */
 		TreeBindingAdapter.prototype._getGroupIdLevel = function (sGroupID) {
 			if (sGroupID == null) {
-				jQuery.sap.log.warning("assertion failed: no need to determine level of group ID = null");
+				Log.warning("assertion failed: no need to determine level of group ID = null");
 				return -1;
 			}
 			return sGroupID.split("/").length - 2;
 		};
 
 		/**
-		 * Determines the size of a group
-		 * @override
+		 * Determines the size of a group.
+		 *
+		 * @param {object} oNode The node to determine the size of
+		 *
+		 * @returns {number} The child count of the given node
 		 */
 		TreeBindingAdapter.prototype._getGroupSize = function (oNode) {
 			return this.getChildCount(oNode.context);
@@ -1060,7 +1209,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		TreeBindingAdapter.prototype.setNodeSelection = function (oNodeState, bIsSelected) {
 
 			if (!oNodeState.groupID) {
-				jQuery.sap.assert(false, "NodeState must have a group ID!");
+				assert(false, "NodeState must have a group ID!");
 				return;
 			}
 
@@ -1078,7 +1227,10 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 		/**
 		 * Returns the selection state for the node at the given index.
-		 * @param {int} iRowIndex the row index to check for selection state
+		 *
+		 * @param {number} iRowIndex The row index to check for selection state
+		 *
+		 * @returns {boolean} Whether the node at the given index is selected
 		 */
 		TreeBindingAdapter.prototype.isIndexSelected = function (iRowIndex) {
 			var oNode = this.getNodeByIndex(iRowIndex);
@@ -1086,9 +1238,12 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Returns if the node at the given index is selectable.
+		 * Returns whether the node at the given index is selectable.
 		 * In the AnalyticalTable only nodes with isLeaf = true are selectable.
-		 * @param {int} iRowIndex the row index which should be checked for "selectability"
+		 *
+		 * @param {number} iRowIndex The row index which should be checked for "selectability"
+		 *
+		 * @returns {boolean} Whether the node at the given index is selectable
 		 */
 		TreeBindingAdapter.prototype.isIndexSelectable = function (iRowIndex) {
 			var oNode = this.getNodeByIndex(iRowIndex);
@@ -1096,7 +1251,12 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Checks if the given node can be selected. Always true for TreeTable controls, except the node is not defined.
+		 * Checks if the given node can be selected. Always true for TreeTable controls, except when
+		 * the node is not defined.
+		 *
+		 * @param {object} oNode The node to check
+		 *
+		 * @returns {boolean} Whether the node can be selected
 		 */
 		TreeBindingAdapter.prototype._isNodeSelectable = function (oNode) {
 			return !!oNode && !oNode.isArtificial;
@@ -1131,23 +1291,24 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 				this._publishSelectionChanges(oChanges);
 			} else {
-				jQuery.sap.log.warning("TreeBindingAdapter: The selection was ignored. Please make sure to only select rows, for which data has been fetched to the client. For AnalyticalTables, some rows might not be selectable at all.");
+				Log.warning("TreeBindingAdapter: The selection was ignored. Please make sure to only select rows, for which data has been fetched to the client. For AnalyticalTables, some rows might not be selectable at all.");
 			}
 		};
 
 		/**
-		 * Retrieves the "Lead-Selection-Index"
-		 * Normally this is the last selected node/table row.
-		 * @return {int} returns the lead selection index or -1 if none is set
+		 * Retrieves the "Lead-Selection-Index". Normally this is the last selected node/table row.
+		 *
+		 * @return {number} Returns the lead selection index or -1 if none is set
 		 */
 		TreeBindingAdapter.prototype.getSelectedIndex = function () {
 			//if we have no nodes selected, the lead selection index is -1
-			if (!this._sLeadSelectionGroupID || jQuery.isEmptyObject(this._mTreeState.selected)) {
+			if (!this._sLeadSelectionGroupID || isEmptyObject(this._mTreeState.selected)) {
 				return -1;
 			}
 
 			// find the first selected entry -> this is our lead selection index
 			var iNodeCounter = -1;
+			var nodeFound = false;
 			var fnMatchFunction = function (oNode) {
 				if (!oNode || !oNode.isArtificial) {
 					iNodeCounter++;
@@ -1155,13 +1316,24 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 				if (oNode) {
 					if (oNode.groupID === this._sLeadSelectionGroupID) {
+						nodeFound = true;
+
 						return true;
 					}
 				}
+
+				return false;
 			};
 			this._match(this._oRootNode, [], 1, fnMatchFunction);
 
-			return iNodeCounter;
+			if (nodeFound) {
+				return iNodeCounter;
+			}
+			// If a parent of the lead selected node has been collapsed,
+			//	we might not be able to find it in the current tree.
+			// This can only happen if recursive collapse is not active
+			//	(recursive collapse always removes the selection of a collapsed nodes' children)
+			return -1;
 		};
 
 		/**
@@ -1174,7 +1346,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 			var that = this;
 
 			//if we have no nodes selected, the selection indices are empty
-			if (jQuery.isEmptyObject(this._mTreeState.selected)) {
+			if (isEmptyObject(this._mTreeState.selected)) {
 				return aResultIndices;
 			}
 
@@ -1196,6 +1368,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 						return true;
 					}
 				}
+
+				return false;
 			};
 
 			this._match(this._oRootNode, [], iNumberOfNodesToSelect, fnMatchFunction);
@@ -1204,7 +1378,9 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Returns the number of selected nodes (including not-yet loaded)
+		 * Returns the number of selected nodes (including not-yet loaded).
+		 *
+		 * @returns {number} The count of selected nodes
 		 * @private
 		 */
 		TreeBindingAdapter.prototype.getSelectedNodesCount = function () {
@@ -1214,7 +1390,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 				var sGroupId, iVisibleDeselectedNodeCount, oParent, oGroupNodeState;
 
 				var oContext, aVisibleGroupIds = [];
-				if (this.filterInfo && this.aAllFilters) {
+				if (this.filterInfo && this.oCombinedFilter) {
 					// If we are filtering, we need to map the filtered (visible) contexts to group IDs.
 					// With that we can check whether a node state is actually a visible node
 					for (var i = this.filterInfo.aFilteredContexts.length - 1; i >= 0; i--) {
@@ -1229,7 +1405,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 				// If we implicitly deselect all nodes under a group node,
 				//	we need to count them as "visible deselected nodes"
 				for (sGroupId in this._mTreeState.expanded) {
-					if (!this.aAllFilters || aVisibleGroupIds.indexOf(sGroupId) !== -1) { // Not filtering or part of the visible nodes if filtering
+					if (!this.oCombinedFilter || aVisibleGroupIds.indexOf(sGroupId) !== -1) { // Not filtering or part of the visible nodes if filtering
 						oGroupNodeState = this._mTreeState.expanded[sGroupId];
 						if (!oGroupNodeState.selectAllMode && oGroupNodeState.leafCount !== undefined) {
 							iVisibleDeselectedNodeCount += oGroupNodeState.leafCount;
@@ -1240,7 +1416,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 				// Except those who got explicitly selected after the parent got collapsed
 				//	and expanded again (and while the root is still in select-all mode)
 				for (sGroupId in this._mTreeState.selected) {
-					if (!this.aAllFilters || aVisibleGroupIds.indexOf(sGroupId) !== -1) { // Not filtering or part of the visible nodes if filtering
+					if (!this.oCombinedFilter || aVisibleGroupIds.indexOf(sGroupId) !== -1) { // Not filtering or part of the visible nodes if filtering
 						oGroupNodeState = this._mTreeState.selected[sGroupId];
 						oParent = this._mTreeState.expanded[oGroupNodeState.parentGroupID];
 						if (oParent && !oParent.selectAllMode) {
@@ -1251,7 +1427,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 				// Add those which are explicitly deselected and whose parents *are* in selectAllMode (not covered by the above)
 				for (sGroupId in this._mTreeState.deselected) {
-					if (!this.aAllFilters || aVisibleGroupIds.indexOf(sGroupId) !== -1) { // Not filtering or part of the visible nodes if filtering
+					if (!this.oCombinedFilter || aVisibleGroupIds.indexOf(sGroupId) !== -1) { // Not filtering or part of the visible nodes if filtering
 						oGroupNodeState = this._mTreeState.deselected[sGroupId];
 						oParent = this._mTreeState.expanded[oGroupNodeState.parentGroupID];
 						// If parent is expanded check if its in select all mode
@@ -1269,7 +1445,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Returns the number of currently selectable nodes (with respect to the current expand/collapse state).
+		 * Returns the number of currently selectable nodes (with respect to the current
+		 * expand/collapse state).
+		 *
+		 * @param {object} [oNode] The node to get the selectable nodes count from
+		 *
 		 * @returns {int} Number of currently selectable nodes
 		 */
 		TreeBindingAdapter.prototype._getSelectableNodesCount = function (oNode) {
@@ -1281,15 +1461,18 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Returns an array containing all selected contexts, ordered by their appearance in the tree.
-		 * @return {sap.ui.model.Context[]} an array containing the binding contexts for all selected nodes
+		 * Returns an array containing all selected contexts, ordered by their appearance in the
+		 * tree.
+		 *
+		 * @return {sap.ui.model.Context[]}
+		 *   An array containing the binding contexts for all selected nodes
 		 */
 		TreeBindingAdapter.prototype.getSelectedContexts = function () {
 			var aResultContexts = [];
 			var that = this;
 
 			//if we have no nodes selected, the selection indices are empty
-			if (jQuery.isEmptyObject(this._mTreeState.selected)) {
+			if (isEmptyObject(this._mTreeState.selected)) {
 				return aResultContexts;
 			}
 
@@ -1308,9 +1491,12 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 						aResultContexts.push(oNode.context);
 						// cache the selected node for subsequent findNode/getContextByIndex calls
 						that._aRowIndexMap[iNodeCounter] = oNode;
+
 						return true;
 					}
 				}
+
+				return false;
 			};
 
 			this._match(this._oRootNode, [], iNumberOfNodesToSelect, fnMatchFunction);
@@ -1320,22 +1506,25 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 		/**
 		 * Sets the selection to the range from iFromIndex to iToIndex (including boundaries).
-		 * e.g. setSelectionInterval(1,3) marks the rows 1,2 and 3.
-		 * All currently selected rows will be deselected in the process.
-		 * A selectionChanged event is fired
+		 * e.g. <code>setSelectionInterval(1,3)</code> marks the rows 1,2 and 3. All currently
+		 * selected rows will be deselected in the process. A <code>selectionChanged</code> event is
+		 * fired.
+		 *
+		 * @param {number} iFromIndex The first index to select
+		 * @param {number} iToIndex The last index to select
 		 */
 		TreeBindingAdapter.prototype.setSelectionInterval = function (iFromIndex, iToIndex) {
-			// clears the selection but suppresses the selection change event
-			var mClearParams = this._clearSelection();
-			// the addSelectionInterval function takes care of the selection change event
-			var mSetParams = this._setSelectionInterval(iFromIndex, iToIndex, true);
-
-			var mIndicesFound = {};
-			var aRowIndices = [];
+			var i, iIndex,
+				// clears the selection but suppresses the selection change event
+				mClearParams = this._clearSelection(),
+				mIndicesFound = {},
+				aRowIndices = [],
+				// the addSelectionInterval function takes care of the selection change event
+				mSetParams = this._setSelectionInterval(iFromIndex, iToIndex, true);
 
 			// flag all cleared indices as changed
-			for (var i = 0; i < mClearParams.rowIndices.length; i++) {
-				var iIndex = mClearParams.rowIndices[i];
+			for (i = 0; i < mClearParams.rowIndices.length; i++) {
+				iIndex = mClearParams.rowIndices[i];
 				mIndicesFound[iIndex] = true;
 			}
 
@@ -1352,7 +1541,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 			// transform the changed index MAP into a real array of indices
 			for (iIndex in mIndicesFound) {
 				if (mIndicesFound[iIndex]) {
-					aRowIndices.push(parseInt(iIndex, 10));
+					aRowIndices.push(parseInt(iIndex));
 				}
 			}
 
@@ -1366,11 +1555,19 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Sets the value inside the given range to the value given with 'bSelectionValue'
+		 * Sets the value inside the given range to the value given with 'bSelectionValue'.
+		 *
+		 * @param {number} iFromIndex
+		 *   The starting index of the selection range
+		 * @param {number} iToIndex
+		 *   The end index of the selection range, which will be included in the selection
+		 * @param {boolean} bSelectionValue
+		 *   The selection state which should be applied to all indices between 'from' and 'to'
+		 *   index
+		 *
+		 * @returns {object}
+		 *   A map containing info about the changed selection
 		 * @private
-		 * @param {int} iFromIndex the starting index of the selection range
-		 * @param {int} iToIndex the end index of the selection range
-		 * @param {boolean} bSelectionValue the selection state which should be applied to all indices between 'from' and 'to' index
 		 */
 		TreeBindingAdapter.prototype._setSelectionInterval = function (iFromIndex, iToIndex, bSelectionValue) {
 			//make sure the "From" Index is always lower than the "To" Index
@@ -1418,6 +1615,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 					}
 				}
 
+				return false;
 			};
 
 			this._match(this._oRootNode, aNewlySelectedNodes, iNumberOfNodesToSelect, fnMatchFunction);
@@ -1440,10 +1638,14 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Marks a range of tree nodes as selected/deselected, starting with iFromIndex going to iToIndex.
-		 * The TreeNodes are referenced via their absolute row index.
-		 * Please be aware, that the absolute row index only applies to the tree which is visualized by the TreeTable.
-		 * Invisible nodes (collapsed child nodes) will not be regarded.
+		 * Marks a range of tree nodes as selected/deselected, starting with <code>iFromIndex</code>
+		 * going to <code>iToIndex</code>. The TreeNodes are referenced via their absolute row
+		 * index. Please be aware, that the absolute row index only applies to the tree which is
+		 * visualized by the TreeTable. Invisible nodes (collapsed child nodes) will not be
+		 * regarded.
+		 *
+		 * @param {number} iFromIndex The first index to mark
+		 * @param {number} iToIndex The last index to mark
 		 */
 		TreeBindingAdapter.prototype.addSelectionInterval = function (iFromIndex, iToIndex) {
 			var mParams = this._setSelectionInterval(iFromIndex, iToIndex, true);
@@ -1451,7 +1653,10 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Removes the selections inside the given range (including boundaries)
+		 * Removes the selections inside the given range (including boundaries).
+		 *
+		 * @param {number} iFromIndex The first index to remove the selection from
+		 * @param {number} iToIndex The last index to remove the selection from
 		 */
 		TreeBindingAdapter.prototype.removeSelectionInterval = function (iFromIndex, iToIndex) {
 			var mParams = this._setSelectionInterval(iFromIndex, iToIndex, false);
@@ -1512,20 +1717,31 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Removes the selection from all nodes
+		 * Removes the selection from all nodes.
+		 *
+		 * @returns {object} An object containing information about the new selection state
 		 * @private
 		 */
 		TreeBindingAdapter.prototype._clearSelection = function () {
 			var iNodeCounter = -1;
 			var iOldLeadIndex = -1;
-			var iMaxNumberOfMatches = 0;
+			var iMaxNumberOfMatches;
 
 			var aChangedIndices = [];
 
-			// Optimisation: find out how many nodes we have to check for deselection
-			for (var sGroupID in this._mTreeState.selected) {
-				if (sGroupID) {
-					iMaxNumberOfMatches++;
+			// The following optimization is not used when selectAllMode was activated.
+			//
+			// In selectAllMode, a traverse through all nodes are needed because the
+			// this._mTreeState.selected only contains the selectable (isNodeSelectable)
+			// nodes but non-selectable nodes may also have the selectAllMode set with
+			// true
+			if (this._oRootNode && !this._oRootNode.nodeState.selectAllMode) {
+				iMaxNumberOfMatches = 0;
+				// Optimisation: find out how many nodes we have to check for deselection
+				for (var sGroupID in this._mTreeState.selected) {
+					if (sGroupID) {
+						iMaxNumberOfMatches++;
+					}
 				}
 			}
 
@@ -1557,6 +1773,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 						return true;
 					}
 				}
+
+				return false;
 			};
 
 			this._match(this._oRootNode, [], iMaxNumberOfMatches, fnMatch);
@@ -1574,20 +1792,25 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 		/**
 		 * Removes the complete selection.
-		 * @param {boolean} bSuppressSelectionChangeEvent if this is set to true, no selectionChange event will be fired
+		 *
+		 * @param {boolean} bSuppressSelectionChangeEvent
+		 *   Whether to suppress the <code>selectionChange</code> event
 		 */
-		TreeBindingAdapter.prototype.clearSelection = function (bSuppresSelectionChangeEvent) {
+		TreeBindingAdapter.prototype.clearSelection = function (bSuppressSelectionChangeEvent) {
 			var oChanges = this._clearSelection();
 
 			// check if the selection change event should be suppressed
-			if (!bSuppresSelectionChangeEvent) {
+			if (!bSuppressSelectionChangeEvent) {
 				this._publishSelectionChanges(oChanges);
 			}
 		};
 
 		/**
-		 * Fires a "selectionChanged" event with the given parameters.
-		 * Also performs a sanity check on the parameters.
+		 * Fires a <code>selectionChanged</code> event with the given parameters. Also performs a
+		 * sanity check on the parameters.
+		 *
+		 * @param {object} mParams
+		 *   An object containing information about selection change
 		 */
 		TreeBindingAdapter.prototype._publishSelectionChanges = function (mParams) {
 
@@ -1618,8 +1841,10 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Sets the node hierarchy to collapse recursive. When set to true, all child nodes will get collapsed as well.
-		 * @param {boolean} bCollapseRecursive
+		 * Sets the node hierarchy to collapse recursive. When set to true, all child nodes will be
+		 * collapsed as well.
+		 *
+		 * @param {boolean} bCollapseRecursive Whether to enable the recursive collapsing
 		 */
 		TreeBindingAdapter.prototype.setCollapseRecursive = function (bCollapseRecursive) {
 			this.bCollapseRecursive = !!bCollapseRecursive;
@@ -1627,6 +1852,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 
 		/**
 		 * Gets the collapsing behavior when parent nodes are collapsed.
+		 *
+		 * @returns {boolean} Whether recursive collapsing is enabled
 		 */
 		TreeBindingAdapter.prototype.getCollapseRecursive = function () {
 			return this.bCollapseRecursive;
@@ -1637,18 +1864,24 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		//*********************************************
 
 		/**
-		 * Attach event-handler <code>fnFunction</code> to the 'selectionChanged' event of this <code>sap.ui.model.SelectionModel</code>.<br/>
+		 * Attaches event handler <code>fnFunction</code> to the {@link #event:selectionChanged selectionChanged} event of this
+		 * <code>sap.ui.model.TreeBindingAdapter</code>.
+		 *
+		 * When called, the context of the event handler (its <code>this</code>) will be bound to <code>oListener</code>
+		 * if specified, otherwise it will be bound to this <code>sap.ui.model.TreeBindingAdapter</code> itself.
+		 *
 		 * Event is fired if the selection of tree nodes is changed in any way.
 		 *
 		 * @param {object}
-		 *            [oData] The object, that should be passed along with the event-object when firing the event.
+		 *            [oData] An application-specific payload object that will be passed to the event handler
+		 *            along with the event object when firing the event
 		 * @param {function}
-		 *            fnFunction The function to call, when the event occurs. This function will be called on the
-		 *            oListener-instance (if present) or in a 'static way'.
+		 *            fnFunction The function to be called, when the event occurs
 		 * @param {object}
-		 *            [oListener] Object on which to call the given function. If empty, this <code>TreeBindingAdapter</code> is used.
+		 *            [oListener] Context object to call the event handler with. Defaults to this
+		 *            <code>TreeBindingAdapter</code> itself
 		 *
-		 * @return {sap.ui.model.SelectionModel} <code>this</code> to allow method chaining
+		 * @returns {this} Reference to <code>this</code> in order to allow method chaining
 		 * @public
 		 */
 		TreeBindingAdapter.prototype.attachSelectionChanged = function(oData, fnFunction, oListener) {
@@ -1657,15 +1890,16 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Detach event-handler <code>fnFunction</code> from the 'selectionChanged' event of this <code>sap.ui.model.SelectionModel</code>.<br/>
+		 * Detaches event handler <code>fnFunction</code> from the {@link #event:selectionChanged selectionChanged} event of this
+		 * <code>sap.ui.model.TreeBindingAdapter</code>.
 		 *
-		 * The passed function and listener object must match the ones previously used for event registration.
+		 * The passed function and listener object must match the ones used for event registration.
 		 *
 		 * @param {function}
-		 *            fnFunction The function to call, when the event occurs.
+		 *            fnFunction The function to be called, when the event occurs
 		 * @param {object}
-		 *            oListener Object on which the given function had to be called.
-		 * @return {sap.ui.model.SelectionModel} <code>this</code> to allow method chaining
+		 *            [oListener] Context object on which the given function had to be called
+		 * @returns {this} Reference to <code>this</code> in order to allow method chaining
 		 * @public
 		 */
 		TreeBindingAdapter.prototype.detachSelectionChanged = function(fnFunction, oListener) {
@@ -1674,7 +1908,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		};
 
 		/**
-		 * Fire event 'selectionChanged' to attached listeners.
+		 * Fires event {@link #event:selectionChanged selectionChanged} to attached listeners.
 		 *
 		 * Expects following event parameters:
 		 * <ul>
@@ -1682,14 +1916,14 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Tr
 		 * <li>'rowIndices' of type <code>int[]</code> Other selected indices (if available)</li>
 		 * </ul>
 		 *
-		 * @param {object} mArguments the arguments to pass along with the event.
-		 * @param {int} mArguments.leadIndex Lead selection index
-		 * @param {int[]} [mArguments.rowIndices] Other selected indices (if available)
-		 * @return {sap.ui.model.SelectionModel} <code>this</code> to allow method chaining
+		 * @param {object} oParameters Parameters to pass along with the event.
+		 * @param {int} oParameters.leadIndex Lead selection index
+		 * @param {int[]} [oParameters.rowIndices] Other selected indices (if available)
+		 * @returns {this} Reference to <code>this</code> in order to allow method chaining
 		 * @protected
 		 */
-		TreeBindingAdapter.prototype.fireSelectionChanged = function(mArguments) {
-			this.fireEvent("selectionChanged", mArguments);
+		TreeBindingAdapter.prototype.fireSelectionChanged = function(oParameters) {
+			this.fireEvent("selectionChanged", oParameters);
 			return this;
 		};
 

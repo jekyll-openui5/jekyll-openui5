@@ -1,8 +1,8 @@
 /* NOTE: This file was generated as an optimized version of "library.source.less" for the Theme Designer. */
 
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -69,107 +69,33 @@
 }
 /* END "ResponsiveLayout.less" */
 
-/* START "SimpleForm.less" */
-/* ========================================= */
-/* CSS for control sap.ui.layout/SimpleForm  */
-/* Belize High Contrast White theme          */
-/* ========================================= */
-
-.sapUiFormEdit-CTX .sapMRb {
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-/* END "SimpleForm.less" */
-
 /* START "Splitter.less" */
 /* ======================================= */
 /* CSS for control sap.ui.layout/Splitter  */
 /* Belize High Contrast White theme        */
 /* ======================================= */
 
+@_sap_ui_layout_Splitter_BarActiveDecorationColors: @sapUiObjectHeaderBorderColor, @sapUiObjectHeaderBorderColor;
+@_sap_ui_layout_Splitter_BarDecorationColors: @sapUiObjectHeaderBorderColor, fade(@sapUiObjectHeaderBorderColor, 0);
+@_sap_ui_layout_Splitter_BarBorder: 0.0625rem solid @sapUiGroupContentBorderColor;
+@_sap_ui_layout_Splitter_BarHoverIconBorderColor: @sapUiButtonLiteHoverBorderColor;
+@_sap_ui_layout_Splitter_BarHoverIconBackground: @sapUiButtonLiteHoverBackground;
+
 .sapUiLoSplitter {
 	background-color: @sapUiHcStandardBackground;
 }
 
-.sapUiLoSplitterOverlay > .sapUiLoSplitterOverlayBar {
-	background-color: @sapUiGlobalBackgroundColor;
-}
-
-.sapUiLoSplitter > .sapUiLoSplitterBar:focus {
-	outline: 2px dotted @sapUiContentFocusColor;
-	outline-offset: -2px;
-	background-color:  @sapUiHcStandardBackground;
-}
-
-.sapUiLoSplitterH > .sapUiLoSplitterBar > .sapUiIcon.sapUiLoSplitterBarIcon::before,
-.sapUiLoSplitterH > .sapUiLoSplitterOverlay > .sapUiLoSplitterOverlayBar > .sapUiIcon.sapUiLoSplitterBarIcon::before,
-.sapUiLoSplitterV > .sapUiLoSplitterBar > .sapUiIcon.sapUiLoSplitterBarIcon::before,
-.sapUiLoSplitterV > .sapUiLoSplitterOverlay > .sapUiLoSplitterOverlayBar > .sapUiIcon.sapUiLoSplitterBarIcon::before,
-.sapUiLoSplitterV > .sapUiLoSplitterBar > .sapUiIcon.sapUiLoSplitterBarIcon::after,
-.sapUiLoSplitterV > .sapUiLoSplitterOverlay > .sapUiLoSplitterOverlayBar > .sapUiIcon.sapUiLoSplitterBarIcon::after {
-	content: "";
-}
+/*********************************** Focus outline**********************************/
 
 .sapUiLoSplitter > .sapUiLoSplitterBar,
-.sapUiLoSplitterOverlay > .sapUiLoSplitterOverlayBar {
-  background-color: @sapUiHcReducedAltForeground;
+.sapUiLoSplitter > .sapUiLoSplitterOverlay .sapUiLoSplitterOverlayBar {
+	&:focus::after {
+		border-width: 2px;
+		top: -1px;
+		bottom: -1px;
+		left: -1px;
+		right: -1px;
+	}
 }
 
-.sapUiLoSplitter > .sapUiLoSplitterBar:hover,
-.sapUiLoSplitter > .sapUiLoSplitterOverlay > .sapUiLoSplitterOverlayBar {
-	background-color: @sapUiHcStandardForeground;
-}
 /* END "Splitter.less" */
-
-/* START "ResponsiveSplitter.less" */
-/* ================================================= */
-/* CSS for control sap.ui.layout/ResponsiveSplitter  */
-/* Belize High Contrast White theme                  */
-/* ================================================= */
-
-.sapUiResponsiveSplitterPaginatorButton {
-	background-color: transparent;
-
-	&:after {
-		background-color: @sapUiHcReducedAltForeground;
-	}
-
-	&:hover {
-		background-color: @sapUiHcHighlightBackground;
-
-		&:after {
-			background-color: @sapUiHcStandardForeground;
-		}
-	}
-
-	&:focus {
-
-		&:before {
-			border: 1px dotted @sapUiContentFocusColor;
-		}
-	}
-}
-
-.sapUiResponsiveSplitterPaginatorSelectedButton {
-	&:after {
-		background-color: @sapUiHcStandardForeground;
-	}
-}
-
-html.sap-phone .sapUiResponsiveSplitter > .sapUiResponsiveSplitterPage > .sapUiLoSplitter .sapUiLoSplitterBar,
-html.sap-tablet .sapUiResponsiveSplitter > .sapUiResponsiveSplitterPage > .sapUiLoSplitter .sapUiLoSplitterBar,
-html.sap-phone .sapUiResponsiveSplitter > .sapUiResponsiveSplitterPage > .sapUiLoSplitter .sapUiLoSplitterOverlayBar,
-html.sap-tablet .sapUiResponsiveSplitter > .sapUiResponsiveSplitterPage > .sapUiLoSplitter .sapUiLoSplitterOverlayBar {
-	& .sapUiLoSplitterBarIcon:after {
-		background-color: @sapUiHcStandardBackground;
-		border-color: @sapUiHcStandardForeground;
-	}
-}
-
-html.sap-phone .sapUiResponsiveSplitter > .sapUiResponsiveSplitterPage > .sapUiLoSplitter .sapUiLoSplitterOverlayBar,
-html.sap-tablet .sapUiResponsiveSplitter > .sapUiResponsiveSplitterPage > .sapUiLoSplitter .sapUiLoSplitterOverlayBar {
-	& .sapUiLoSplitterBarIcon:after {
-		background-color: @sapUiHcHighlightBackground;
-	}
-}
-/* END "ResponsiveSplitter.less" */

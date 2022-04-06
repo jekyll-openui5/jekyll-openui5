@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -8,6 +8,9 @@
 sap.ui.define(['./FlexBox', './library', "./VBoxRenderer"],
 	function(FlexBox, library, VBoxRenderer) {
 	"use strict";
+
+	// shortcut for sap.m.FlexDirection
+	var FlexDirection = library.FlexDirection;
 
 	/**
 	 * Constructor for a new VBox.
@@ -23,7 +26,7 @@ sap.ui.define(['./FlexBox', './library', "./VBoxRenderer"],
 	 * @extends sap.m.FlexBox
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -40,6 +43,11 @@ sap.ui.define(['./FlexBox', './library', "./VBoxRenderer"],
 		designtime: "sap/m/designtime/VBox.designtime"
 	}});
 
-	return VBox;
+	VBox.prototype.init = function () {
+		this.setDirection(FlexDirection.Column);
 
+		FlexBox.prototype.init.apply(this, arguments);
+	};
+
+	return VBox;
 });

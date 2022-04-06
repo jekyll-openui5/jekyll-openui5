@@ -1,30 +1,37 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.m.FormattedText.
 sap.ui.define([
-	'jquery.sap.global',
 	'./library',
+	'sap/ui/core/library',
 	'sap/ui/core/Control',
 	'./FormattedTextAnchorGenerator',
-	'./FormattedTextRenderer'
+	'./FormattedTextRenderer',
+	"sap/base/Log",
+	"sap/base/security/URLListValidator",
+	"sap/base/security/sanitizeHTML"
 ],
 function(
-	jQuery,
 	library,
+	coreLibrary,
 	Control,
 	FormattedTextAnchorGenerator,
-	FormattedTextRenderer
+	FormattedTextRenderer,
+	Log,
+	URLListValidator,
+	sanitizeHTML0
 	) {
 		"use strict";
 
 
 		// shortcut for sap.m.LinkConversion
-		var LinkConversion = library.LinkConversion;
-
+		var LinkConversion = library.LinkConversion,
+			TextDirection = coreLibrary.TextDirection,
+			TextAlign = coreLibrary.TextAlign;
 
 		/**
 		 * Constructor for a new FormattedText.
@@ -35,7 +42,7 @@ function(
 		 * @class
 		 * The FormattedText control allows the usage of a limited set of tags for inline display of formatted text in HTML format.
 		 * @extends sap.ui.core.Control
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 *
 		 * @constructor
 		 * @public
@@ -54,6 +61,7 @@ function(
 					 * <ul>
 					 *	<li><code>a</code></li>
 					 *	<li><code>abbr</code></li>
+					 *	<li><code>bdi</code></li>
 					 *	<li><code>blockquote</code></li>
 					 *	<li><code>br</code></li>
 					 *	<li><code>cite</code></li>
@@ -72,14 +80,14 @@ function(
 					 *	<li><code>u</code></li>
 					 *	<li><code>dl</code></li>
 					 *	<li><code>dt</code></li>
-					 *	<li><code>dl</code></li>
+					 *	<li><code>dd</code></li>
 					 *	<li><code>ul</code></li>
 					 *	<li><code>ol</code></li>
 					 *	<li><code>li</code></li>
 					 * </ul>
-					 * <p><code>class, style,</code> and <code>target</code> attributes are allowed.
+					 * <p><code>class, style, dir,</code> and <code>target</code> attributes are allowed.
 					 * If <code>target</code> is not set, links open in a new window by default.
-					 * <p>Only safe <code>href</code> attributes can be used. See {@link jQuery.sap.validateUrl}.
+					 * <p>Only safe <code>href</code> attributes can be used. See {@link module:sap/base/security/URLListValidator URLListValidator}.
 					 *
 					 * <b>Note:</b> Keep in mind that not supported HTML tags and
 					 * the content nested inside them are both not rendered by the control.
@@ -89,7 +97,7 @@ function(
 					/**
 					 * Optional width of the control in CSS units.
 					 */
-					width : {type : "sap.ui.core.CSSSize", group : "Appearance", defaultValue : null},
+					width: {type : "sap.ui.core.CSSSize", group : "Appearance", defaultValue : null},
 
 					/**
 					 * Determines whether strings that appear to be links will be converted to HTML anchor tags,
@@ -111,7 +119,37 @@ function(
 					/**
 					 *  Optional height of the control in CSS units.
 					 */
-					height : {type : "sap.ui.core.CSSSize", group : "Appearance", defaultValue : null}
+					height: {type : "sap.ui.core.CSSSize", group : "Appearance", defaultValue : null},
+
+					/**
+					 * Defines the directionality of the text in the <code>FormattedText</code>, e.g. right-to-left(<code>RTL</code>)
+					 * or left-to-right (<code>LTR</code>).
+					 *
+					 * <b>Note:</b> This functionality if set to the root element. Use the <code>bdi</code> element and
+					 * the <code>dir</code> attribute to set explicit direction to an element.
+					 *
+					 * @since 1.86.0
+					 */
+					textDirection: { type: "sap.ui.core.TextDirection", group: "Appearance", defaultValue: TextDirection.Inherit },
+
+					/**
+					 * Determines the text alignment in the text elements in the <code>FormattedText</code>.
+					 *
+					 * <b>Note:</b> This functionality if set to the root element. To set explicit alignment to an element
+					 * use the <code>style</code> attribute.
+					 *
+					 * @since 1.86.0
+					 */
+					textAlign : {type : "sap.ui.core.TextAlign", group : "Appearance", defaultValue : TextAlign.Begin}
+				},
+				aggregations: {
+
+					/**
+					* List of <code>sap.m.Link</code> controls that will be used to replace the placeholders in the text.
+					* Placeholders are replaced according to their indexes. The placeholder with index %%0 will be replaced
+					* by the first link in the aggregation, etc.
+					*/
+					controls: {type: "sap.m.Link", multiple: true, singularName: "control"}
 				}
 			}
 		});
@@ -125,13 +163,15 @@ function(
 				'style' : 1,
 				'class' : 1,
 				'a::href' : 1,
-				'a::target' : 1
+				'a::target' : 1,
+				'dir' : 1
 			},
 			// rules for the allowed tags
 			ELEMENTS: {
 				// Text Module Tags
 				'a' : {cssClass: 'sapMLnk'},
 				'abbr': 1,
+				'bdi' : 1,
 				'blockquote': 1,
 				'br': 1,
 				'cite': 1,
@@ -165,6 +205,7 @@ function(
 			},
 			ELEMENTS: {
 				'a' : {cssClass: 'sapMLnk'},
+				'br': 1,
 				'em': 1,
 				'strong': 1,
 				'u': 1
@@ -209,7 +250,7 @@ function(
 
 				if (!this._renderingRules.ATTRIBS[attr] && !this._renderingRules.ATTRIBS[tagName + "::" + attr]) {
 					sWarning = 'FormattedText: <' + tagName + '> with attribute [' + attr + '="' + value + '"] is not allowed';
-					jQuery.sap.log.warning(sWarning, this);
+					Log.warning(sWarning, this);
 					// to remove the attribute by the sanitizer, set the value to null
 					attribs[i + 1] = null;
 					continue;
@@ -217,8 +258,8 @@ function(
 
 				// sanitize hrefs
 				if (attr == "href") { // a::href
-					if (!jQuery.sap.validateUrl(value)) {
-						jQuery.sap.log.warning("FormattedText: incorrect href attribute:" + value, this);
+					if (!URLListValidator.validate(value)) {
+						Log.warning("FormattedText: incorrect href attribute:" + value, this);
 						attribs[i + 1] = "#";
 						addTarget = false;
 					}
@@ -253,7 +294,7 @@ function(
 				return fnSanitizeAttribs.call(this, tagName, attribs);
 			} else {
 				var sWarning = '<' + tagName + '> is not allowed';
-				jQuery.sap.log.warning(sWarning, this);
+				Log.warning(sWarning, this);
 			}
 		}
 
@@ -265,11 +306,11 @@ function(
 		 * @private
 		 */
 		function sanitizeHTML(sText) {
-			return jQuery.sap._sanitizeHTML(sText, {
+			return sanitizeHTML0(sText, {
 				tagPolicy: fnPolicy.bind(this),
 				uriRewriter: function (sUrl) {
-					// by default we use the URL whitelist to check the URLs
-					if (jQuery.sap.validateUrl(sUrl)) {
+					// by default, we use the URLListValidator to check the URLs
+					if (URLListValidator.validate(sUrl)) {
 						return sUrl;
 					}
 				}
@@ -288,11 +329,15 @@ function(
 			this.$().find('a[target="_blank"]').on("click", openExternalLink);
 		};
 
+		FormattedText.prototype.onBeforeRendering = function () {
+			this.$().find('a[target="_blank"]').off("click", openExternalLink);
+		};
+
 		FormattedText.prototype._getDisplayHtml = function (){
 			var sText = this.getHtmlText(),
 				sAutoGenerateLinkTags = this.getConvertLinksToAnchorTags();
 
-			if (sAutoGenerateLinkTags === library.LinkConversion.None) {
+			if (sAutoGenerateLinkTags === LinkConversion.None) {
 				return sText;
 			}
 
@@ -304,7 +349,7 @@ function(
 		/**
 		 * Defines the HTML text to be displayed.
 		 * @param {string} sText HTML text as a string
-		 * @return {sap.m.FormattedText} this for chaining
+		 * @return {this} this for chaining
 		 * @public
 		 */
 		FormattedText.prototype.setHtmlText = function (sText) {
@@ -315,13 +360,16 @@ function(
 		 * Sets should a limited list of rendering rules be used instead of the default one. This limited list
 		 * will evaluate only a small subset of the default HTML elements and attributes.
 		 * @param {boolean} bLimit Should the control use the limited list
-		 * @sap-restricted sap.m.MessageStrip
 		 * @private
+		 * @ui5-restricted sap.m.MessageStrip
 		 */
 		FormattedText.prototype._setUseLimitedRenderingRules = function (bLimit) {
 			this._renderingRules = bLimit ? _limitedRenderingRules : _defaultRenderingRules;
 		};
 
+		FormattedText.prototype.getFocusDomRef = function () {
+			return this.getDomRef() && this.getDomRef().querySelector("a");
+		};
 
 		return FormattedText;
 	});

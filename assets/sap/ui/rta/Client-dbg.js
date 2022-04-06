@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -8,14 +8,14 @@ sap.ui.define([
 	"sap/ui/base/ManagedObject",
 	"sap/ui/core/postmessage/Bus",
 	"sap/base/util/uid",
-	"sap/base/util/extend",
+	"sap/base/util/merge",
 	"sap/ui/rta/util/ServiceEventBus",
 	"sap/ui/thirdparty/URI"
 ], function (
 	ManagedObject,
 	PostMessageBus,
 	uid,
-	extend,
+	merge,
 	ServiceEventBus,
 	URI
 ) {
@@ -57,24 +57,23 @@ sap.ui.define([
 	 * @alias sap.ui.rta.Client
 	 * @author SAP SE
 	 * @since 1.56.0
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @private
 	 * @ui5-restricted
 	 */
-	var Client = ManagedObject.extend("sap.ui.rta.Client",
-	{
-		metadata : {
-			library : "sap.ui.rta",
-			properties : {
+	var Client = ManagedObject.extend("sap.ui.rta.Client", {
+		metadata: {
+			library: "sap.ui.rta",
+			properties: {
 				/**
 				 * Receiving window object; has to be a different window than the window in which this client is used
 				 */
-				"window": "object",
+				window: "object",
 
 				/**
 				 * Receiving window origin; a valid origin has to be specified, see {@link https://html.spec.whatwg.org/multipage/origin.html#origin}
 				 */
-				"origin": "string"
+				origin: "string"
 			}
 		},
 
@@ -298,7 +297,7 @@ sap.ui.define([
 				var sServiceName = mRequest.request.data.body.arguments[0];
 				var aMethods = mData.body.methods || [];
 				var aEvents = mData.body.events;
-				var mService = extend(
+				var mService = merge(
 					// Create placeholders for methods
 					aMethods.reduce(function (mResult, sMethodName) {
 						mResult[sMethodName] = function () {
@@ -324,7 +323,7 @@ sap.ui.define([
 					if (!this._oServiceEventBus) {
 						this._oServiceEventBus = new ServiceEventBus();
 					}
-					extend(mService, {
+					merge(mService, {
 						attachEvent: function (sEventName, fnCallback, oContext) {
 							if (typeof (sEventName) !== "string" || !sEventName) {
 								throw new TypeError("sap.ui.rta.Client: sEventName must be a non-empty string when calling attachEvent() for a service");

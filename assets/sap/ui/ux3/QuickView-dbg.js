@@ -1,20 +1,26 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.ux3.QuickView.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/ui/thirdparty/jquery',
     'sap/ui/commons/CalloutBase',
     'sap/ui/core/delegate/ItemNavigation',
     './ActionBar',
     './library',
-    "./QuickViewRenderer"
+    './QuickViewRenderer',
+    'sap/ui/core/TooltipBase'
 ],
-	function(jQuery, CalloutBase, ItemNavigation, ActionBar, library, QuickViewRenderer) {
+	function(jQuery, CalloutBase, ItemNavigation, ActionBar, library, QuickViewRenderer, TooltipBase) {
 	"use strict";
+
+
+
+	// shortcut for sap.ui.ux3.FollowActionState
+	var FollowActionState = library.FollowActionState;
 
 
 
@@ -30,7 +36,7 @@ sap.ui.define([
 	 * @extends sap.ui.commons.CalloutBase
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -40,6 +46,7 @@ sap.ui.define([
 	 */
 	var QuickView = CalloutBase.extend("sap.ui.ux3.QuickView", /** @lends sap.ui.ux3.QuickView.prototype */ { metadata : {
 
+		deprecated: true,
 		library : "sap.ui.ux3",
 		properties : {
 
@@ -81,7 +88,7 @@ sap.ui.define([
 			/**
 			 * Follow State of a Thing
 			 */
-			followState : {type : "sap.ui.ux3.FollowActionState", group : "Misc", defaultValue : sap.ui.ux3.FollowActionState.Default},
+			followState : {type : "sap.ui.ux3.FollowActionState", group : "Misc", defaultValue : FollowActionState.Default},
 
 			/**
 			 * State of Flag Action
@@ -189,10 +196,6 @@ sap.ui.define([
 		}
 	}});
 
-	///**
-	// * This file defines behavior for the QuickView control,
-	// */
-
 
 	/**
 	 * Initialization of the QuickView control.
@@ -239,13 +242,13 @@ sap.ui.define([
 		// do not close my pop-up if it was opened already
 		if (oPopup.isOpen() && oPopup.getContent() == this) {
 			if (this.sCloseNowTimeout) {
-				jQuery.sap.clearDelayedCall(this.sCloseNowTimeout);
+				clearTimeout(this.sCloseNowTimeout);
 				this.sCloseNowTimeout = null;
 			}
 			return;
 		}
 
-		sap.ui.core.TooltipBase.prototype.onmouseover.call(this, oEvent);
+		TooltipBase.prototype.onmouseover.call(this, oEvent);
 	};
 
 	/**
@@ -524,4 +527,4 @@ sap.ui.define([
 
 	return QuickView;
 
-}, /* bExport= */ true);
+});

@@ -1,34 +1,45 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	"jquery.sap.global",
+	"sap/ui/thirdparty/jquery",
 	"sap/ui/core/Component",
 	"sap/ui/core/util/reflection/BaseTreeModifier",
-	"sap/ui/thirdparty/hasher"
-], function(
+	"sap/ui/thirdparty/hasher",
+	"sap/base/Log",
+	"sap/base/util/UriParameters",
+	"sap/base/util/uid",
+	"sap/base/strings/formatMessage",
+	"sap/ui/base/ManagedObject",
+	"sap/ui/core/mvc/View",
+	"sap/base/util/isPlainObject",
+	"sap/ui/base/SyncPromise"
+],
+function(
 	jQuery,
 	Component,
 	BaseTreeModifier,
-	hasher
+	hasher,
+	Log,
+	UriParameters,
+	uid,
+	formatMessage,
+	ManagedObject,
+	View,
+	isPlainObject,
+	SyncPromise
 ) {
 	"use strict";
-	//Stack of layers in the layered repository
-	var aLayers = [
-			"VENDOR",
-			"PARTNER",
-			"CUSTOMER_BASE",
-			"CUSTOMER",
-			"USER"
-		];
-	//Precalculates index of layers
-	var mLayersIndex = {};
-	aLayers.forEach(function(sLayer, iIndex){
-		mLayersIndex[sLayer] = iIndex;
-	});
+
+	function appendComponentToString(sComponentName) {
+		if (sComponentName.length > 0 && sComponentName.indexOf(".Component") < 0) {
+			sComponentName += ".Component";
+		}
+		return sComponentName;
+	}
 
 	/**
 	 * Provides utility functions for the SAPUI5 flexibility library
@@ -36,33 +47,25 @@ sap.ui.define([
 	 * @namespace
 	 * @alias sap.ui.fl.Utils
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @experimental Since 1.25.0
 	 */
 	var Utils = {
+		APP_ID_AT_DESIGN_TIME: "${pro" + "ject.art" + "ifactId}", //avoid replaced by content of sap.ui.fl placeholder at build steps
+		VARIANT_MODEL_NAME: "$FlexVariants",
 
-		_aLayers : aLayers,
-		_mLayersIndex : mLayersIndex,
-		_sTopLayer : aLayers[aLayers.length - 1],
-		_sMaxLayer : aLayers[aLayers.length - 1],
-		DEFAULT_APP_VERSION : "DEFAULT_APP_VERSION",
-		APP_ID_AT_DESIGN_TIME : "${pro" + "ject.art" + "ifactId}", //avoid replaced by content of sap.ui.fl placeholder at build steps
 		/**
-		 * log object exposes available log functions
+		 * Formats the log message by replacing placeholders with values and logging the message.
 		 *
-		 * @name sap.ui.fl.Utils.log
-		 * @public
+		 * @param {string} sLogType - Logging type to be used. Possible values: info | warning | debug | error
+		 * @param {array.<string>} aMessageComponents - Individual parts of the message text
+		 * @param {array.<any>} aValuesToInsert - The values to be used instead of the placeholders in the message
+		 * @param {string} [sCallStack] - Passes the callstack to the logging function
 		 */
-		log: {
-			error: function (sMessage, sDetails, sComponent) {
-				jQuery.sap.log.error(sMessage, sDetails, sComponent);
-			},
-			warning: function (sMessage, sDetails, sComponent) {
-				jQuery.sap.log.warning(sMessage, sDetails, sComponent);
-			},
-			debug: function (sMessage, sDetails, sComponent) {
-				jQuery.sap.log.debug(sMessage, sDetails, sComponent);
-			}
+		formatAndLogMessage: function(sLogType, aMessageComponents, aValuesToInsert, sCallStack) {
+			var sLogMessage = aMessageComponents.join(' ');
+			sLogMessage = formatMessage(sLogMessage, aValuesToInsert);
+			Log[sLogType](sLogMessage, sCallStack || "");
 		},
 
 		/**
@@ -74,7 +77,7 @@ sap.ui.define([
 		 * @function
 		 * @name sap.ui.fl.Utils.getXSRFTokenFromControl
 		 */
-		getXSRFTokenFromControl: function (oControl) {
+		getXSRFTokenFromControl: function(oControl) {
 			var oModel;
 			if (!oControl) {
 				return "";
@@ -95,7 +98,7 @@ sap.ui.define([
 		 * @returns {String} XSRF Token
 		 * @private
 		 */
-		_getXSRFTokenFromModel: function (oModel) {
+		_getXSRFTokenFromModel: function(oModel) {
 			var mHeaders;
 			if (!oModel) {
 				return "";
@@ -113,17 +116,19 @@ sap.ui.define([
 		 * Returns the class name of the component the given control belongs to.
 		 *
 		 * @param {sap.ui.core.Control} oControl - SAPUI5 control
+		 *
 		 * @returns {String} The component class name, ending with ".Component"
-		 * @see sap.ui.base.Component.getOwnerIdFor
+		 * @see sap.ui.core.Component.getOwnerIdFor
 		 * @public
 		 * @function
 		 * @name sap.ui.fl.Utils.getComponentClassName
 		 */
-		getComponentClassName: function (oControl) {
+		getComponentClassName: function(oControl) {
 			var oAppComponent;
 
 			// determine UI5 component out of given control
 			if (oControl) {
+				// always return the app component
 				oAppComponent = this.getAppComponentForControl(oControl);
 
 				// check if the component is an application variant and assigned an application descriptor then use this as reference
@@ -142,7 +147,7 @@ sap.ui.define([
 			return Utils.getComponentName(oAppComponent);
 		},
 
-		isVariantByStartupParameter: function (oControl) {
+		isVariantByStartupParameter: function(oControl) {
 			// determine UI5 component out of given control
 			if (oControl) {
 				var oAppComponent = this.getAppComponentForControl(oControl);
@@ -158,15 +163,15 @@ sap.ui.define([
 		 * Returns the class name of the application component owning the passed component or the component name itself if
 		 * this is already an application component.
 		 *
-		 * @param {sap.ui.base.Component} oComponent - SAPUI5 component
+		 * @param {sap.ui.core.Component} oComponent - SAPUI5 component
 		 * @returns {String} The component class name, ending with ".Component"
-		 * @see sap.ui.base.Component.getOwnerIdFor
+		 * @see sap.ui.core.Component.getOwnerIdFor
 		 * @public
 		 * @since 1.40
 		 * @function
 		 * @name getAppComponentClassNameForComponent
 		 */
-		getAppComponentClassNameForComponent: function (oComponent) {
+		getAppComponentClassNameForComponent: function(oComponent) {
 			return Utils.getComponentClassName(oComponent);
 		},
 
@@ -179,8 +184,10 @@ sap.ui.define([
 		 * @function
 		 * @name sap.ui.fl.Utils.getAppDescriptor
 		 */
-		getAppDescriptor: function (oControl) {
-			var oManifest = null, oComponent = null, oComponentMetaData = null;
+		getAppDescriptor: function(oControl) {
+			var oManifest = null;
+			var oComponent = null;
+			var oComponentMetaData = null;
 
 			// determine UI5 component out of given control
 			if (oControl) {
@@ -207,23 +214,22 @@ sap.ui.define([
 		 * @function
 		 * @name sap.ui.fl.Utils.getSiteId
 		 */
-		getSiteId: function (oControl) {
-			var sSiteId = null, oComponent = null;
+		getSiteId: function(oControl) {
+			var sSiteId = null;
+			var oAppComponent = null;
 
 			// determine UI5 component out of given control
 			if (oControl) {
-				oComponent = this.getAppComponentForControl(oControl);
+				oAppComponent = this.getAppComponentForControl(oControl);
 
 				// determine siteId from ComponentData
-				if (oComponent) {
-
+				if (oAppComponent) {
 					//Workaround for back-end check: isApplicationPermitted
 					//As long as FLP does not know about appDescriptorId we have to pass siteID and applicationID.
 					//With startUpParameter hcpApplicationId we will get a concatenation of “siteId:applicationId”
 
 					//sSiteId = this._getComponentStartUpParameter(oComponent, "scopeId");
-					sSiteId = this._getComponentStartUpParameter(oComponent, "hcpApplicationId");
-
+					sSiteId = this._getComponentStartUpParameter(oAppComponent, "hcpApplicationId");
 				}
 			}
 
@@ -239,59 +245,36 @@ sap.ui.define([
 		 * @function
 		 * @name sap.ui.fl.Utils.getSiteIdByComponentData
 		 */
-		getSiteIdByComponentData: function (oComponentData) {
-			var sSiteId = null;
-
-			sSiteId = this._getStartUpParameter(oComponentData, "hcpApplicationId");
-
-			return sSiteId;
-		},
-
-		/**
-		 * Indicates if the current application is a variant of an existing one and the VENDOR layer is selected
-		 *
-		 * @param {sap.ui.core.Control} oControl - SAPUI5 control
-		 * @returns {boolean} true if application is a variant and the VENDOR layer selected
-		 * @public
-		 * @function
-		 * @name sap.ui.fl.Utils.isAppVariantMode
-		 */
-		isAppVariantMode: function (oControl) {
-			return (Utils.isVendorLayer() && Utils.isApplicationVariant(oControl));
+		getSiteIdByComponentData: function(oComponentData) {
+			return this._getStartUpParameter(oComponentData, "hcpApplicationId");
 		},
 
 		/**
 		 * Indicates if the property value represents a binding
 		 *
-		 * @param {object} oPropertyValue - property value
+		 * @param {object} vPropertyValue - Property value
 		 * @returns {boolean} true if value represents a binding
 		 * @public
 		 * @function
 		 * @name sap.ui.fl.Utils.isBinding
 		 */
-		isBinding: function (oPropertyValue) {
-			var bIsBinding = false;
-			if (oPropertyValue && typeof oPropertyValue === "string" && oPropertyValue.substring(0, 1) === "{" && oPropertyValue.slice(-1) === "}") {
-				bIsBinding = true;
-			}
-			return bIsBinding;
-		},
-
-		/**
-		 * Indicates if the VENDOR is selected
-		 *
-		 * @returns {boolean} true if it's an application variant
-		 * @public
-		 * @function
-		 * @name sap.ui.fl.Utils.isVendorLayer
-		 */
-		isVendorLayer: function () {
-			// variant mode only supported for vendor other types are not allowed to change standard control variants
-			if (Utils.getCurrentLayer(false) === "VENDOR") {
-				return true;
-			}
-
-			return false;
+		isBinding: function(vPropertyValue) {
+			return (
+				(
+					typeof vPropertyValue === "string"
+					&& !!ManagedObject.bindingParser(vPropertyValue)
+				)
+				|| (
+					isPlainObject(vPropertyValue)
+					&& (
+						(
+							vPropertyValue.hasOwnProperty("path")
+							|| vPropertyValue.hasOwnProperty("parts")
+						)
+						&& !vPropertyValue.hasOwnProperty("ui5object")
+					)
+				)
+			);
 		},
 
 		/**
@@ -303,7 +286,7 @@ sap.ui.define([
 		 * @function
 		 * @name sap.ui.fl.Utils.isApplicationVariant
 		 */
-		isApplicationVariant: function (oControl) {
+		isApplicationVariant: function(oControl) {
 			var sFlexReference = Utils.getComponentClassName(oControl);
 			var oAppComponent = Utils.getAppComponentForControl(oControl);
 			var sComponentName = Utils.getComponentName(oAppComponent);
@@ -311,73 +294,18 @@ sap.ui.define([
 		},
 
 		/**
-		 * Sets the top layer that the changes are applied to; if max layer is not specified, the highest layer in the layer stack is used.
-		 *
-		 * @param {string} sMaxLayer (optional) - name of the max layer
+		 * Determines if the passed change is related to control variants.
+		 * @see sap.ui.fl.variants.VariantManagement
+		 * @param {sap.ui.fl.Change} oChange Change object
+		 * @returns {boolean} If the passed change is a variant management change
 		 * @public
-		 * @function
-		 * @name sap.ui.fl.Utils.setMaxLayerParameter
+		 * @name sap.ui.fl.Utils.isChangeRelatedToVariants
 		 */
-		setMaxLayerParameter: function(sMaxLayer) {
-			this._sMaxLayer = sMaxLayer || this._sTopLayer;
-		},
-
-		/**
-		 * Converts layer name into index
-		 * @param {string} sLayer - layer name
-		 * @returns {int} index of the layer
-		 * @function
-		 * @name sap.ui.fl.Utils.getLayerIndex
-		 */
-		getLayerIndex: function(sLayer) {
-			return this._mLayersIndex[sLayer];
-		},
-
-		/**
-		 * Determines whether a layer is higher than the max layer.
-		 *
-		 * @param {string} sLayer - Layer name to be evaluated
-		 * @returns {boolean} <code>true</code> if input layer is higher than max layer, otherwise <code>false</code>
-		 * @public
-		 * @function
-		 * @name sap.ui.fl.Utils.isOverMaxLayer
-		 */
-		isOverMaxLayer: function(sLayer) {
-			return (this.getLayerIndex(sLayer) > this.getLayerIndex(this._sMaxLayer));
-		},
-
-		/**
-		 * Compares current layer with a provided layer
-		 * -1: Lower layer, 0: Same layer, 1: Layer above
-		 *
-		 * @param {String} sLayer - Layer name to be evaluated
-		 * @returns {boolean} <code>true</code> if input layer is higher than current layer
-		 * @public
-		 * @function
-		 * @name sap.ui.fl.Utils.isLayerOverCurrentLayer
-		 */
-		isLayerAboveCurrentLayer: function(sLayer) {
-			var sCurrentLayer = Utils.getCurrentLayer(false);
-			// If sLayer is undefined, it is assumed it be on the lowest layer
-			if ((this.getLayerIndex(sCurrentLayer) > this.getLayerIndex(sLayer)) || !sLayer) {
-				return -1;
-			} else if (this.getLayerIndex(sCurrentLayer) === this.getLayerIndex(sLayer)) {
-				return 0;
-			} else {
-				return 1;
-			}
-		},
-
-		/**
-		 * Determines if filtering of changes based on layer is required.
-		 *
-		 * @returns {boolean} <code>true</code> if the top layer is also the max layer, otherwise <code>false</code>
-		 * @public
-		 * @function
-		 * @name sap.ui.fl.Utils.isLayerFilteringRequired
-		 */
-		isLayerFilteringRequired: function() {
-			return !(this._sTopLayer === this._sMaxLayer);
+		isChangeRelatedToVariants: function(oChange) {
+			return oChange.getFileType() === "ctrl_variant_change"
+				|| oChange.getFileType() === "ctrl_variant_management_change"
+				|| oChange.getFileType() === "ctrl_variant"
+				|| oChange.getVariantReference();
 		},
 
 		/**
@@ -388,7 +316,7 @@ sap.ui.define([
 		 * @returns {String} content of found startUpParameter
 		 * @private
 		 */
-		_getComponentStartUpParameter: function (oComponent, sParameterName) {
+		_getComponentStartUpParameter: function(oComponent, sParameterName) {
 			var startUpParameterContent = null;
 
 			if (sParameterName) {
@@ -400,9 +328,9 @@ sap.ui.define([
 			return startUpParameterContent;
 		},
 
-		_getStartUpParameter: function (oComponentData, sParameterName) {
+		_getStartUpParameter: function(oComponentData, sParameterName) {
 			if (oComponentData && oComponentData.startupParameters && sParameterName) {
-				if (jQuery.isArray(oComponentData.startupParameters[sParameterName])) {
+				if (Array.isArray(oComponentData.startupParameters[sParameterName])) {
 					return oComponentData.startupParameters[sParameterName][0];
 				}
 			}
@@ -415,15 +343,12 @@ sap.ui.define([
 		 * @returns {String} component name
 		 * @public
 		 */
-		getComponentName: function (oComponent) {
+		getComponentName: function(oComponent) {
 			var sComponentName = "";
 			if (oComponent) {
 				sComponentName = oComponent.getMetadata().getName();
 			}
-			if (sComponentName.length > 0 && sComponentName.indexOf(".Component") < 0) {
-				sComponentName += ".Component";
-			}
-			return sComponentName;
+			return appendComponentToString(sComponentName);
 		},
 
 		/**
@@ -433,10 +358,10 @@ sap.ui.define([
 		 * @returns {sap.ui.core.Component} component for the component ID
 		 * @private
 		 */
-		_getComponent: function (sComponentId) {
+		_getComponent: function(sComponentId) {
 			var oComponent;
 			if (sComponentId) {
-				oComponent = sap.ui.getCore().getComponent(sComponentId);
+				oComponent = Component.get(sComponentId);
 			}
 			return oComponent;
 		},
@@ -445,25 +370,21 @@ sap.ui.define([
 		 * Returns ComponentId of the control. If the control has no component, it walks up the control tree in order to find a control having one
 		 *
 		 * @param {sap.ui.core.Control} oControl - SAPUI5 control
-		 * @returns {String} The component id
-		 * @see sap.ui.base.Component.getOwnerIdFor
+		 * @returns {String} The component id or empty string if component id couldn't be found
+		 * @see sap.ui.core.Component.getOwnerIdFor
 		 * @private
 		 */
-		_getComponentIdForControl: function (oControl) {
-			var sComponentId = "", i = 0;
-			do {
-				i++;
-				sComponentId = Utils._getOwnerIdForControl(oControl);
-				if (sComponentId) {
-					return sComponentId;
+		_getComponentIdForControl: function(oControl) {
+			var sComponentId = Utils._getOwnerIdForControl(oControl);
+			if (!sComponentId) {
+				if (oControl && typeof oControl.getParent === "function") {
+					var oParent = oControl.getParent();
+					if (oParent) {
+						return Utils._getComponentIdForControl(oParent);
+					}
 				}
-				if (oControl && typeof oControl.getParent === "function") { // Walk up control tree
-					oControl = oControl.getParent();
-				} else {
-					return "";
-				}
-			} while (oControl && i < 100);
-			return "";
+			}
+			return sComponentId || "";
 		},
 
 		/**
@@ -471,41 +392,49 @@ sap.ui.define([
 		 * control having one.
 		 *
 		 * @param {sap.ui.core.Control} oControl - SAPUI5 control
-		 * @returns {sap.ui.base.Component} found component
+		 * @returns {sap.ui.core.Component} found component
 		 * @public
 		 */
-		getComponentForControl: function (oControl) {
+		getComponentForControl: function(oControl) {
 			return Utils._getComponentForControl(oControl);
 		},
 
 		/**
-		 * Returns the Component that belongs to given control whose type is "application". If the control has no component, it walks up the control tree in order to find a
-		 * control having one.
+		 * Returns the component that belongs to the passed control whose type is "application".
+		 * If the control has no component, it walks up the control tree in order to find a control having one.
 		 *
-		 * @param {sap.ui.core.Control} oControl - SAPUI5 control
-		 * @returns {sap.ui.base.Component} found component
+		 * @param {sap.ui.base.ManagedObject} oControl - Managed object instance
+		 * @returns {sap.ui.core.Component} component instance if found or null
 		 * @public
 		 */
-		getAppComponentForControl: function (oControl) {
-			var oComponent;
-
-			if (oControl instanceof sap.ui.core.Component) {
-				oComponent = oControl;
-			} else {
-				oComponent = this._getComponentForControl(oControl);
-			}
+		getAppComponentForControl: function(oControl) {
+			var oComponent = oControl instanceof Component ? oControl : this._getComponentForControl(oControl);
 			return this._getAppComponentForComponent(oComponent);
+		},
+
+		/**
+		 * Returns an object with 'name' and 'version' of the App Component where the App Descriptor changes are saved
+		 *
+		 * @param {sap.ui.base.ManagedObject} oControl control or app component for which the flex controller should be instantiated
+		 * @returns {Promise} Returns Object with name and version of Component for App Descriptor changes
+		 */
+		getAppDescriptorComponentObjectForControl: function(oControl) {
+			var oAppComponent = this.getAppComponentForControl(oControl);
+			var oManifest = oAppComponent.getManifest();
+			return {
+				name: this.getAppIdFromManifest(oManifest)
+			};
 		},
 
 		/**
 		 * Returns the Component that belongs to given control. If the control has no component, it walks up the control tree in order to find a
 		 * control having one.
 		 *
-		 * @param {sap.ui.core.Control} oControl - SAPUI5 control
-		 * @returns {sap.ui.base.Component} found component
+		 * @param {sap.ui.base.ManagedObject} oControl - Managed object instance
+		 * @returns {sap.ui.core.Component|null} found component
 		 * @private
 		 */
-		_getComponentForControl: function (oControl) {
+		_getComponentForControl: function(oControl) {
 			var oComponent = null;
 			var sComponentId = null;
 
@@ -523,15 +452,14 @@ sap.ui.define([
 		/**
 		 * Returns the Component that belongs to given component whose type is "application".
 		 *
-		 * @param {sap.ui.base.Component} oComponent - SAPUI5 component
-		 * @returns {sap.ui.base.Component} found component
+		 * @param {sap.ui.core.Component} oComponent - SAPUI5 component
+		 * @returns {sap.ui.core.Component|null} component instance if found or null
 		 * @private
 		 */
-		_getAppComponentForComponent: function (oComponent) {
+		_getAppComponentForComponent: function(oComponent) {
 			var oSapApp = null;
-
 			// special case for Fiori Elements to reach the real appComponent
-			if (oComponent && oComponent.getAppComponent) {
+			if (oComponent && oComponent.getAppComponent && oComponent.getAppComponent() instanceof Component) {
 				return oComponent.getAppComponent();
 			}
 
@@ -543,13 +471,14 @@ sap.ui.define([
 			if (oComponent && oComponent.getManifestEntry) {
 				oSapApp = oComponent.getManifestEntry("sap.app");
 			} else {
+				// if no manifest entry
 				return oComponent;
 			}
 
 			if (oSapApp && oSapApp.type && oSapApp.type !== "application") {
-				//we need to call this method only when the component
-				//an instance of Component is in order to walk up the tree.
-				if (oComponent instanceof sap.ui.core.Component) {
+				if (oComponent instanceof Component) {
+					// we need to call this method only when the component is an instance of Component in order to walk up the tree
+					// returns owner app component
 					oComponent = this._getComponentForControl(oComponent);
 				}
 				return this.getAppComponentForControl(oComponent);
@@ -564,15 +493,14 @@ sap.ui.define([
 		 *
 		 * @param {sap.ui.core.Control} oControl - SAPUI5 control
 		 * @returns {sap.ui.core.mvc.View} The view
-		 * @see sap.ui.base.Component.getOwnerIdFor
+		 * @see sap.ui.core.Component.getOwnerIdFor
 		 * @public
 		 */
-		getViewForControl: function (oControl) {
+		getViewForControl: function(oControl) {
 			return Utils.getFirstAncestorOfControlWithControlType(oControl, sap.ui.core.mvc.View);
-
 		},
 
-		getFirstAncestorOfControlWithControlType: function (oControl, controlType) {
+		getFirstAncestorOfControlWithControlType: function(oControl, controlType) {
 			if (oControl instanceof controlType) {
 				return oControl;
 			}
@@ -583,7 +511,7 @@ sap.ui.define([
 			}
 		},
 
-		hasControlAncestorWithId: function (sControlId, sAncestorControlId) {
+		hasControlAncestorWithId: function(sControlId, sAncestorControlId) {
 			var oControl;
 
 			if (sControlId === sAncestorControlId) {
@@ -592,7 +520,6 @@ sap.ui.define([
 
 			oControl = sap.ui.getCore().byId(sControlId);
 			while (oControl) {
-
 				if (oControl.getId() === sAncestorControlId) {
 					return true;
 				}
@@ -611,12 +538,12 @@ sap.ui.define([
 		 * Checks whether the provided control is a view
 		 *
 		 * @param {sap.ui.core.Control} oControl - SAPUI5 control
-		 * @returns {Boolean} Flag
-		 * @see sap.ui.base.Component.getOwnerIdFor
+		 * @returns {boolean} Flag
+		 * @see sap.ui.core.Component.getOwnerIdFor
 		 * @private
 		 */
-		_isView: function (oControl) {
-			return oControl instanceof sap.ui.core.mvc.View;
+		_isView: function(oControl) {
+			return oControl instanceof View;
 		},
 
 		/**
@@ -624,55 +551,11 @@ sap.ui.define([
 		 *
 		 * @param {sap.ui.core.Control} oControl - SAPUI5 control
 		 * @returns {String} The owner id
-		 * @see sap.ui.base.Component.getOwnerIdFor
+		 * @see sap.ui.core.Component.getOwnerIdFor
 		 * @private
 		 */
-		_getOwnerIdForControl: function (oControl) {
+		_getOwnerIdForControl: function(oControl) {
 			return Component.getOwnerIdFor(oControl);
-		},
-
-		/**
-		 * Returns the current layer as defined by the url parameter. If the end user flag is set, it always returns "USER".
-		 *
-		 * @param {boolean} bIsEndUser - the end user flag
-		 * @returns {string} the current layer
-		 * @public
-		 * @function
-		 * @name sap.ui.fl.Utils.getCurrentLayer
-		 */
-		getCurrentLayer: function (bIsEndUser) {
-			var oUriParams, layer;
-			if (bIsEndUser) {
-				return "USER";
-			}
-
-			oUriParams = this._getUriParameters();
-			layer = oUriParams.mParams["sap-ui-layer"];
-			if (layer && layer.length > 0) {
-				return layer[0];
-			}
-			return "CUSTOMER";
-
-		},
-
-		/**
-		 * Checks if a shared newly created variant requires an ABAP package; this is relevant for the VENDOR, PARTNER and CUSTOMER_BASE layers,
-		 * whereas variants in the CUSTOMER layer are client-dependent content and can either be transported or stored as local objects ($TMP).
-		 * A variant in the CUSTOMER layer that will be transported must not be assigned to a package.
-		 *
-		 * @returns {boolean} - Indicates whether a new variant needs an ABAP package
-		 * @public
-		 * @function
-		 * @name sap.ui.fl.Utils.doesSharedVariantRequirePackage
-		 */
-		doesSharedVariantRequirePackage: function () {
-			var sCurrentLayer;
-			sCurrentLayer = Utils.getCurrentLayer(false);
-			if ((sCurrentLayer === "VENDOR") || (sCurrentLayer === "PARTNER") || (sCurrentLayer === "CUSTOMER_BASE")) {
-				return true;
-			}
-
-			return false;
 		},
 
 		/**
@@ -683,18 +566,16 @@ sap.ui.define([
 		 * @returns {string} the current client
 		 * @name sap.ui.fl.Utils.getClient
 		 */
-		getClient: function () {
-			var oUriParams, client;
+		getClient: function() {
+			var oUriParams;
+			var sClient;
 			oUriParams = this._getUriParameters();
-			client = oUriParams.mParams["sap-client"];
-			if (client && client.length > 0) {
-				return client[0];
-			}
-			return undefined;
+			sClient = oUriParams.get("sap-client");
+			return sClient || undefined;
 		},
 
-		_getUriParameters: function () {
-			return jQuery.sap.getUriParameters();
+		_getUriParameters: function() {
+			return UriParameters.fromQuery(window.location.search);
 		},
 		/**
 		 * Returns whether the hot fix mode is active (url parameter hotfix=true)
@@ -702,13 +583,11 @@ sap.ui.define([
 		 * @public
 		 * @returns {boolean} is hotfix mode active, or not
 		 */
-		isHotfixMode: function () {
-			var oUriParams, aIsHotfixMode, sIsHotfixMode;
+		isHotfixMode: function() {
+			var oUriParams;
+			var sIsHotfixMode;
 			oUriParams = this._getUriParameters();
-			aIsHotfixMode = oUriParams.mParams["hotfix"];
-			if (aIsHotfixMode && aIsHotfixMode.length > 0) {
-				sIsHotfixMode = aIsHotfixMode[0];
-			}
+			sIsHotfixMode = oUriParams.get("hotfix");
 			return (sIsHotfixMode === "true");
 		},
 
@@ -723,7 +602,7 @@ sap.ui.define([
 		 * @function
 		 * @name sap.ui.fl.Utils.convertBrowserLanguageToISO639_1
 		 */
-		convertBrowserLanguageToISO639_1: function (sBrowserLanguage) {
+		convertBrowserLanguageToISO639_1: function(sBrowserLanguage) {
 			if (!sBrowserLanguage || typeof sBrowserLanguage !== "string") {
 				return "";
 			}
@@ -739,13 +618,22 @@ sap.ui.define([
 			return "";
 		},
 
+		getLrepUrl: function() {
+			var aFlexibilityServices = sap.ui.getCore().getConfiguration().getFlexibilityServices();
+			var oLrepConfiguration = aFlexibilityServices.find(function(oServiceConfig) {
+				return oServiceConfig.connector === "LrepConnector";
+			});
+
+			return oLrepConfiguration ? oLrepConfiguration.url : "";
+		},
+
 		/**
 		 * Returns the current language in ISO 639-1 format.
 		 *
 		 * @returns {String} Language in ISO 639-1. Empty string if language cannot be determined
 		 * @public
 		 */
-		getCurrentLanguage: function () {
+		getCurrentLanguage: function() {
 			var sLanguage = sap.ui.getCore().getConfiguration().getLanguage();
 			return Utils.convertBrowserLanguageToISO639_1(sLanguage);
 		},
@@ -757,7 +645,7 @@ sap.ui.define([
 		 * @returns {string} control type of the control - undefined if controlType cannot be determined
 		 * @private
 		 */
-		getControlType: function (oControl) {
+		getControlType: function(oControl) {
 			var oMetadata;
 			if (oControl && typeof oControl.getMetadata === "function") {
 				oMetadata = oControl.getMetadata();
@@ -773,16 +661,15 @@ sap.ui.define([
 		 * @param {String} ascii string containing ascii code valid numbers separated by ','
 		 * @returns {String} parsedString parsed string
 		 */
-		asciiToString: function (ascii) {
+		asciiToString: function(ascii) {
 			var asciiArray = ascii.split(",");
 			var parsedString = "";
 
-			jQuery.each(asciiArray, function (index, asciiChar) {
+			jQuery.each(asciiArray, function(index, asciiChar) {
 				parsedString += String.fromCharCode(asciiChar);
 			});
 
 			return parsedString;
-
 		},
 
 		/**
@@ -791,7 +678,7 @@ sap.ui.define([
 		 * @param {String} string string which has to be encoded
 		 * @returns {String} ascii imput parsed to ascii numbers separated by ','
 		 */
-		stringToAscii: function (string) {
+		stringToAscii: function(string) {
 			var ascii = "";
 
 			for (var i = 0; i < string.length; i++) {
@@ -807,12 +694,12 @@ sap.ui.define([
 		/**
 		 * See {@link sap.ui.core.BaseTreeModifier#checkControlId} method
 		 */
-		checkControlId: function (vControl, oAppComponent, bSuppressLogging) {
+		checkControlId: function(vControl, oAppComponent) {
 			if (!oAppComponent) {
-				vControl = vControl instanceof sap.ui.base.ManagedObject ? vControl : sap.ui.getCore().byId(vControl);
+				vControl = vControl instanceof ManagedObject ? vControl : sap.ui.getCore().byId(vControl);
 				oAppComponent = Utils.getAppComponentForControl(vControl);
 			}
-			return BaseTreeModifier.checkControlId(vControl, oAppComponent, bSuppressLogging);
+			return BaseTreeModifier.checkControlId(vControl, oAppComponent);
 		},
 
 		/**
@@ -826,17 +713,17 @@ sap.ui.define([
 		 * @returns {string} Substring of url containing the url query parameters
 		 * @private
 		 */
-		_getAllUrlParameters: function () {
+		_getAllUrlParameters: function() {
 			return window.location.search.substring(1);
 		},
 
 		/**
-		 * Returns technical parameters for the passed component.
+		 * Returns a map of technical parameters for the passed component.
 		 *
-		 * @param  {object} oComponent Component instance used to get the technical parameters
-		 * @returns {object|undefined} Returns the technical parameters object or undefined if unavailable
+		 * @param  {object} oComponent - Component instance used to get the technical parameters
+		 * @returns {object|undefined} Returns the requested technical parameter object or undefined if unavailable
 		 */
-		getTechnicalParametersForComponent : function(oComponent){
+		getTechnicalParametersForComponent: function(oComponent) {
 			return oComponent
 				&& oComponent.getComponentData
 				&& oComponent.getComponentData()
@@ -844,49 +731,16 @@ sap.ui.define([
 		},
 
 		/**
-		 * Returns URL hash when ushell container is available
+		 * Returns URL hash when ushell container is available synchronously.
 		 *
+		 * @param  {sap.ushell.services.URLParsing} oURLParsingService - The Unified Shell's internal URL parsing service
 		 * @returns {object} Returns the parsed URL hash object or an empty object if ushell container is not available
 		 */
-		getParsedURLHash : function(){
-			var oUshellContainer = Utils.getUshellContainer();
-			if (oUshellContainer) {
-				var oURLParser = oUshellContainer.getService("URLParsing");
-				var oParsedHash = oURLParser.parseShellHash(oURLParser.getHash(window.location.href));
-				return oParsedHash ? oParsedHash : { };
+		getParsedURLHash: function(oURLParsingService) {
+			if (oURLParsingService) {
+				return oURLParsingService.parseShellHash(hasher.getHash()) || {};
 			}
-			return { };
-		},
-
-		/**
-		 * Sets the values for url hash and technical parameters for the component data.
-		 * Deactivates hash based navigation while performing the operations, which is then re-activated upon completion.
-		 * If the passed doesn't exist in the url hash or technical parameters, then a new object is added respectively.
-		 *
-		 * @param {object} oComponent Component instance used to get the technical parameters
-		 * @param {string} sParameterName Name of the parameter (e.g. "sap-ui-fl-control-variant-id")
-		 * @param {string[]} aValues Array of values for the technical parameter
-		 */
-		setTechnicalURLParameterValues: function (oComponent, sParameterName, aValues) {
-				var oParsedHash = Utils.getParsedURLHash(sParameterName);
-
-				if (oParsedHash.params) {
-					hasher.changed.active = false; //disable changed signal
-
-					var mTechnicalParameters = Utils.getTechnicalParametersForComponent(oComponent);
-					if (!mTechnicalParameters) {
-						this.log.error("Component instance not provided, so technical parameters in component data and browser history remain unchanged");
-					}
-					if (aValues.length === 0) {
-						delete oParsedHash.params[sParameterName];
-						mTechnicalParameters && delete mTechnicalParameters[sParameterName]; // Case when ControlVariantsAPI.clearVariantParameterInURL is called with a parameter
-					} else {
-						oParsedHash.params[sParameterName] = aValues;
-						mTechnicalParameters && (mTechnicalParameters[sParameterName] = aValues); // Technical parameters need to be in sync with the URL hash
-					}
-					hasher.replaceHash(Utils.getUshellContainer().getService("URLParsing").constructShellHash(oParsedHash)); // Set hash without dispatching changed signal nor writing history
-					hasher.changed.active = true; // Re-enable signal
-				}
+			return {};
 		},
 
 		/**
@@ -895,46 +749,52 @@ sap.ui.define([
 		 * @returns {boolean} Returns a flag if the flexibility library is debugged
 		 * @public
 		 */
-		isDebugEnabled: function () {
+		isDebugEnabled: function() {
+			var oUriParams = this._getUriParameters();
+			var sDebugParameters = oUriParams.get("sap-ui-debug") || "";
+
 			// true if SAPUI5 is in complete debug mode
-			if (sap.ui.getCore().getConfiguration().getDebug()) {
+			if (sap.ui.getCore().getConfiguration().getDebug() || sDebugParameters === "true") {
 				return true;
 			}
 
-			var sDebugParameters = window["sap-ui-debug"] || "";
 			var aDebugParameters = sDebugParameters.split(",");
-			return aDebugParameters.indexOf("sap.ui.fl") !== -1;
+			return aDebugParameters.indexOf("sap/ui/fl") !== -1 || aDebugParameters.indexOf("sap/ui/fl/") !== -1;
 		},
 
 		/**
 		 * Returns the value of the specified url parameter of the current url
 		 *
-		 * @param {String} sParameterName - Name of the url parameter
+		 * @param {string} sParameterName - Name of the url parameter
 		 * @returns {string} url parameter
 		 * @private
 		 */
-		getUrlParameter: function (sParameterName) {
-			return jQuery.sap.getUriParameters().get(sParameterName);
+		getUrlParameter: function(sParameterName) {
+			return UriParameters.fromQuery(window.location.search).get(sParameterName);
 		},
 
 		/**
-		 * Returns ushell container if available
+		 * Returns UShell container if available
 		 *
-		 * @returns {object|undefined} Returns ushell container object if available or undefined
+		 * @returns {object|undefined} Returns UShell container object if available or undefined
 		 */
 		getUshellContainer: function() {
 			return sap.ushell && sap.ushell.Container;
 		},
 
-		createDefaultFileName: function (sNameAddition) {
-			var sFileName = jQuery.sap.uid().replace(/-/g, "_");
+		createDefaultFileName: function(sNameAddition) {
+			var sFileName = uid().replace(/-/g, "_");
 			if (sNameAddition) {
 				sFileName += '_' + sNameAddition;
 			}
 			return sFileName;
 		},
 
-		createNamespace: function (oPropertyBag, sSubfolder) {
+		createNamespace: function(oPropertyBag, sFileType) {
+			var sSubfolder = "changes";
+			if (sFileType === "ctrl_variant") {
+				sSubfolder = "variants";
+			}
 			var sReferenceName = oPropertyBag.reference.replace('.Component', '');
 			var sNamespace = 'apps/' + sReferenceName + "/" + sSubfolder + "/";
 			return sNamespace;
@@ -952,23 +812,29 @@ sap.ui.define([
 		buildLrepRootNamespace: function(sBaseId, sScenario, sProjectId) {
 			var sRootNamespace = "apps/";
 			var oError = new Error("Error in sap.ui.fl.Utils#buildLrepRootNamespace: ");
-
 			if (!sBaseId) {
 				oError.message += "for every scenario you need a base ID";
 				throw oError;
 			}
 
 			switch (sScenario) {
+				case sap.ui.fl.Scenario.VersionedAppVariant:
+					if (!sProjectId) {
+						oError.message += "in a versioned app variant scenario you additionally need a project ID";
+						throw oError;
+					}
+					sRootNamespace += sBaseId + "/appVariants/" + sProjectId + "/";
+					break;
 				case sap.ui.fl.Scenario.AppVariant:
 					if (!sProjectId) {
-						oError.message += "in an app variant scenario you additionaly need a project ID";
+						oError.message += "in an app variant scenario you additionally need a project ID";
 						throw oError;
 					}
 					sRootNamespace += sBaseId + "/appVariants/" + sProjectId + "/";
 					break;
 				case sap.ui.fl.Scenario.AdaptationProject:
 					if (!sProjectId) {
-						oError.message += "in a adaptation project scenario you additionaly need a project ID";
+						oError.message += "in a adaptation project scenario you additionally need a project ID";
 						throw oError;
 					}
 					sRootNamespace += sBaseId + "/adapt/" + sProjectId + "/";
@@ -982,69 +848,155 @@ sap.ui.define([
 			return sRootNamespace;
 		},
 
-		isApplication: function (oManifest) {
-			return (oManifest && oManifest.getEntry("sap.app") && oManifest.getEntry("sap.app").type === "application");
+		/** Returns the type of "sap.app" from the manifest object passed.
+		 * @param {sap.ui.core.Manifest} oManifest - Manifest object
+		 * @returns {string | undefined} Manifest object's "type" property for "sap.app" entry
+		 * @private
+		 */
+		_getComponentTypeFromManifest: function(oManifest) {
+			return oManifest && oManifest.getEntry && oManifest.getEntry("sap.app") && oManifest.getEntry("sap.app").type;
+		},
+
+		/** Returns the type of "sap.app" from the manifest object passed.
+		 * @param {sap.ui.core.Manifest} oRawManifest - raw manifest object
+		 * @returns {string | undefined} Manifest object's "type" property for "sap.app" entry
+		 * @private
+		 */
+		_getComponentTypeFromRawManifest: function(oManifest) {
+			return oManifest && oManifest["sap.app"] && oManifest["sap.app"].type;
+		},
+
+		/** Returns <code>true</code> if the passed manifest object is of type "application".
+		 * @param {sap.ui.core.Manifest} oManifest - Manifest object
+		 * @param {boolean} isRaw - is manifest raw object
+		 * @returns {boolean} <code>true</code> if the passed manifest object is of type "application"
+		 * @public
+		 */
+		isApplication: function(oManifest, isRaw) {
+			var sComponentType = isRaw ? Utils._getComponentTypeFromRawManifest(oManifest) : Utils._getComponentTypeFromManifest(oManifest);
+			return sComponentType === "application";
+		},
+
+		/** Returns <code>true</code> if the passed component is an application component.
+		 * @param {sap.ui.core.Component} oComponent - Component instance
+		 * @returns {boolean} <code>true</code> if the passed component is of type "application"
+		 * @public
+		 */
+		isApplicationComponent: function(oComponent) {
+			return oComponent instanceof Component && Utils.isApplication(oComponent.getManifestObject());
+		},
+
+		/** Returns <code>true</code> if the passed component is an embedded component.
+		 * @param {sap.ui.core.Component} oComponent - Component instance
+		 * @returns {boolean} <code>true</code> if the passed component is of type "component"
+		 * @public
+		 */
+		isEmbeddedComponent: function(oComponent) {
+			return oComponent instanceof Component && Utils._getComponentTypeFromManifest(oComponent.getManifestObject()) === "component";
 		},
 
 		/**
 		 * Returns the reference of a component, according to the following logic:
-		 * First appVariantId, if not, componentName + ".Component", if not appId + ".Component".
+		 * First appVariantId, if not, componentName + ".Component", if not appId + ".Component" (unless they already have ".Component" at the end).
 		 *
 		 * @param {object} oManifest - Manifest of the component
 		 * @returns {string} flex reference
 		 * @public
 		 */
-		getFlexReference: function (oManifest) {
+		getFlexReference: function(oManifest) {
 			if (oManifest) {
 				if (oManifest.getEntry("sap.ui5")) {
 					if (oManifest.getEntry("sap.ui5").appVariantId) {
 						return oManifest.getEntry("sap.ui5").appVariantId;
 					}
 					if (oManifest.getEntry("sap.ui5").componentName) {
-						return oManifest.getEntry("sap.ui5").componentName + ".Component";
+						return appendComponentToString(oManifest.getEntry("sap.ui5").componentName);
 					}
 				}
 				if (oManifest.getEntry("sap.app") && oManifest.getEntry("sap.app").id) {
-					var sAppId = oManifest.getEntry("sap.app").id;
-					if (sAppId === Utils.APP_ID_AT_DESIGN_TIME && oManifest.getComponentName) {
-						sAppId = oManifest.getComponentName();
-					}
-					return sAppId + ".Component";
+					return appendComponentToString(Utils.getAppIdFromManifest(oManifest));
 				}
 			}
-			this.log.warning("No Manifest received.");
+			Log.warning("No Manifest received.");
 			return "";
 		},
 
 		/**
-		 * Returns the semantic application version using format: "major.minor.patch".
+		 * Returns the descriptor Id, which is always the reference for descriptor changes
 		 *
 		 * @param {object} oManifest - Manifest of the component
 		 * @returns {string} Version of application if it is available in the manifest, otherwise an empty string
 		 * @public
 		 */
-		getAppVersionFromManifest: function (oManifest) {
-			var sVersion = "";
-			if (oManifest){
+		getAppIdFromManifest: function(oManifest) {
+			if (oManifest) {
 				var oSapApp = (oManifest.getEntry) ? oManifest.getEntry("sap.app") : oManifest["sap.app"];
-				if (oSapApp && oSapApp.applicationVersion && oSapApp.applicationVersion.version){
-					sVersion = oSapApp.applicationVersion.version;
+				var sAppId = oSapApp && oSapApp.id;
+				if (sAppId === Utils.APP_ID_AT_DESIGN_TIME && oManifest.getComponentName) {
+					sAppId = oManifest.getComponentName();
 				}
-			} else {
-				this.log.warning("No Manifest received.");
+				return sAppId;
 			}
-			return sVersion;
+
+			throw new Error("No Manifest received, descriptor changes are not possible");
 		},
 
 		/**
-		 * Returns whether provided layer is a customer dependent layer
+		 * Returns the uri of the main service specified in the app manifest
 		 *
-		 * @param {string} sLayerName - layer name
-		 * @returns {boolean} true if provided layer is customer dependent layer else false
+		 * @param {object} oManifest - Manifest of the component
+		 * @returns {string} Returns the uri if the manifest is available, otherwise an empty string
 		 * @public
 		 */
-		isCustomerDependentLayer : function(sLayerName) {
-			return (["CUSTOMER", "CUSTOMER_BASE"].indexOf(sLayerName) > -1);
+		getODataServiceUriFromManifest: function(oManifest) {
+			var sUri = "";
+			if (oManifest) {
+				var oSapApp = (oManifest.getEntry) ? oManifest.getEntry("sap.app") : oManifest["sap.app"];
+				if (oSapApp && oSapApp.dataSources && oSapApp.dataSources.mainService && oSapApp.dataSources.mainService.uri) {
+					sUri = oSapApp.dataSources.mainService.uri;
+				}
+			} else {
+				Log.warning("No Manifest received.");
+			}
+			return sUri;
+		},
+
+		/**
+		 * Checks if an object is in an array or not and returns the index or -1
+		 *
+		 * @param {object[]} aArray Array of objects
+		 * @param {object} oObject object that should be part of the array
+		 * @returns {int} Returns the index of the object in the array, -1 if it is not in the array
+		 * @public
+		 */
+		indexOfObject: function(aArray, oObject) {
+			var iObjectIndex = -1;
+			aArray.some(function(oArrayObject, iIndex) {
+				var aKeysArray;
+				var aKeysObject;
+				if (!oArrayObject) {
+					aKeysArray = [];
+				} else {
+					aKeysArray = Object.keys(oArrayObject);
+				}
+
+				if (!oObject) {
+					aKeysObject = [];
+				} else {
+					aKeysObject = Object.keys(oObject);
+				}
+				var bSameNumberOfAttributes = aKeysArray.length === aKeysObject.length;
+				var bContains = bSameNumberOfAttributes && !aKeysArray.some(function(sKey) {
+					return oArrayObject[sKey] !== oObject[sKey];
+				});
+
+				if (bContains) {
+					iObjectIndex = iIndex;
+				}
+
+				return bContains;
+			});
+			return iObjectIndex;
 		},
 
 		/**
@@ -1057,7 +1009,7 @@ sap.ui.define([
 		 * @param {boolean} bAsync - true: asynchronous processing with Promise, false: synchronous processing with FakePromise
 		 * @returns {Promise} Returns empty resolved Promise or FakePromise when all passed promises inside functions have been executed
 		 */
-		execPromiseQueueSequentially : function(aPromiseQueue, bThrowError, bAsync) {
+		execPromiseQueueSequentially: function(aPromiseQueue, bThrowError, bAsync) {
 			if (aPromiseQueue.length === 0) {
 				if (bAsync) {
 					return Promise.resolve();
@@ -1066,72 +1018,106 @@ sap.ui.define([
 			}
 			var fnPromise = aPromiseQueue.shift();
 			if (typeof fnPromise === "function") {
-				var vResult = fnPromise();
+				try {
+					var vResult = fnPromise();
+				} catch (e) {
+					vResult = Promise.reject(e);
+				}
 
 				return vResult.then(function() {
 					if (!bAsync && vResult instanceof Promise) {
 						bAsync = true;
 					}
 				})
-
 				.catch(function(e) {
 					var sErrorMessage = "Error during execPromiseQueueSequentially processing occured";
-					sErrorMessage += e ?  ": " + e.message : "";
-					this.log.error(sErrorMessage);
+					sErrorMessage += e ? ": " + e.message : "";
+					Log.error(sErrorMessage);
 
 					if (bThrowError) {
 						throw new Error(sErrorMessage);
 					}
-				}.bind(this))
-
+				})
 				.then(function() {
 					return this.execPromiseQueueSequentially(aPromiseQueue, bThrowError, bAsync);
 				}.bind(this));
-
-			} else {
-				this.log.error("Changes could not be applied, promise not wrapped inside function.");
-				return this.execPromiseQueueSequentially(aPromiseQueue, bThrowError, bAsync);
 			}
+
+			Log.error("Changes could not be applied, promise not wrapped inside function.");
+			return this.execPromiseQueueSequentially(aPromiseQueue, bThrowError, bAsync);
 		},
 
 		/**
-		 * Function that behaves like Promise (es6) but is synchronous. Implements 'then' and 'catch' functions.
-		 * After instantiating can be used simillar to standard Promises but synchronously.
-		 * As soon as one of the callback functions returns a Promise the asynchronus Promise replaces the FakePromise in further processing.
+		 * Class that behaves like a promise (es6), but is synchronous. Implements <code>then</code> and <code>catch</code> functions.
+		 * After instantiating can be used similar to standard Promises but synchronously.
+		 * As soon as one of the callback functions returns a Promise the asynchronous Promise replaces the FakePromise in further processing.
 		 *
+		 * @class sap.ui.fl.Utils.FakePromise
 		 * @param {any} vInitialValue - value on resolve FakePromise
 		 * @param {any} vError - value on reject FakePromise
+		 * @param {string} sInitialPromiseIdentifier - value identifies previous promise in chain. If the identifier is passed to the function and don't match with the FakePromiseIdentifier then native Promise execution is used for further processing
 		 * @returns {sap.ui.fl.Utils.FakePromise|Promise} Returns instantiated FakePromise only if no Promise is passed by value parameter
+		 * @private
+		 * @ui5-restricted
 		 */
-		FakePromise : function(vInitialValue, vError) {
+		FakePromise: function(vInitialValue, vError, sInitialPromiseIdentifier) {
+			Utils.FakePromise.fakePromiseIdentifier = "sap.ui.fl.Utils.FakePromise";
 			this.vValue = vInitialValue;
 			this.vError = vError;
-			Utils.FakePromise.prototype.then = function(fn) {
+			this.bContinueWithFakePromise = arguments.length < 3 || (sInitialPromiseIdentifier === Utils.FakePromise.fakePromiseIdentifier);
+
+			var fnResolveOrReject = function(vParam, fn) {
+				try {
+					var vResolve = fn(vParam, Utils.FakePromise.fakePromiseIdentifier);
+					if (SyncPromise.isThenable(vResolve)) {
+						return vResolve;
+					}
+					return new Utils.FakePromise(vResolve);
+				} catch (oError) {
+					var vReject = oError;
+					return new Utils.FakePromise(undefined, vReject);
+				}
+			};
+
+			/**
+			 * <code>then</code> function as for promise (es6)
+			 * @param {function} fnSuccess - Resolve handler
+			 * @param {function} fnError - Reject handler
+			 * @returns {sap.ui.fl.Utils.FakePromise|Promise} <code>FakePromise</code> if no promise is returned by the resolve handler
+			 * @public
+			 */
+			Utils.FakePromise.prototype.then = function(fnSuccess, fnError) {
+				if (!this.bContinueWithFakePromise) {
+					return Promise.resolve(fnSuccess(this.vValue));
+				}
+
 				if (!this.vError) {
-					try {
-						this.vValue = fn(this.vValue, true);
-					} catch (oError) {
-						this.vError = oError;
-						this.vValue = null;
-						return this;
-					}
-					if (this.vValue instanceof Promise) {
-						return this.vValue;
-					}
+					return fnResolveOrReject(this.vValue, fnSuccess);
+				} else if (fnError) {
+					return fnResolveOrReject(this.vError, fnError);
 				}
 				return this;
 			};
+
+			/**
+			 * <code>catch</code> function as for promise (es6)
+			 * @param {function} fn - Rejection handler
+			 * @returns {sap.ui.fl.Utils.FakePromise|Promise} <code>FakePromise</code> if no promise is returned by the rejection handler
+			 * @public
+			 */
 			Utils.FakePromise.prototype.catch = function(fn) {
+				if (!this.bContinueWithFakePromise) {
+					return Promise.reject(fn(this.vError));
+				}
+
 				if (this.vError) {
-					this.vValue = fn(this.vError, true);
-					this.vError = null;
-					if (this.vValue instanceof Promise) {
-						return this.vValue;
-					}
+					return fnResolveOrReject(this.vError, fn);
 				}
 				return this;
 			};
-			if (this.vValue instanceof Promise) {
+
+			if (this.vValue instanceof Promise ||
+				this.vValue instanceof Utils.FakePromise) {
 				return this.vValue;
 			}
 		},
@@ -1154,6 +1140,177 @@ sap.ui.define([
 				});
 			});
 			return oResult;
+		},
+
+		/**
+		 * Wraps the async sap.ui.require call into a Promise.
+		 * @param {string} sModuleName Name of the required module
+		 * @returns {Promise} Returns a promise.
+		 */
+		requireAsync: function(sModuleName) {
+			//TODO: get rid of require async as soon as sap.ui.require has learned Promises as return value
+			var oModule = sap.ui.require(sModuleName);
+			// apply directly if class was already loaded
+			if (oModule) {
+				return Promise.resolve(oModule);
+			}
+			return new Promise(function(fnResolve, fnReject) {
+				sap.ui.require([sModuleName], function(oModule) {
+					fnResolve(oModule);
+				}, function(oError) {
+					fnReject(oError);
+				});
+			});
+		},
+
+		/**
+		 * Normalize reference, delete .Component at the end of the incoming string.
+		 * @param {string} reference
+		 * @returns {string} Returns reference without .Component
+		 */
+		normalizeReference: function(sReference) {
+			return sReference.replace(/(.Component)$/g, "");
+		},
+
+		/**
+		 * Standalone: Adds the given search parameter to the URL or removes it.
+		 *
+		 * @param  {string} sParameters - The URL parameters to be modified
+		 * @param  {string} sParameterName - The parameter name that can be removed or added
+		 * @param  {string} sParameterValue - The parameter value of the parameter name that can be removed or added
+		 * @param  {sap.ushell.services.URLParsing} oURLParsingService - The Unified Shell's internal URL parsing service
+		 * @returns {string} The modified URL
+		 */
+		handleUrlParameters: function(sParameters, sParameterName, sParameterValue, oURLParsingService) {
+			if (this.hasParameterAndValue(sParameterName, sParameterValue, oURLParsingService)) {
+				if (sParameters.startsWith("?")) {
+					sParameters = sParameters.substr(1, sParameters.length);
+				}
+				var aFilterUrl = sParameters.split("&").filter(function(sParameter) {
+					return sParameter !== sParameterName + "=" + sParameterValue;
+				});
+				sParameters = "";
+				if (aFilterUrl.length > 0) {
+					sParameters = "?" + aFilterUrl.toString();
+				}
+			} else {
+				sParameters += (sParameters.length > 0 ? '&' : '?') + sParameterName + "=" + sParameterValue;
+			}
+			return sParameters;
+		},
+
+		/**
+		 * Checks if the passed parameter name with the parameter value is contained in the URL.
+		 *
+		 * @param  {string} sParameterName - The parameter name to be checked
+		 * @param  {string} sParameterValue - The parameter value to be checked
+		 * @param  {sap.ushell.services.URLParsing} oURLParsingService - The Unified Shell's internal URL parsing service
+		 * @returns {boolean} <code>true</code> if the parameter and the given value are in the URL
+		 */
+		hasParameterAndValue: function(sParameterName, sParameterValue, oURLParsingService) {
+			return this.getParameter(sParameterName, oURLParsingService) === sParameterValue;
+		},
+
+		/**
+		 * Checks if the passed parameter name is contained in the URL and returns its value.
+		 *
+		 * @param  {string} sParameterName - The parameter name to be checked
+		 * @param  {sap.ushell.services.URLParsing} oURLParsingService - The Unified Shell's internal URL parsing service
+		 * @returns {string} The value of the given parameter or undefined
+		 */
+		getParameter: function (sParameterName, oURLParsingService) {
+			if (oURLParsingService) {
+				var mParsedHash = Utils.getParsedURLHash(oURLParsingService);
+				return mParsedHash.params &&
+					mParsedHash.params[sParameterName] &&
+					mParsedHash.params[sParameterName][0];
+			}
+			var oUriParams = UriParameters.fromQuery(document.location.search);
+			if (!oUriParams) {
+				return false;
+			}
+			return oUriParams.get(sParameterName);
+		},
+
+		/**
+		 * Searches in the control metadata for the aggregation defintion
+		 * @param {sap.ui.base.ManagedObject|Element} oControl - Control which has the aggregation
+		 * @param {string} sAggregationName - Aggregation name
+		 * @returns {object} Aggregation metadata
+		 */
+		findAggregation: function(oControl, sAggregationName) {
+			if (oControl) {
+				if (oControl.getMetadata) {
+					var oMetadata = oControl.getMetadata();
+					var oAggregations = oMetadata.getAllAggregations();
+					if (oAggregations) {
+						return oAggregations[sAggregationName];
+					}
+				}
+			}
+			return undefined;
+		},
+
+		/**
+		 * Returns aggregation content for the given aggregation name.
+		 * @param {sap.ui.base.ManagedObject|Element} oParent - Control which has the aggregation
+		 * @param {string} sAggregationName - Aggregation name
+		 * @returns {sap.ui.base.ManagedObject[]|Element[]} Aggregation content
+		 */
+		getAggregation: function (oParent, sAggregationName) {
+			var oAggregation = Utils.findAggregation(oParent, sAggregationName);
+			if (oAggregation) {
+				return oParent[oAggregation._sGetter]();
+			}
+			return undefined;
+		},
+
+		/**
+		 * Returns property value.
+		 * @param {sap.ui.base.ManagedObject|Element} oControl - Control representation
+		 * @param {string} sPropertyName - Property name
+		 * @returns {any} Value of the property
+		 */
+		getProperty: function (oControl, sPropertyName) {
+			var oMetadata = oControl.getMetadata().getPropertyLikeSetting(sPropertyName);
+			if (oMetadata) {
+				var sPropertyGetter = oMetadata._sGetter;
+				return oControl[sPropertyGetter]();
+			}
+			return undefined;
+		},
+
+		/**
+		 * Returns a Promise resolving with the requested Unified Shell service if available
+		 *
+		 * @param {string} sServiceName UShell service name (e.g. "URLParsing")
+		 * @returns {Promise<object|undefined>} Returns UShell service if available or undefined
+		 */
+		 getUShellService: function(sServiceName) {
+			if (sServiceName) {
+				var oUShellContainer = this.getUshellContainer();
+				if (oUShellContainer) {
+					return oUShellContainer.getServiceAsync(sServiceName);
+				}
+			}
+			return Promise.resolve();
+		},
+
+		/**
+		 * Gets the requested UShell Services from Ushell container, if container is available.
+		 * @param {array} aServiceNames - List of service names
+		 * @returns {Promise<object>} Resolves to an object with the requested ushell services
+		 */
+		getUShellServices: function (aServiceNames) {
+			var aServicePromises = aServiceNames.map(function (sServiceName) {
+				return this.getUShellService(sServiceName);
+			}.bind(this));
+			return Promise.all(aServicePromises).then(function (aServices) {
+				return aServiceNames.reduce(function (mServices, sService, iIndex) {
+					mServices[sService] = aServices && aServices[iIndex];
+					return mServices;
+				}, {});
+			});
 		}
 
 	};

@@ -1,25 +1,29 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.m.ObjectAttribute.
 sap.ui.define([
-	'jquery.sap.global',
 	'./library',
 	'sap/ui/core/Control',
 	'sap/ui/core/library',
 	'sap/m/Text',
-	'./ObjectAttributeRenderer'
+	'sap/ui/events/KeyCodes',
+	'./ObjectAttributeRenderer',
+	'sap/base/Log',
+	'sap/ui/base/ManagedObjectObserver',
+	'sap/ui/core/Core'
 ],
-function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
+function(library, Control, coreLibrary, Text, KeyCodes, ObjectAttributeRenderer, Log, ManagedObjectObserver, Core) {
 	"use strict";
 
 	// shortcut for sap.ui.core.TextDirection
 	var TextDirection = coreLibrary.TextDirection;
 
-
+	// shortcut for sap.m.EmptyIndicator
+	var EmptyIndicatorMode = library.EmptyIndicatorMode;
 
 	/**
 	 * Constructor for a new <code>ObjectAttribute</code>.
@@ -35,7 +39,7 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 	 * <code>text</code> property is styled and acts as a link. In this case the <code>text</code>
 	 * property must also be set, as otherwise there will be no link displayed for the user.
 	 * @extends sap.ui.core.Control
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -63,19 +67,20 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 			 * Indicates if the <code>ObjectAttribute</code> text is selectable for the user.
 			 *
 			 * <b>Note:</b> As of version 1.48, only the value of the <code>text</code> property becomes active (styled and acts like a link) as opposed to both the <code>title</code> and <code>text</code> in the previous versions. If you set this property to <code>true</code>, you have to also set the <code>text</code> property.
+			 * <b>Note:</b> When <code>active</code> property is set to <code>true</code>, and the text direction of the <code>title</code> or the <code>text</code> does not match the text direction of the application, the <code>textDirection</code> property should be set to ensure correct display.
 			 */
 			active : {type : "boolean", group : "Misc", defaultValue : null},
 
 			/**
-			 * Determines the direction of the text, not including the title.
-			 * Available options for the text direction are LTR (left-to-right) and RTL (right-to-left). By default the control inherits the text direction from its parent control.
+			 * Determines the direction of the text.
+			 * Available options for the text direction are LTR (left-to-right), RTL (right-to-left), or Inherit. By default the control inherits the text direction from its parent control.
 			 */
 			textDirection : {type : "sap.ui.core.TextDirection", group : "Appearance", defaultValue : TextDirection.Inherit}
 		},
 		aggregations : {
 
 			/**
-			 * When the aggregation is set, it replaces the text, active and textDirection properties. This also ignores the press event. The provided control is displayed as an active link.
+			 * When the aggregation is set, it replaces the <code>text</code>, <code>active</code> and <code>textDirection</code> properties. This also ignores the press event. The provided control is displayed as an active link in case it is a sap.m.Link.
 			 * <b>Note:</b> It will only allow sap.m.Text and sap.m.Link controls.
 			 */
 			customContent : {type : "sap.ui.core.Control", multiple : false},
@@ -99,7 +104,8 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 					domRef : {type : "string"}
 				}
 			}
-		}
+		},
+		dnd: { draggable: true, droppable: false }
 	}});
 
 	/**
@@ -111,21 +117,35 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 		this.setAggregation('_textControl', new Text());
 	};
 
+	ObjectAttribute.prototype.exit = function() {
+		if (this._oCustomContentObserver) {
+			this._oCustomContentObserver.disconnect();
+			this._oCustomContentObserver = null;
+		}
+
+		if (this._oCustomContentCloning) {
+			this._oCustomContentCloning.destroy();
+		}
+	};
+
 	/**
 	 * Delivers text control with updated title, text and maxLines properties.
 	 *
 	 * @private
 	 */
 	ObjectAttribute.prototype._getUpdatedTextControl = function() {
-		var oAttrAggregation = this.getAggregation('customContent') || this.getAggregation('_textControl'),
+		var oAttrAggregation = this._oCustomContentCloning || this.getAggregation('_textControl'),
 			sTitle = this.getTitle(),
 			sText = this.getAggregation('customContent') ? this.getAggregation('customContent').getText() : this.getText(),
 			sTextDir = this.getTextDirection(),
 			oParent = this.getParent(),
 			bPageRTL = sap.ui.getCore().getConfiguration().getRTL(),
-			iMaxLines = ObjectAttributeRenderer.MAX_LINES.MULTI_LINE,
+			iMaxLines,
 			bWrap = true,
-			oppositeDirectionMarker = '';
+			oppositeDirectionMarker = '',
+			oCore = sap.ui.getCore(),
+			sResult;
+		this._bEmptyIndicatorMode = this._isEmptyIndicatorMode();
 
 		if (sTextDir === TextDirection.LTR && bPageRTL) {
 			oppositeDirectionMarker = '\u200e';
@@ -133,12 +153,26 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 		if (sTextDir === TextDirection.RTL && !bPageRTL) {
 			oppositeDirectionMarker = '\u200f';
 		}
+
 		sText = oppositeDirectionMarker + sText + oppositeDirectionMarker;
+
 		if (sTitle) {
-			sText = sText.replace(new RegExp(sTitle + ":\\s+", "gi"), "");
-			sText = sTitle + ": " + sText;
+			sResult = sTitle;
+			if (oCore.getConfiguration().getLocale().getLanguage().toLowerCase() === "fr") {
+				sResult += " ";
+			}
+			sResult += ": " + sText;
+		} else {
+			sResult = sText;
 		}
-		oAttrAggregation.setProperty('text', sText, true);
+
+		if (this._bEmptyIndicatorMode) {
+			//inner text control is used in order to display properly the empty indicator
+			this.getAggregation('_textControl').setProperty("emptyIndicatorMode", EmptyIndicatorMode.On, true);
+		}
+
+		oAttrAggregation.setProperty('text', sResult, true);
+		oAttrAggregation.setProperty('textDirection', sTextDir, true);
 
 		//if attribute is used inside responsive ObjectHeader or in ObjectListItem - only 1 line
 		if (oParent instanceof sap.m.ObjectListItem) {
@@ -151,16 +185,23 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 		return oAttrAggregation;
 	};
 
+	ObjectAttribute.prototype._isEmptyIndicatorMode = function () {
+		var oCustomContent = this.getAggregation('customContent');
+		return oCustomContent &&
+			oCustomContent.getEmptyIndicatorMode() !== EmptyIndicatorMode.Off &&
+			!oCustomContent.getText();
+	};
+
 	/**
 	 * Sets the appropriate property to the customContent aggregation.
 	 *
 	 * @private
 	 */
 	ObjectAttribute.prototype._setControlWrapping = function(oAttrAggregation, bWrap, iMaxLines) {
-		if (oAttrAggregation instanceof sap.m.Link) {
+		if (oAttrAggregation.isA("sap.m.Link")) {
 			oAttrAggregation.setProperty('wrapping', bWrap, true);
 		}
-		if (oAttrAggregation instanceof Text) {
+		if (oAttrAggregation.isA("sap.m.Text")) {
 			oAttrAggregation.setProperty('maxLines', iMaxLines, true);
 		}
 	};
@@ -170,8 +211,10 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 	 * @param {object} oEvent The fired event
 	 */
 	ObjectAttribute.prototype.ontap = function(oEvent) {
-		//event should only be fired if the click is on the text
-		if (this._isSimulatedLink() && (oEvent.target.id != this.getId())) {
+		var oTarget = oEvent.target;
+		oTarget = oTarget.id ? oTarget : oTarget.parentElement;
+		//event should only be fired if the click is on the text (acting like a link)
+		if (this._isSimulatedLink() && (oTarget.id === this.getId() + "-text")) {
 			this.firePress({
 				domRef : this.getDomRef()
 			});
@@ -198,7 +241,13 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 	 * @param {object} oEvent The fired event
 	 */
 	ObjectAttribute.prototype.onsapspace = function(oEvent) {
-		this.onsapenter(oEvent);
+		oEvent.preventDefault();
+	};
+
+	ObjectAttribute.prototype.onkeyup = function (oEvent) {
+		if (oEvent.which === KeyCodes.SPACE) {
+			this.onsapenter(oEvent);
+		}
 	};
 
 	/**
@@ -208,8 +257,8 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 	 * @returns {boolean} true if ObjectAttribute's text is empty or only consists of whitespaces
 	 */
 	ObjectAttribute.prototype._isEmpty = function() {
-		if (this.getAggregation('customContent') && !(this.getAggregation('customContent') instanceof sap.m.Link || this.getAggregation('customContent') instanceof Text)) {
-			jQuery.sap.log.warning("Only sap.m.Link or sap.m.Text are allowed in \"sap.m.ObjectAttribute.customContent\" aggregation");
+		if (this.getAggregation('customContent') && !(this.getAggregation('customContent').isA("sap.m.Link") || this.getAggregation('customContent').isA("sap.m.Text"))) {
+			Log.warning("Only sap.m.Link or sap.m.Text are allowed in \"sap.m.ObjectAttribute.customContent\" aggregation");
 			return true;
 		}
 
@@ -232,7 +281,7 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 	 * Defines to which DOM reference the Popup should be docked.
 	 *
 	 * @protected
-	 * @return {DomNode} The DOM reference that Popup should dock to
+	 * @return {Element} The DOM reference that Popup should dock to
 	 */
 	ObjectAttribute.prototype.getPopupAnchorDomRef = function() {
 		return this.getDomRef("text");
@@ -240,6 +289,52 @@ function(jQuery, library, Control, coreLibrary, Text, ObjectAttributeRenderer) {
 
 	ObjectAttribute.prototype._isSimulatedLink = function () {
 		return (this.getActive() && this.getText() !== "") && !this.getAggregation('customContent');
+	};
+
+	ObjectAttribute.prototype.setCustomContent = function(oCustomContent) {
+		var oCurrentCustomContent = this.getCustomContent(),
+			fnGetTabIndex = function() {
+				return "-1";
+			};
+
+		//for the cases where the original custom content is rendered
+		if (oCustomContent && oCustomContent.isA('sap.m.Link')) {
+			oCustomContent._getTabindex = fnGetTabIndex;
+		}
+
+		// clone the new aggregation, but first destroy the previous cloning
+		if (this._oCustomContentCloning) {
+			this._oCustomContentCloning.destroy();
+		}
+		this._oCustomContentCloning = oCustomContent && oCustomContent.clone();
+
+		if (this._oCustomContentCloning && this._oCustomContentCloning.isA('sap.m.Link')) {
+			this._oCustomContentCloning._getTabindex = fnGetTabIndex;
+		}
+
+		if (!this._oCustomContentObserver) {
+			this._oCustomContentObserver = new ManagedObjectObserver(function() {
+				this.invalidate();
+			}.bind(this));
+		}
+
+		// do not listen for property changes on the old control
+		if (oCurrentCustomContent) {
+			this._oCustomContentObserver.unobserve(oCurrentCustomContent);
+		}
+
+		// listen on the new one
+		oCustomContent && this._oCustomContentObserver.observe(oCustomContent, { properties: true });
+
+		return this.setAggregation('customContent', oCustomContent);
+	};
+
+	/**
+	 * Returns whether the control can be clicked so in the renderer appropriate attributes can be set (for example tabindex).
+	 * @private
+	 */
+	ObjectAttribute.prototype._isClickable = function() {
+		return (this.getActive() && this.getText() !== "") || ( this.getAggregation('customContent') && this.getAggregation('customContent').isA('sap.m.Link'));
 	};
 
 	return ObjectAttribute;

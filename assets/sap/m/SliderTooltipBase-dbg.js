@@ -1,21 +1,11 @@
 /*!
-* UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+* OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
 */
 
-sap.ui.define([
-	'jquery.sap.global',
-	'sap/ui/core/Control',
-	'./library',
-	'./SliderTooltipBaseRenderer'
-],
-function(
-	jQuery,
-	Control,
-	Library,
-	SliderTooltipBaseRenderer
-	) {
+sap.ui.define(['sap/ui/core/Control', './library', './SliderTooltipBaseRenderer'],
+function(Control, Library, SliderTooltipBaseRenderer) {
 		"use strict";
 
 		/**
@@ -31,7 +21,7 @@ function(
 		 * @abstract
 		 *
 		 * @author SAP SE
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 *
 		 * @constructor
 		 * @public
@@ -53,8 +43,8 @@ function(
 		 * Updates value of the tooltip.
 		 *
 		 * @param {float} fValue The new value
-		 * @sap-restricted sap.m.Slider
 		 * @private
+		 * @ui5-restricted sap.m.Slider
 		 */
 		SliderTooltipBase.prototype.setValue = function (fValue) {
 			this.fValue = fValue;
@@ -64,6 +54,7 @@ function(
 		/**
 		 * Gets the value of the tooltip.
 		 *
+		 * @returns {float} The current value of the tooltip.
 		 * @protected
 		 */
 		SliderTooltipBase.prototype.getValue = function () {

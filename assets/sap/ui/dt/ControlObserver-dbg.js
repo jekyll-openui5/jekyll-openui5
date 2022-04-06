@@ -1,17 +1,15 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides class sap.ui.dt.ControlObserver.
 sap.ui.define([
-	'jquery.sap.global',
-	'sap/ui/dt/ManagedObjectObserver'
+	"sap/ui/dt/ManagedObjectObserver"
 ],
-function(jQuery, ManagedObjectObserver) {
+function(ManagedObjectObserver) {
 	"use strict";
-
 
 	/**
 	 * Constructor for a new ControlObserver.
@@ -24,7 +22,7 @@ function(jQuery, ManagedObjectObserver) {
 	 * @extends sap.ui.dt.ManagedObjectObserver
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @private
@@ -33,28 +31,22 @@ function(jQuery, ManagedObjectObserver) {
 	 * @experimental Since 1.30. This class is experimental and provides only limited functionality. Also the API might be changed in future.
 	 */
 	var ControlObserver = ManagedObjectObserver.extend("sap.ui.dt.ControlObserver", /** @lends sap.ui.dt.ControlObserver.prototype */ {
-		metadata : {
+		metadata: {
 
 			// ---- object ----
 
 			// ---- control specific ----
-			library : "sap.ui.dt",
-			properties : {
+			library: "sap.ui.dt",
+			properties: {
 
 			},
-			associations : {
+			associations: {
 				/**
 				 * target Control to observe
 				 */
-				"target" : {
-					"type" : "sap.ui.core.Control"
+				target: {
+					type: "sap.ui.core.Control"
 				}
-			},
-			/**
-			 * Fired when the DOM of the observed control is changed
-			 */
-			events : {
-				"afterRendering" : {}
 			}
 		}
 	});
@@ -66,7 +58,7 @@ function(jQuery, ManagedObjectObserver) {
 		ManagedObjectObserver.prototype.init.apply(this, arguments);
 
 		this._oControlDelegate = {
-			onAfterRendering : this._onAfterRendering
+			onAfterRendering: this._onAfterRendering
 		};
 	};
 
@@ -99,9 +91,10 @@ function(jQuery, ManagedObjectObserver) {
 	 * @private
 	 */
 	ControlObserver.prototype._onAfterRendering = function() {
-		this.fireAfterRendering();
-
+		this.fireModified({
+			type: "afterRendering"
+		});
 	};
 
 	return ControlObserver;
-}, /* bExport= */ true);
+});

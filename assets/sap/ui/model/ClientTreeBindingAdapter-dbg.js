@@ -1,12 +1,26 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
+/*eslint-disable max-len */
 // Provides class sap.ui.model.odata.ODataAnnotations
-sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/ClientTreeBinding', './TreeBindingAdapter', 'sap/ui/model/ChangeReason'],
-	function(jQuery, TreeBinding, ClientTreeBinding, TreeBindingAdapter, ChangeReason) {
+sap.ui.define([
+	'sap/ui/model/TreeBinding',
+	'sap/ui/model/ClientTreeBinding',
+	'./TreeBindingAdapter',
+	'sap/ui/model/ChangeReason',
+	"sap/base/assert",
+	"sap/base/Log"
+],
+	function(
+		TreeBinding,
+		ClientTreeBinding,
+		TreeBindingAdapter,
+		ChangeReason,
+		assert,
+		Log
+	) {
 		"use strict";
 
 		/**
@@ -36,20 +50,12 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 
 			this._invalidTree = true;
 
-			// TODO: Decide if the tree state feature should be available for ClientModels
-			//-> remove comments if yes
-
-			// restore old tree state if given
-			//if (this.mParameters.treeState) {
-			//	this.setTreeState(this.mParameters.treeState);
-			//}
-
 			//set the default auto expand mode
 			this.setNumberOfExpandedLevels(this.mParameters.numberOfExpandedLevels || 0);
 		};
 
 		ClientTreeBindingAdapter.prototype.setNumberOfExpandedLevels = function (iNumberOfExpandedLevels) {
-			this._iNumberOfExpandedLevels = parseInt(iNumberOfExpandedLevels, 10);
+			this._iNumberOfExpandedLevels = parseInt(iNumberOfExpandedLevels);
 		};
 
 		ClientTreeBindingAdapter.prototype.getNumberOfExpandedLevels = function () {
@@ -62,7 +68,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 		 * @returns {boolean} True if the node has children
 		 */
 		ClientTreeBindingAdapter.prototype.nodeHasChildren = function(oNode) {
-			jQuery.sap.assert(oNode, "TreeBindingAdapter.nodeHasChildren: No node given!");
+			assert(oNode, "TreeBindingAdapter.nodeHasChildren: No node given!");
 
 			//check if the node has children
 			if (!oNode) {
@@ -103,7 +109,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 		 * Calculates a unique group ID for a given node
 		 * @param {Object} oNode Node of which the group ID shall be calculated
 		 * @returns {string} Group ID for oNode
-		 * @override
 		 */
 		ClientTreeBindingAdapter.prototype._calculateGroupID = function (oNode) {
 			var sBindingPath = this.getPath();
@@ -118,7 +123,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 					if (aMatch != null && aMatch[1]) {
 						sGroupId = aMatch[1];
 					} else {
-						jQuery.sap.log.warning("CTBA: BindingPath/ContextPath matching problem!");
+						Log.warning("CTBA: BindingPath/ContextPath matching problem!");
 					}
 				}
 				if (!sGroupId) {
@@ -127,7 +132,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 
 				// slashes are used to separate levels. As in the data model not every path-part represents a level,
 				// the remaining slashes must be replaced by some other character. "_" is used
-				if (jQuery.sap.startsWith(sGroupId,"/")) {
+				if (sGroupId.startsWith("/")) {
 					sGroupId = sGroupId.substring(1, sGroupId.length);
 				}
 
@@ -160,7 +165,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 		 * Expand function.
 		 * Due to the tree invalidation mechanism the tree has to be rebuilt before an expand operation.
 		 * Calling buildTree is performance-safe, as the tree is invalid anyway.
-		 * @override
 		 */
 		ClientTreeBindingAdapter.prototype.expand = function() {
 			this._buildTree();
@@ -171,7 +175,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 		 * Collapse function.
 		 * Due to the tree invalidation mechanism the tree has to be rebuilt before a collapse operation.
 		 * Calling buildTree is performance-safe, as the tree is invalid anyway.
-		 * @override
 		 */
 		ClientTreeBindingAdapter.prototype.collapse = function() {
 			this._buildTree();
@@ -182,7 +185,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 		 * Builds the tree from start index with the specified number of nodes
 		 * @param {int} iStartIndex Index from which the tree shall be built
 		 * @param {int} iLength Number of Nodes
-		 * @override
 		 */
 		ClientTreeBindingAdapter.prototype._buildTree = function(iStartIndex, iLength) {
 			if (this._invalidTree) {
@@ -195,39 +197,44 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 		};
 
 		/**
-		 * Due to the tree invalidation mechanism the tree has to be rebuilt before a findNode operation.
-		 * Calling buildTree is performance-safe, as the tree is invalid anyway.
-		 * @override
+		 * Find the first node in the tree matching the search criteria. In case the tree structure
+		 * is invalid, it is rebuilt before finding the node.
+		 *
+		 * @param {any} vParam The search criteria
+		 *
+		 * @returns {object} A tree node which may be a cached sum row
 		 */
-		ClientTreeBindingAdapter.prototype.findNode = function () {
+		ClientTreeBindingAdapter.prototype.findNode = function (vParam) {
 			this._buildTree();
 			return TreeBindingAdapter.prototype.findNode.apply(this, arguments);
 		};
 
 		/**
-		 * Due to the tree invalidation mechanism the tree has to be rebuilt before a setSelectedIndex operation.
-		 * Calling buildTree is performance-safe, as the tree is invalid anyway.
-		 * @override
+		 * Marks a single node as selected. In case the tree structure is invalid, it is rebuilt
+		 * before a <code>setSelectedIndex</code> operation.
+		 *
+		 * @param {number} iRowIndex Row to mark as selected
 		 */
-		ClientTreeBindingAdapter.prototype.setSelectedIndex = function () {
+		ClientTreeBindingAdapter.prototype.setSelectedIndex = function (iRowIndex) {
 			this._buildTree();
-			return TreeBindingAdapter.prototype.setSelectedIndex.apply(this, arguments);
+			TreeBindingAdapter.prototype.setSelectedIndex.apply(this, arguments);
 		};
 
 		/**
-		 * Due to the tree invalidation mechanism the tree has to be rebuilt before a setSelctionInterval operation.
-		 * Calling buildTree is performance-safe, as the tree is invalid anyway.
-		 * @override
+		 * Marks multiple nodes as selected. In case the tree structure is invalid, it is rebuilt
+		 * before a <code>setSelctionInterval</code> operation.
+		 *
+		 * @param {number} iFromIndex The first index to mark as selected
+		 * @param {number} iToIndex The last index to mark as selected
 		 */
-		ClientTreeBindingAdapter.prototype.setSelectionInterval = function () {
+		ClientTreeBindingAdapter.prototype.setSelectionInterval = function (iFromIndex, iToIndex) {
 			this._buildTree();
-			return TreeBindingAdapter.prototype.setSelectionInterval.apply(this, arguments);
+			TreeBindingAdapter.prototype.setSelectionInterval.apply(this, arguments);
 		};
 
 		/**
 		 * Due to the tree invalidation mechanism the tree has to be rebuilt before an addSelectionInterval operation.
 		 * Calling buildTree is performance-safe, as the tree is invalid anyway.
-		 * @override
 		 */
 		ClientTreeBindingAdapter.prototype.addSelectionInterval = function () {
 			this._buildTree();
@@ -237,7 +244,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 		/**
 		 * Due to the tree invalidation mechanism the tree has to be rebuilt before an addSelectionInterval operation.
 		 * Calling buildTree is performance-safe, as the tree is invalid anyway.
-		 * @override
 		 */
 		ClientTreeBindingAdapter.prototype.removeSelectionInterval = function () {
 			this._buildTree();
@@ -247,7 +253,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 		/**
 		 * Due to the tree invalidation mechanism the tree has to be rebuilt before an addSelectionInterval operation.
 		 * Calling buildTree is performance-safe, as the tree is invalid anyway.
-		 * @override
 		 */
 		ClientTreeBindingAdapter.prototype.clearSelection = function () {
 			this._buildTree();
@@ -257,7 +262,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 		/**
 		 * Due to the tree invalidation mechanism the tree has to be rebuilt before an addSelectionInterval operation.
 		 * Calling buildTree is performance-safe, as the tree is invalid anyway.
-		 * @override
 		 */
 		ClientTreeBindingAdapter.prototype.selectAll = function () {
 			this._buildTree();
@@ -265,12 +269,15 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', 'sap/ui/model/Cl
 		};
 
 		/**
-		 * Calculate the request length based on the given information
+		 * Calculate the request length based on the given information.
 		 *
-		 * Because client treebinding knows all of the data from the very beginning, it should simply return the the
-		 * maximum group size without looking at the current section.
+		 * Because client treebinding knows the complete data from the very beginning, it returns
+		 * the maximum group size, the current section is not considered.
 		 *
-		 * @override
+		 * @param {number} iMaxGroupSize The maximum group size
+		 * @param {object} oSection Information of the current section
+		 *
+		 * @returns {number} The request length
 		 */
 		ClientTreeBindingAdapter.prototype._calculateRequestLength = function(iMaxGroupSize, oSection) {
 			return iMaxGroupSize;

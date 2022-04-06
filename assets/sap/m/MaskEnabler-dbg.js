@@ -1,17 +1,22 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
 	'sap/ui/core/Control',
 	'./InputBase',
-	'jquery.sap.global',
 	'sap/ui/Device',
 	'sap/ui/core/library',
-	'jquery.sap.keycodes'
-], function(Control, InputBase, jQuery, Device, coreLibrary) {
+	'sap/ui/core/IconPool',
+	"sap/ui/events/KeyCodes",
+	"sap/base/Log",
+	"sap/ui/thirdparty/jquery",
+	"sap/m/MaskInputRule",
+	// jQuery Plugin "cursorPos"
+	"sap/ui/dom/jquery/cursorPos"
+], function(Control, InputBase, Device, coreLibrary, IconPool, KeyCodes, Log, jQuery, MaskInputRule) {
 	"use strict";
 
 	// shortcut for sap.ui.core.TextDirection
@@ -21,7 +26,7 @@ sap.ui.define([
 	 * Applies mask support for input controls.
 	 * It should should be applied to the prototype of a <code>sap.m.InputBase</code>.
 	 *
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @private
 	 * @mixin
 	 * @alias sap.m.MaskEnabler
@@ -51,7 +56,10 @@ sap.ui.define([
 			// Skips setup of mask variables on every iteration when initializing default rules
 			this._bSkipSetupMaskVariables = null;
 
+			this._oRb = sap.ui.getCore().getLibraryResourceBundle("sap.m");
+
 			this._setDefaultRules();
+			this._setupMaskVariables();
 		};
 
 		/**
@@ -77,11 +85,13 @@ sap.ui.define([
 				var sValidationErrorMsg = this._validateDependencies();
 
 				if (sValidationErrorMsg) {
-					jQuery.sap.log.warning("Invalid mask input: " + sValidationErrorMsg);
+					Log.warning("Invalid mask input: " + sValidationErrorMsg);
 				}
 			}
 
 			InputBase.prototype.onBeforeRendering.apply(this, arguments);
+
+			this.getShowClearIcon && this.getShowClearIcon() && this._getClearIcon().setVisible(this.getProperty("effectiveShowClearIcon"));
 		};
 
 		/**
@@ -119,7 +129,7 @@ sap.ui.define([
 				//For the sake of MaskInput, change event is decided inside _inputCompletedHandler, the reset of the InputBase.onfocusout
 				//follows
 				this.bFocusoutDueRendering = this.bRenderingPhase;
-				this.$().toggleClass("sapMFocus", false);
+				this.removeStyleClass("sapMFocus");
 				// remove touch handler from document for mobile devices
 				jQuery(document).off('.sapMIBtouchstart');
 
@@ -133,7 +143,7 @@ sap.ui.define([
 				this.closeValueStateMessage();
 				this._inputCompletedHandler();
 			} else {
-				this._setValue();
+				this._inputCompletedHandlerNoMask();
 				InputBase.prototype.onfocusout.apply(this, arguments);
 			}
 		};
@@ -164,6 +174,10 @@ sap.ui.define([
 			if (this._isMaskEnabled()) {
 				this._keyPressHandler(oEvent);
 			}
+
+			if (this.getDOMValue() !== "") {
+				this._setClearIconVisibility();
+			}
 		};
 
 		/**
@@ -172,25 +186,18 @@ sap.ui.define([
 		 */
 		this.onkeydown = MaskEnabler.onkeydown = function (oEvent) {
 			if (this._isMaskEnabled()) {
-				var oKey = this._parseKeyBoardEvent(oEvent),
-					mBrowser = Device.browser,
-					bIE9AndBackspaceDeleteScenario;
+				var oKey = this._parseKeyBoardEvent(oEvent);
 
-				/* When user types character, the flow of triggered events is keydown -> keypress -> input. The MaskInput
-				 handles user input in keydown (for special keys like Delete and Backspace) or in keypress - for any other user
-				 input and suppresses the input events. This is not true for IE9, where the input event is fired, because of
-				 the underlying InputBase takes control and fires it (see {@link sap.m.InputBase#onkeydown})
-				 */
-				bIE9AndBackspaceDeleteScenario = (oKey.bBackspace || oKey.bDelete) && mBrowser.msie && mBrowser.version < 10;
-
-				if (!bIE9AndBackspaceDeleteScenario) {
-					InputBase.prototype.onkeydown.apply(this, arguments);
-				}
+				InputBase.prototype.onkeydown.apply(this, arguments);
 				this._keyDownHandler(oEvent, oKey);
+
+				if (this.getDOMValue() !== "") {
+					this._setClearIconVisibility();
+				}
 			} else {
 				var oKey = this._parseKeyBoardEvent(oEvent);
 				if (oKey.bEnter) {
-					this._setValue();
+					this._inputCompletedHandlerNoMask();
 				}
 				InputBase.prototype.onkeydown.apply(this, arguments);
 			}
@@ -215,10 +222,96 @@ sap.ui.define([
 		};
 
 		/**
+		 * Handle when escape is pressed.
+		 *
+		 * @param {jQuery.Event} oEvent The event object.
+		 * @private
+		 */
+		this.onsapescape = function(oEvent) {
+			if (this._oTempValue._aContent.join("") !== this._oTempValue._aInitial.join("")) {
+				InputBase.prototype.onsapescape.call(this, oEvent);
+			}
+		};
+
+		/**
+		 * Sets the clear icon visibility depending on whether the input value is empty or not.
+		 * @param {boolean} bShowClearIcon whether to force show/hide of the clear icon or not.
+		 * @private
+		 */
+		this._setClearIconVisibility = function(bShowClearIcon) {
+			var bEffectiveShowClearIcon = bShowClearIcon !== undefined ? bShowClearIcon : !this._isValueEmpty();
+			if (this.getShowClearIcon && this.getShowClearIcon()) {
+				this.setProperty("effectiveShowClearIcon", bEffectiveShowClearIcon);
+				this._getClearIcon().setVisible(this.getProperty("effectiveShowClearIcon"));
+			}
+		};
+
+		/**
+		 * Lazy initialization of the clear icon.
+		 * @returns {sap.ui.core.Icon} The created icon.
+		 * @private
+		 */
+		this._getClearIcon = function () {
+			if (this._oClearButton) {
+				return this._oClearButton;
+			}
+
+			this._oClearButton = this.addEndIcon({
+				src: IconPool.getIconURI("decline"),
+				noTabStop: true,
+				visible: false,
+				alt: this._oRb.getText("INPUT_CLEAR_ICON_ALT"),
+				useIconTooltip: false,
+				press: function () {
+					if (!this._isValueEmpty()) {
+						this.fireChange({
+							value: ""
+						});
+
+						this.setValue("");
+						this.setProperty("effectiveShowClearIcon", false);
+						this._getClearIcon().setVisible(false);
+
+						setTimeout(function() {
+							if (Device.system.desktop) {
+								this.focus();
+							}
+						}, 0);
+					}
+				}.bind(this)
+			});
+
+			return this._oClearButton;
+		};
+
+		/**
+		 * Returns whether there is something entered in the field or not.
+		 *
+		 * @protected
+		 * @returns {boolean} True if there are placeholder characters displayed, but nothing is entered.
+		 */
+		this._isValueEmpty = function() {
+			var sValue = this.getDOMValue(),
+				sPlaceholder = this._oTempValue._aInitial.join('');
+
+			return sValue == sPlaceholder;
+		};
+
+		/**
+		 * Gets the inner input DOM value.
+		 *
+		 * @protected
+		 * @returns {string} The value of the input.
+		 */
+		this.getDOMValue = function() {
+			return this._$input.val();
+		};
+
+		/**
 		 * Setter for property <code>value</code>.
 		 *
 		 * @param {string} sValue New value for property <code>value</code>.
-		 * @return {sap.m.MaskInput} <code>this</code> to allow method chaining.
+		 * @return {this} <code>this</code> to allow method chaining.
 		 * @public
 		 */
 		this.setValue = MaskEnabler.setValue = function (sValue) {
@@ -236,6 +329,9 @@ sap.ui.define([
 					this._applyRules(sValue);
 				}
 			}
+
+			// show/hide the clear icon based on the new value (it is not yet set in the DOM, so the default check will not work)
+			this._setClearIconVisibility(sValue !== "");
 
 			return this;
 		};
@@ -280,7 +376,7 @@ sap.ui.define([
 		 */
 		this._validateRegexAgainstPlaceHolderSymbol = function (oRule) {
 			if (new RegExp(oRule.getRegex()).test(this.getPlaceholderSymbol())) {
-				jQuery.sap.log.error("Rejecting input mask rule because it includes the currently set placeholder symbol.");
+				Log.error("Rejecting input mask rule because it includes the currently set placeholder symbol.");
 				return false;
 			}
 			return true;
@@ -297,7 +393,7 @@ sap.ui.define([
 
 			// make sure the placeholder symbol is always a single regex supported character
 			if (!/^.$/i.test(sSymbol)) {
-				jQuery.sap.log.error("Invalid placeholder symbol string given");
+				Log.error("Invalid placeholder symbol string given");
 				return this;
 			}
 
@@ -308,7 +404,7 @@ sap.ui.define([
 			});
 
 			if (bSymbolFound) {
-				jQuery.sap.log.error("Rejecting placeholder symbol because it is included as a regex in an existing mask input rule.");
+				Log.error("Rejecting placeholder symbol because it is included as a regex in an existing mask input rule.");
 			} else {
 				this.setProperty("placeholderSymbol", sSymbol);
 				this._setupMaskVariables();
@@ -326,7 +422,7 @@ sap.ui.define([
 		this.setMask = function (sMask) {
 			if (!sMask) {
 				var sErrorMsg = "Setting an empty mask is pointless. Make sure you set it with a non-empty value.";
-				jQuery.sap.log.warning(sErrorMsg);
+				Log.warning(sErrorMsg);
 				return this;
 			}
 			this.setProperty("mask", sMask, true);
@@ -365,17 +461,24 @@ sap.ui.define([
 		 * and fire change event if it is needed. This is not used for MaskMode On because this logic is handled by _inputCompletedHandler
 		 * @private
 		 */
-		this._setValue = function () {
+		this._inputCompletedHandlerNoMask = function () {
 			var sValue = this._getInputValue();
 
 			if (this._sOldInputValue !== sValue) {
-				InputBase.prototype.setValue.call(this, sValue);
+				// Altered value (if any) should be used only for updating <value>. Mask works on dom level.
+				InputBase.prototype.setValue.call(this, this._getAlteredUserInputValue ? this._getAlteredUserInputValue(sValue) : sValue);
 				this._sOldInputValue = sValue;
 				if (this.onChange && !this.onChange({value: sValue})) {//if the subclass didn't fire the "change" event by itself
 					this.fireChangeEvent(sValue);
 				}
 			}
 		};
+
+		/**
+		 * @name _getAlteredUserInputValue
+		 * Subclasses can override it in order to alter the value entered by the user right before it is transmitted
+		 * to the InputBase#value
+		 */
 
 		/********************************************************************************************
 		 ****************************** Private methods and classes *********************************
@@ -514,11 +617,11 @@ sap.ui.define([
 		 */
 		this._setDefaultRules = function () {
 			this._bSkipSetupMaskVariables = true;
-			this.addRule(new sap.m.MaskInputRule({
+			this.addRule(new MaskInputRule({
 				maskFormatSymbol: "a",
 				regex: "[A-Za-z]"
 			}), true);
-			this.addRule(new sap.m.MaskInputRule({
+			this.addRule(new MaskInputRule({
 				maskFormatSymbol: "9",
 				regex: "[0-9]"
 			}), true);
@@ -590,7 +693,7 @@ sap.ui.define([
 			var oResult = null;
 
 			if (typeof sMaskRuleSymbol !== "string" || sMaskRuleSymbol.length !== 1) {
-				jQuery.sap.log.error(sMaskRuleSymbol + " is not a valid mask rule symbol");
+				Log.error(sMaskRuleSymbol + " is not a valid mask rule symbol");
 				return null;
 			}
 
@@ -616,7 +719,7 @@ sap.ui.define([
 			var _$Input = jQuery(this.getFocusDomRef());
 
 			if (!_$Input && (_$Input.length === 0 || _$Input.is(":hidden"))) {
-				return;
+				return {};
 			}
 
 			return {
@@ -887,24 +990,22 @@ sap.ui.define([
 
 			// give a chance the normal browser cut and oninput handler to finish its work with the current selection,
 			// before messing up the dom value (updateDomValue) or the selection (by setting a new cursor position)
-			jQuery.sap.delayedCall(iMinBrowserDelay, this,
-				function updateDomAndCursor(sValue, iPos, aOldTempValueContent) {
-					//update the temp value back
-					//because oninput breaks it
-					this._oTempValue._aContent = aOldTempValueContent;
-					this.updateDomValue(sValue);
+			setTimeout(function updateDomAndCursor(sValue, iPos, aOldTempValueContent) {
+				//update the temp value back
+				//because oninput breaks it
+				this._oTempValue._aContent = aOldTempValueContent;
+				this.updateDomValue(sValue);
 
-					//we want that shortly after updateDomValue
-					//but _positionCaret sets the cursor, also with a delayedCall
-					//so we must put our update in the queue
-					jQuery.sap.delayedCall(iMinBrowserDelay, this, this._setCursorPosition, [iPos]);
-				},
-				[
-					this._oTempValue.toString(),
-					Math.max(this._iUserInputStartPosition, iBegin),
-					this._oTempValue._aContent.slice(0)
-				]
-			);
+				//we want that shortly after updateDomValue
+				//but _positionCaret sets the cursor, also with a delayedCall
+				//so we must put our update in the queue
+				setTimeout(this._setCursorPosition.bind(this, iPos), iMinBrowserDelay);
+			}.bind(
+				this,
+				this._oTempValue.toString(),
+				Math.max(this._iUserInputStartPosition, iBegin),
+				this._oTempValue._aContent.slice(0)
+			), iMinBrowserDelay);
 		};
 
 		/**
@@ -951,7 +1052,6 @@ sap.ui.define([
 				this._applyAndUpdate(this._sOldInputValue);
 				this._positionCaret(true);
 				oEvent.preventDefault();
-
 			} else if (oKey.bEnter) {
 				this._inputCompletedHandler(oEvent);
 			} else if ((oKey.bCtrlKey && oKey.bInsert) ||
@@ -964,7 +1064,8 @@ sap.ui.define([
 				// needed for further processing at "oninput"
 				this._oKeyDownStateAndroid = {
 					sValue: this._oTempValue.toString(),
-					iCursorPosition: this._getCursorPosition()
+					iCursorPosition: this._getCursorPosition(),
+					oSelection: this._getTextSelection()
 				};
 			}
 		};
@@ -973,11 +1074,14 @@ sap.ui.define([
 		 * Reverts the value, as if no key down.
 		 * In case of backspace, just reverts to the previous temp value.
 		 * @param {object} oKey All the info for a key in a keydown event
+		 * @param {Object} [oSelection] An input selection info object, that could be used.
+		 * If not specified, current selection will take place. Format is the same as _getTextSelection returned type.
 		 * @private
 		 */
-		this._revertKey = function(oKey) {
-			var oSelection = this._getTextSelection(),
-				iBegin = oSelection.iFrom,
+		this._revertKey = function(oKey, oSelection) {
+			oSelection = oSelection || this._getTextSelection();
+
+			var iBegin = oSelection.iFrom,
 				iEnd = oSelection.iTo;
 
 			if (!oSelection.bHasSelection) {
@@ -1048,7 +1152,8 @@ sap.ui.define([
 			}
 
 			if (this._sOldInputValue !== this._oTempValue.toString()) {
-				InputBase.prototype.setValue.call(this, sValue);
+				// Altered value (if any) should be used only for updating <value>. Mask works on dom level.
+				InputBase.prototype.setValue.call(this, this._getAlteredUserInputValue ? this._getAlteredUserInputValue(sValue) : sValue);
 				this._sOldInputValue = sValue;
 				if (this.onChange && !this.onChange({value: sValue})) {//if the subclass didn't fire the "change" event by itself
 					this.fireChangeEvent(sValue);
@@ -1107,7 +1212,7 @@ sap.ui.define([
 		 */
 		this._parseKeyBoardEvent = function (oEvent) {
 			var iPressedKey = oEvent.which || oEvent.keyCode,
-				mKC = jQuery.sap.KeyCodes,
+				mKC = KeyCodes,
 				bArrowRight = iPressedKey === mKC.ARROW_RIGHT,
 				bArrowLeft = iPressedKey === mKC.ARROW_LEFT,
 				bShift = oEvent.shiftKey;
@@ -1119,7 +1224,7 @@ sap.ui.define([
 				bAltKey: oEvent.altKey,
 				bMetaKey: oEvent.metaKey,
 				bShift: bShift,
-				bInsert: iPressedKey === jQuery.sap.KeyCodes.INSERT,
+				bInsert: iPressedKey === KeyCodes.INSERT,
 				bBackspace: iPressedKey === mKC.BACKSPACE,
 				bDelete: iPressedKey === mKC.DELETE,
 				bEscape: iPressedKey === mKC.ESCAPE,
@@ -1127,8 +1232,8 @@ sap.ui.define([
 				bIphoneEscape: (Device.system.phone && Device.os.ios && iPressedKey === 127),
 				bArrowRight: bArrowRight,
 				bArrowLeft: bArrowLeft,
-				bHome: iPressedKey === jQuery.sap.KeyCodes.HOME,
-				bEnd:  iPressedKey === jQuery.sap.KeyCodes.END,
+				bHome: iPressedKey === KeyCodes.HOME,
+				bEnd:  iPressedKey === KeyCodes.END,
 				bShiftLeftOrRightArrow: bShift && (bArrowLeft || bArrowRight),
 				bBeforeSpace: iPressedKey < mKC.SPACE
 			};
@@ -1151,7 +1256,7 @@ sap.ui.define([
 				iEndSelectionIndex = sMask.length;
 			}
 
-			this._iCaretTimeoutId = jQuery.sap.delayedCall(iMinBrowserDelay, this, function () {
+			this._iCaretTimeoutId = setTimeout(function () {
 				if (this.getFocusDomRef() !== document.activeElement) {
 					return;
 				}
@@ -1160,18 +1265,18 @@ sap.ui.define([
 				} else {
 					this._setCursorPosition(iEndSelectionIndex);
 				}
-			});
+			}.bind(this), iMinBrowserDelay);
+
+			this._setClearIconVisibility();
 		};
 
 		/**
 		 * Determines the browser specific minimal delay time for setTimeout.
 		 *
-		 * Todo: This logic is a good candidate to be implemented generally in jQuery.sap.delayedCall method.
-		 *
 		 * @private
 		 */
 		this._getMinBrowserDelay = function () {
-			return !Device.browser.msie ? 4 : 50;
+			return 4;
 		};
 
 		/**
@@ -1398,7 +1503,7 @@ sap.ui.define([
 				return;
 			}
 
-			oKeyInfo = this._buildKeyboardEventInfo(this._oKeyDownStateAndroid.sValue, this._getInputValue());
+			oKeyInfo = this._buildKeyboardEventInfo(this._oKeyDownStateAndroid.sValue, this._getInputValue(), this._oKeyDownStateAndroid.oSelection);
 
 			/* Fix 2 side effects:
 			 * - Cursor is at wrong position (browser behavior) - > restore it
@@ -1411,17 +1516,20 @@ sap.ui.define([
 			// the old and new value will be observed
 			this.updateDomValue(this._oKeyDownStateAndroid.sValue);
 
-			jQuery.sap.delayedCall(0, this, function(oInputEvent, oKeyDownState, oKey) {
+			setTimeout(function(oInputEvent, oKeyDownState, oKey) {
 				// delayed call is needed, as for some Android devices(e.g. S5) if _setCursorPosition (jQuery.cursorPos)
 				// is called from within the input handler, this won't really change the cursor position,
 				// even though _getCursorPosition() returns the one that had been previously set.
 				this._setCursorPosition(oKeyDownState.iCursorPosition);
-				if (oKey.bBackspace) {
-					this._revertKey(oKey);
+				if (oKey.bBackspace) { // backspace could also mean previous selection which is deleted by any char
+					this._revertKey(oKey, oKeyDownState.oSelection);
+					if (oKeyDownState.oSelection.bHasSelection && oKey.sChar) { // user-typed char replaces previous selection
+						this._keyPressHandler(oInputEvent, oKey);
+					}
 				} else {
 					this._keyPressHandler(oInputEvent, oKey);
 				}
-			}, [oEvent, this._oKeyDownStateAndroid, oKeyInfo]);
+			}.bind(this, oEvent, this._oKeyDownStateAndroid, oKeyInfo), 0);
 
 			delete this._oKeyDownStateAndroid;
 			oEvent.preventDefault();
@@ -1437,11 +1545,15 @@ sap.ui.define([
 		 *	</ul>
 		 * @param {string} sOldValue the old value
 		 * @param {string} sNewValue the new value
+		 * @param {Object} oOldValueSelection An input selection info object, that could be used. Format is the same as
+		 * _getTextSelection return type.
 		 * @returns {Object} an info object about which key "is pressed" (see #parseKeyboardEvent)
 		 * @private
 		 */
-		this._buildKeyboardEventInfo = function(sOldValue, sNewValue) {
-			var sNewChar = "", i;
+		this._buildKeyboardEventInfo = function(sOldValue, sNewValue, oOldValueSelection) {
+			var sNewChar = "", i,
+				oResult = {},
+				bCurrentPosHadSelection;
 
 			if (!sOldValue && !sNewValue) {
 				return {};
@@ -1450,22 +1562,28 @@ sap.ui.define([
 			if (sOldValue && sNewValue && sNewValue.length < sOldValue.length) { //backspace
 				// We choose "bBackspace" property instead of "bDelete", because only "Backspace"
 				// is available on Android keyboards (i.e. no "delete")
-				return { bBackspace: true };
+				oResult.bBackspace = true; // the bBackspace does not denote if there was previous selection or not
 			}
 
 			for (i = 0; i < sNewValue.length; i++) {
-				if (sOldValue[i] !== sNewValue[i]) {
+				//if char from sOldValue was selected before, the same positioned char in sNewValue should be always considered
+				// as a new char (even if both chars are equal)
+				bCurrentPosHadSelection = oOldValueSelection.bHasSelection && oOldValueSelection.iFrom === i;
+
+				if (bCurrentPosHadSelection || sOldValue[i] !== sNewValue[i]) {
 					sNewChar = sNewValue[i];
 					break;
 				}
 			}
-			return { sChar: sNewChar };
+			oResult.sChar = sNewChar;
+
+			return oResult;
 		};
 
 
 		/**
 		 * Checks if the current environment is Android PS with browser Chrome
- 		 * @returns {boolean} true if it is both Chrome and Android, otherwise - false.
+		 * @returns {boolean} true if it is both Chrome and Android, otherwise - false.
 		 * @private
 		 */
 		this._isChromeOnAndroid = function() {

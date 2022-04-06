@@ -1,20 +1,24 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.ListBox.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/ui/thirdparty/jquery',
     './library',
     'sap/ui/core/Control',
     'sap/ui/core/delegate/ItemNavigation',
-    "./ListBoxRenderer",
-    'jquery.sap.strings'
+    './ListBoxRenderer',
+    'sap/ui/core/library',
+    'sap/ui/Device'
 ],
-	function(jQuery, library, Control, ItemNavigation, ListBoxRenderer /*, jQuerySap */) {
+	function(jQuery, library, Control, ItemNavigation, ListBoxRenderer, coreLibrary, Device) {
 	"use strict";
+
+	// shortcut for sap.ui.core.TextAlign
+	var TextAlign = coreLibrary.TextAlign;
 
 	/**
 	 * Constructor for a new ListBox.
@@ -30,7 +34,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -40,6 +44,7 @@ sap.ui.define([
 	 */
 	var ListBox = Control.extend("sap.ui.commons.ListBox", /** @lends sap.ui.commons.ListBox.prototype */ { metadata : {
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -96,12 +101,12 @@ sap.ui.define([
 			/**
 			 * Determines the text alignment in the primary ListBox column.
 			 */
-			valueTextAlign : {type : "sap.ui.core.TextAlign", group : "Appearance", defaultValue : sap.ui.core.TextAlign.Begin},
+			valueTextAlign : {type : "sap.ui.core.TextAlign", group : "Appearance", defaultValue : TextAlign.Begin},
 
 			/**
 			 * Determines the text alignment in the secondary ListBox text column (if available).
 			 */
-			secondaryValueTextAlign : {type : "sap.ui.core.TextAlign", group : "Appearance", defaultValue : sap.ui.core.TextAlign.Begin},
+			secondaryValueTextAlign : {type : "sap.ui.core.TextAlign", group : "Appearance", defaultValue : TextAlign.Begin},
 
 			/**
 			 * Determines the minimum width of the ListBox. If not set, there is no minimum width.
@@ -258,27 +263,13 @@ sap.ui.define([
 			var div = document.createElement("div");
 			div.id = "sap-ui-commons-ListBox-sizeDummy";
 			div.innerHTML = '<div class="sapUiLbx sapUiLbxFlexWidth sapUiLbxStd"><ul><li class="sapUiLbxI"><span class="sapUiLbxITxt">&nbsp;</span></li></ul></div>';
-			if (sap.ui.Device.browser.safari) {
+			if (Device.browser.safari) {
 				oStaticArea.insertBefore(div, oStaticArea.firstChild);
 			} else {
 				oStaticArea.appendChild(div);
 			}
 			var oItemDomRef = div.firstChild.firstChild.firstChild;
 			ListBox._fItemHeight = oItemDomRef.offsetHeight;
-
-			// subpixel rendering strategy in IE >= 9 can lead to the total being larger than the sum of heights
-			if (!!sap.ui.Device.browser.internet_explorer && (document.documentMode == 9 || document.documentMode == 10)) { // TODO: browser version check... not good...
-				var cs = document.defaultView.getComputedStyle(oItemDomRef.firstChild, "");
-				var h = parseFloat(cs.getPropertyValue("height").split("px")[0]);
-				if (!(typeof h === "number") || !(h > 0)) { // sometimes cs.getPropertyValue("height") seems to return "auto"
-					h = jQuery(oItemDomRef.firstChild).height();
-				}
-				var pt = parseFloat(cs.getPropertyValue("padding-top").split("px")[0]);
-				var pb = parseFloat(cs.getPropertyValue("padding-bottom").split("px")[0]);
-				var bt = parseFloat(cs.getPropertyValue("border-top-width").split("px")[0]);
-				var bb = parseFloat(cs.getPropertyValue("border-bottom-width").split("px")[0]);
-				ListBox._fItemHeight = h + pt + pb + bt + bb;
-			}
 
 			// remove the dummy
 			oStaticArea.removeChild(div);
@@ -412,7 +403,7 @@ sap.ui.define([
 	 * @param {int} iIndex The index to which the ListBox should scroll.
 	 * @param {boolean} bLazy
 	 *         If set to true, the ListBox only scrolls if the item is not completely visible, and it scrolls for exactly the space to make it fully visible. If set to false, the item is scrolled to the top position (if possible).
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.scrollToIndex = function(iIndex, bLazy) {
@@ -460,7 +451,7 @@ sap.ui.define([
 	 * Makes the ListBox render with a height that allows it to display exactly the given number of items.
 	 *
 	 * @param {int} iItemCount The number of items that should fit into the ListBox without scrolling.
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.setVisibleItems = function(iItemCount) {
@@ -532,7 +523,7 @@ sap.ui.define([
 	 * Sets the height of this ListBox in CSS units.
 	 *
 	 * @param {sap.ui.core.CSSSize} sHeight New height for the ListBox.
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.setHeight = function(sHeight) {
@@ -560,7 +551,7 @@ sap.ui.define([
 	 * Sets the width of this ListBox in CSS units.
 	 *
 	 * @param {sap.ui.core.CSSSize} sWidth New width for the ListBox.
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.setWidth = function(sWidth) {
@@ -576,7 +567,7 @@ sap.ui.define([
 	 * Positions the ListBox contents so that they are scrolled-down by the given number of pixels.
 	 *
 	 * @param {int} iScrollTop Vertical scroll position in pixels.
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.setScrollTop = function (iScrollTop) {
@@ -612,12 +603,15 @@ sap.ui.define([
 	/* --- user interaction handling methods --- */
 
 	ListBox.prototype.onmousedown = function(oEvent) {
-		if (!!sap.ui.Device.browser.webkit && oEvent.target && oEvent.target.id === this.getId()) { // ListBox scrollbar has been clicked; webkit completely removes the focus, which breaks autoclose popups
+		if (Device.browser.webkit && oEvent.target && oEvent.target.id === this.getId()) { // ListBox scrollbar has been clicked; webkit completely removes the focus, which breaks autoclose popups
 			var idToFocus = document.activeElement ? document.activeElement.id : this.getId();
 			var that = this;
-			window.setTimeout(function(){
+			setTimeout(function(){
 				var scrollPos = that.getDomRef().scrollTop; // yes, this scrollPosition is the right one to use. The one before setTimeout works for the scrollbar grip, but not for the arrows
-				jQuery.sap.focus(jQuery.sap.domById(idToFocus)); // re-set the focus
+				var oFocusElem = idToFocus ? document.getElementById(idToFocus) : null;
+				if ( oFocusElem ) {
+					oFocusElem.focus(); // re-set the focus
+				}
 				that.getDomRef().scrollTop = scrollPos; // re-apply the scroll position (otherwise the focus() call would scroll the focused element into view)
 			},0);
 		}
@@ -655,7 +649,7 @@ sap.ui.define([
 		}
 
 		var oSource = oEvent.target;
-		if (oSource.id === "" || jQuery.sap.endsWith(oSource.id, "-txt")) {
+		if (oSource.id === "" || (oSource.id && oSource.id.endsWith("-txt")) ) {
 			oSource = oSource.parentNode;
 			if (oSource.id === "") { // could be the image inside the first cell
 				oSource = oSource.parentNode;
@@ -663,7 +657,7 @@ sap.ui.define([
 		}
 		var attr = jQuery(oSource).attr("data-sap-ui-lbx-index");
 		if (typeof attr == "string" && attr.length > 0) {
-			var iIndex = parseInt(attr, 10); // Get the selected index from the HTML
+			var iIndex = parseInt(attr); // Get the selected index from the HTML
 
 			var aItems = this.getItems();
 			var oItem = aItems[iIndex]; // oItem could be a separator, though!
@@ -678,7 +672,7 @@ sap.ui.define([
 					// Take care of selection and select event
 					if (oEvent.ctrlKey || oEvent.metaKey) { // = CTRL
 							this._handleUserActivationCtrl(iIndex, oItem);
-					} else  if (oEvent.shiftKey) {
+					} else if (oEvent.shiftKey) {
 						this.setSelectedIndices(this._getUserSelectionRange(iIndex));
 						this.fireSelect({
 							id:this.getId(),
@@ -813,7 +807,7 @@ sap.ui.define([
 	 *This method removes any previous selections. When the given index is invalid, the call is ignored.
 	 *
 	 * @param {int} iSelectedIndex Index to be selected.
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.setSelectedIndex = function(iSelectedIndex) {
@@ -847,7 +841,7 @@ sap.ui.define([
 	 * When the given index is invalid, the call is ignored.
 	 *
 	 * @param {int} iSelectedIndex Index to add to selection..
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.addSelectedIndex = function(iSelectedIndex) {
@@ -882,7 +876,7 @@ sap.ui.define([
 	 * Removes the given index from this selection. When the index is invalid or not selected, the call is ignored.
 	 *
 	 * @param {int} iIndex Index that shall be removed from selection.
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.removeSelectedIndex = function(iIndex) {
@@ -905,7 +899,7 @@ sap.ui.define([
 	/**
 	 * Removes complete selection.
 	 *
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.clearSelection = function() {
@@ -953,7 +947,7 @@ sap.ui.define([
 	 * The previous selection is in any case replaced.
 	 *
 	 * @param {int[]} aSelectedIndices Indices of the items to be selected.
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.setSelectedIndices = function(aSelectedIndices) {
@@ -993,7 +987,7 @@ sap.ui.define([
 	 * Adds the given indices to selection. Any invalid indices are ignored.
 	 *
 	 * @param {int[]} aSelectedIndices Indices of the items that shall additionally be selected.
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.addSelectedIndices = function(aSelectedIndices) {
@@ -1051,7 +1045,7 @@ sap.ui.define([
 	 * The previous selection is replaced in any case.
 	 *
 	 * @param {string[]} aSelectedKeys The keys of the items to be selected.
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.setSelectedKeys = function(aSelectedKeys) {
@@ -1175,7 +1169,7 @@ sap.ui.define([
 	 *
 	 * @param {sap.ui.core.ListItem[]} aItems The items to set for this ListBox.
 	 * @param {boolean} bDestroyItems Optional boolean parameter to indicate that the formerly set items should be destroyed, instead of just removed.
-	 * @return {sap.ui.commons.ListBox} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ListBox.prototype.setItems = function(aItems, bDestroyItems, bNoItemsChanged) {
@@ -1320,7 +1314,9 @@ sap.ui.define([
 		this._bNoItemInvalidateEvent = true;
 		// fire change event asynchrounusly to be sure all binding update is done
 		if (!this._bItemsChangedAfterUpdate) {
-			this._bItemsChangedAfterUpdate = jQuery.sap.delayedCall(0, this, "_itemsChangedAfterUpdate");
+			this._bItemsChangedAfterUpdate = setTimeout(function() {
+				this._itemsChangedAfterUpdate();
+			}.bind(this), 0);
 		}
 
 	};
@@ -1348,7 +1344,7 @@ sap.ui.define([
 		}
 
 		if (this._bItemsChangedAfterUpdate) {
-			jQuery.sap.clearDelayedCall(this._bItemsChangedAfterUpdate);
+			clearTimeout(this._bItemsChangedAfterUpdate);
 			this._bItemsChangedAfterUpdate = undefined;
 			this._bNoItemsChangeEvent = undefined;
 			this._bNoItemInvalidateEvent = undefined;
@@ -1386,4 +1382,4 @@ sap.ui.define([
 
 	return ListBox;
 
-}, /* bExport= */ true);
+});

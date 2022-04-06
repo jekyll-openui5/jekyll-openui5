@@ -1,19 +1,22 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.m.PullToRefresh.
 sap.ui.define([
-	'jquery.sap.global',
+	"sap/ui/thirdparty/jquery",
 	'./library',
 	'sap/ui/core/Control',
 	'sap/ui/Device',
 	'./PullToRefreshRenderer',
-	'jquery.sap.keycodes'
+	"sap/ui/events/KeyCodes",
+	"sap/base/security/encodeXML",
+	"sap/ui/core/InvisibleText",
+	"sap/m/BusyIndicator"
 ],
-	function(jQuery, library, Control, Device, PullToRefreshRenderer) {
+	function(jQuery, library, Control, Device, PullToRefreshRenderer, KeyCodes, encodeXML, InvisibleText, BusyIndicator) {
 	"use strict";
 
 
@@ -39,7 +42,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -82,21 +85,37 @@ sap.ui.define([
 		}
 	}});
 
+	PullToRefresh.ARIA_F5_REFRESH = "PULL_TO_REFRESH_ARIA_F5";
+
 	PullToRefresh.prototype.init = function(){
+		// TODO: migration not possible. jQuery.sap.simulateMobileOnDesktop is a testing flag which should not be used.
 		this._bTouchMode = Device.support.touch && !Device.system.combi || jQuery.sap.simulateMobileOnDesktop;
 		this._iState = 0; // 0 - normal; 1 - release to refresh; 2 - loading
+		this._sAriaF5Text = InvisibleText.getStaticId("sap.m", PullToRefresh.ARIA_F5_REFRESH);
 	};
 
 	PullToRefresh.prototype._loadBI = function(){
 		// lazy create a Busy indicator to avoid overhead when invisible at start
 		if (this.getVisible() && !this._oBusyIndicator) {
-			jQuery.sap.require("sap.m.BusyIndicator");
-			this._oBusyIndicator = new sap.m.BusyIndicator({
+			this._oBusyIndicator = new BusyIndicator({
 				size: "1.7rem",
 				design: "auto"
 			});
 			this._oBusyIndicator.setParent(this);
 		}
+	};
+
+	PullToRefresh.prototype._getAriaDescribedByReferences = function(){
+		var sTooltipText = this.getTooltip_AsString(),
+			sDescribedBy = this._sAriaF5Text,
+			sTooltipId;
+
+		if (sTooltipText) {
+			sTooltipId = InvisibleText.getStaticId("sap.m", sTooltipText);
+			sDescribedBy += ' ' + sTooltipId;
+		}
+
+		return sDescribedBy;
 	};
 
 	PullToRefresh.prototype.onBeforeRendering = function(){
@@ -171,7 +190,7 @@ sap.ui.define([
 		if (_scroller.y > -this._iTopTrigger && this._iState < 1 ) {
 			this.setState(1);
 			_scroller.minScrollY = 0;
-		} else if (_scroller.y < -this._iTopTrigger && this._iState == 1) {
+		} else if (_scroller.y < -this._iTopTrigger && this._iState === 1) {
 			this.setState(0);
 			_scroller.minScrollY = -domRef.offsetHeight;
 		}
@@ -190,7 +209,7 @@ sap.ui.define([
 	};
 
 	PullToRefresh.prototype.doScrollEnd = function(){
-		if (this._iState == 1) { // if released when ready - load
+		if (this._iState === 1) { // if released when ready - load
 			this.setState(2);
 			this.fireRefresh();
 		}
@@ -202,7 +221,7 @@ sap.ui.define([
 	*/
 	PullToRefresh.prototype.setState = function(iState){
 
-		if (this._iState == iState) {
+		if (this._iState === iState) {
 			return;
 		}
 
@@ -221,7 +240,7 @@ sap.ui.define([
 				$this.toggleClass("sapMFlip", false).toggleClass("sapMLoading", false);
 				$text.html(oResourceBundle.getText(this._bTouchMode ? "PULL2REFRESH_PULLDOWN" : "PULL2REFRESH_REFRESH"));
 				$this.removeAttr("aria-live");
-				$this.find(".sapMPullDownInfo").html(jQuery.sap.encodeHTML(this.getDescription()));
+				$this.find(".sapMPullDownInfo").html(encodeXML(this.getDescription()));
 				break;
 			case 1:
 				$this.toggleClass("sapMFlip", true);
@@ -236,17 +255,6 @@ sap.ui.define([
 				$this.find(".sapMPullDownInfo").html(this._bTouchMode ? oResourceBundle.getText("PULL2REFRESH_LOADING_LONG") : "");
 				break;
 		}
-	};
-
-	/*
-	* Override re-rendering for description
-	* @private
-	*/
-	PullToRefresh.prototype.setDescription = function(sDescription){
-		if (this._oDomRef) {
-			this.$().find(".sapMPullDownInfo").html(jQuery.sap.encodeHTML(sDescription));
-		}
-		return this.setProperty("description", sDescription, true);
 	};
 
 	/*
@@ -282,7 +290,7 @@ sap.ui.define([
 	 * @private
 	 */
 	PullToRefresh.prototype.onkeydown = function(event) {
-		if ( event.which == jQuery.sap.KeyCodes.F5) {
+		if (event.which === KeyCodes.F5) {
 			this.onclick();
 			// do not refresh browser window
 			event.stopPropagation();
@@ -334,7 +342,7 @@ sap.ui.define([
 	};
 
 	PullToRefresh.prototype.setVisible = function(bVisible){
-		if (this.getVisible() == bVisible) {
+		if (this.getVisible() === bVisible) {
 			return this;
 		}
 

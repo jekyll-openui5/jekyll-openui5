@@ -1,18 +1,22 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.ProgressIndicator.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/ui/thirdparty/jquery',
     './library',
     'sap/ui/core/Control',
-    "./ProgressIndicatorRenderer"
+    './ProgressIndicatorRenderer',
+    'sap/ui/core/library'
 ],
-	function(jQuery, library, Control, ProgressIndicatorRenderer) {
+	function(jQuery, library, Control, ProgressIndicatorRenderer, coreLibrary) {
 	"use strict";
+
+	// shortcut for sap.ui.core.BarColor
+	var BarColor = coreLibrary.BarColor;
 
 	/**
 	 * Constructor for a new ProgressIndicator.
@@ -28,7 +32,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -38,6 +42,7 @@ sap.ui.define([
 	 */
 	var ProgressIndicator = Control.extend("sap.ui.commons.ProgressIndicator", /** @lends sap.ui.commons.ProgressIndicator.prototype */ { metadata : {
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -51,7 +56,7 @@ sap.ui.define([
 			 * Possible values defined in the sap.ui.core.BarColor enumeration are the following:
 			 * CRITICAL (yellow), NEGATIVE (red), POSITIVE (green), NEUTRAL (blue) (default value).
 			 */
-			barColor : {type : "sap.ui.core.BarColor", group : "Appearance", defaultValue : sap.ui.core.BarColor.NEUTRAL},
+			barColor : {type : "sap.ui.core.BarColor", group : "Appearance", defaultValue : BarColor.NEUTRAL},
 
 			/**
 			 * Determines the text value that will be displayed in the bar.
@@ -87,6 +92,12 @@ sap.ui.define([
 		this.focus();
 
 	};
+
+	ProgressIndicator.prototype.onselectstart = function(oEvent) {
+
+		return false;
+	};
+
 
 	/**
 	 * Function is called when the value of the ProgressIndicator goes beyond 100 and
@@ -188,7 +199,7 @@ sap.ui.define([
 	 * A new rendering is not necessary, only the bar has to be moved.
 	 *
 	 * @param {int} iPercentValue The new percent value of the ProgressIndicator.
-	 * @return {sap.ui.commons.ProgressIndicator} <code>this</code> to allow method chaining.
+	 * @return {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	ProgressIndicator.prototype.setPercentValue = function(iPercentValue) {
@@ -291,6 +302,7 @@ sap.ui.define([
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
+	 * @returns {object} The accessibility info
 	 * @protected
 	 */
 	ProgressIndicator.prototype.getAccessibilityInfo = function() {
@@ -306,4 +318,4 @@ sap.ui.define([
 
 	return ProgressIndicator;
 
-}, /* bExport= */ true);
+});

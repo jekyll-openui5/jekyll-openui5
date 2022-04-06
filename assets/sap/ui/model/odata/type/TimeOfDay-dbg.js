@@ -1,18 +1,19 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	"jquery.sap.global",
-	"jquery.sap.strings",
+	"sap/base/Log",
+	"sap/base/util/extend",
+	"sap/ui/core/CalendarType",
 	"sap/ui/core/format/DateFormat",
 	"sap/ui/model/FormatException",
 	"sap/ui/model/ParseException",
 	"sap/ui/model/ValidateException",
 	"sap/ui/model/odata/type/ODataType"
-], function(jQuery, jQuerySapStrings, DateFormat, FormatException, ParseException,
+], function (Log, extend, CalendarType, DateFormat, FormatException, ParseException,
 		ValidateException, ODataType) {
 	"use strict";
 
@@ -26,30 +27,7 @@ sap.ui.define([
 	 */
 	function getErrorMessage(oType) {
 		return sap.ui.getCore().getLibraryResourceBundle().getText("EnterTime",
-			[oType.formatValue("13:47:26", "string")]);
-	}
-
-	/*
-	 * Returns the DateFormat instance for OData values in the model. Creates it lazily.
-	 *
-	 * @param {sap.ui.model.odata.type.TimeOfDay} oType
-	 *   The type
-	 * @returns {sap.ui.core.format.DateFormat}
-	 *   The DateFormat
-	 */
-	function getModelFormat(oType) {
-		var sPattern = "HH:mm:ss",
-			iPrecision;
-
-		if (!oType.oModelFormat) {
-			iPrecision = oType.oConstraints && oType.oConstraints.precision;
-			if (iPrecision) {
-				sPattern += "." + jQuery.sap.padRight("", "S", iPrecision);
-			}
-			oType.oModelFormat = DateFormat.getTimeInstance({pattern : sPattern,
-				strictParsing : true, UTC : true});
-		}
-		return oType.oModelFormat;
+			[oType.formatValue("23:59:58", "string")]);
 	}
 
 	/*
@@ -64,7 +42,7 @@ sap.ui.define([
 		var oFormatOptions;
 
 		if (!oType.oUiFormat) {
-			oFormatOptions = jQuery.extend({strictParsing : true}, oType.oFormatOptions);
+			oFormatOptions = extend({strictParsing : true}, oType.oFormatOptions);
 			oFormatOptions.UTC = true; // value is always UTC; no overwrite via format options
 			oType.oUiFormat = DateFormat.getTimeInstance(oFormatOptions);
 		}
@@ -97,13 +75,13 @@ sap.ui.define([
 			if (vNullable === false) {
 				oType.oConstraints = {nullable : false};
 			} else if (vNullable !== undefined && vNullable !== true) {
-				jQuery.sap.log.warning("Illegal nullable: " + vNullable, null, oType.getName());
+				Log.warning("Illegal nullable: " + vNullable, null, oType.getName());
 			}
 			if (vPrecision === Math.floor(vPrecision) && vPrecision > 0 && vPrecision <= 12) {
 				oType.oConstraints = oType.oConstraints || {};
 				oType.oConstraints.precision = vPrecision;
 			} else if (vPrecision !== undefined && vPrecision !== 0) {
-				jQuery.sap.log.warning("Illegal precision: " + vPrecision, null, oType.getName());
+				Log.warning("Illegal precision: " + vPrecision, null, oType.getName());
 			}
 		}
 	}
@@ -132,7 +110,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.odata.type.ODataType
 	 * @public
 	 * @since 1.37.0
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 */
 	var TimeOfDay = ODataType.extend("sap.ui.model.odata.type.TimeOfDay", {
 			constructor : function (oFormatOptions, oConstraints) {
@@ -156,15 +134,25 @@ sap.ui.define([
 	};
 
 	/**
+	 * Resets the model formatter instance which is recreated on demand, for example via
+	 * {@link #getModelFormat}, and cached.
+	 *
+	 * @private
+	 */
+	TimeOfDay.prototype._resetModelFormatter = function () {
+		this.oModelFormat = undefined;
+	};
+
+	/**
 	 * Formats the given value to the given target type.
 	 *
 	 * @param {string} sValue
 	 *   The value to be formatted, which is represented as a string in the model
 	 * @param {string} sTargetType
-	 *   The target type, may be "any", "string", or a type with one of these types as its
-	 *   {@link sap.ui.base.DataType#getPrimitiveType primitive type}.
+	 *   The target type, may be "any", "object" (since 1.69.0), "string", or a type with one of
+	 *   these types as its {@link sap.ui.base.DataType#getPrimitiveType primitive type}.
 	 *   See {@link sap.ui.model.odata.type} for more information
-	 * @returns {string}
+	 * @returns {Date|string}
 	 *   The formatted output value in the target type; <code>undefined</code> or <code>null</code>
 	 *   are formatted to <code>null</code>
 	 * @throws {sap.ui.model.FormatException}
@@ -174,30 +162,37 @@ sap.ui.define([
 	 * @public
 	 * @since 1.37.0
 	 */
-	TimeOfDay.prototype.formatValue = function(sValue, sTargetType) {
+	TimeOfDay.prototype.formatValue = function (sValue, sTargetType) {
 		var oDate,
-			iIndex;
+			iIndex,
+			sPrimitiveType;
 
 		if (sValue === undefined || sValue === null) {
 			return null;
 		}
 
-		switch (this.getPrimitiveType(sTargetType)) {
-		case "any":
-			return sValue;
-		case "string":
-			iIndex = sValue.indexOf(".");
-			if (iIndex >= 0) {
-				sValue = sValue.slice(0, iIndex + 4); // cut off after milliseconds
-			}
-			oDate = getModelFormat(this).parse(sValue);
-			if (oDate) {
-				return getUiFormat(this).format(oDate);
-			}
-			throw new FormatException("Illegal " + this.getName() + " value: " + sValue);
-		default:
-			throw new FormatException("Don't know how to format " + this.getName() + " to "
-				+ sTargetType);
+		sPrimitiveType = this.getPrimitiveType(sTargetType);
+		switch (sPrimitiveType) {
+			case "any":
+				return sValue;
+			case "object":
+			case "string":
+				iIndex = sValue.indexOf(".");
+				if (iIndex >= 0) {
+					sValue = sValue.slice(0, iIndex + 4); // cut off after milliseconds
+				}
+				oDate = this.getModelFormat().parse(sValue);
+				if (oDate) {
+					if (sPrimitiveType === "object") {
+						return new Date(1970, 0, 1, oDate.getUTCHours(), oDate.getUTCMinutes(),
+							oDate.getUTCSeconds());
+					}
+					return getUiFormat(this).format(oDate);
+				}
+				throw new FormatException("Illegal " + this.getName() + " value: " + sValue);
+			default:
+				throw new FormatException("Don't know how to format " + this.getName() + " to "
+					+ sTargetType);
 		}
 	};
 
@@ -212,8 +207,23 @@ sap.ui.define([
 	 * @override
 	 * @protected
 	 */
-	TimeOfDay.prototype.getModelFormat = function() {
-		return getModelFormat(this);
+	TimeOfDay.prototype.getModelFormat = function () {
+		var sPattern = "HH:mm:ss",
+			iPrecision;
+
+		if (!this.oModelFormat) {
+			iPrecision = this.oConstraints && this.oConstraints.precision;
+			if (iPrecision) {
+				sPattern += "." + "".padEnd(iPrecision, "S");
+			}
+			this.oModelFormat = DateFormat.getTimeInstance({
+				calendarType : CalendarType.Gregorian,
+				pattern : sPattern,
+				strictParsing : true,
+				UTC : true
+			});
+		}
+		return this.oModelFormat;
 	};
 
 	/**
@@ -233,11 +243,14 @@ sap.ui.define([
 	 * Parses the given value, which is expected to be of the given type, to a string with an
 	 * OData V4 Edm.TimeOfDay value.
 	 *
-	 * @param {string} sValue
-	 *   The value to be parsed, maps <code>""</code> to <code>null</code>
+	 * @param {Date|string} vValue
+	 *   The value to be parsed, maps <code>""</code> to <code>null</code>; <code>Date</code>
+	 *   objects are expected to represent local time and are supported if and only if source type
+	 *   is "object".
 	 * @param {string} sSourceType
-	 *   The source type (the expected type of <code>sValue</code>), must be "string", or a type
-	 *   with "string" as its {@link sap.ui.base.DataType#getPrimitiveType primitive type}.
+	 *   The source type (the expected type of <code>sValue</code>), must be "string",
+	 *   "object" (since 1.69.0) or a type with one of these types as its
+	 *   {@link sap.ui.base.DataType#getPrimitiveType primitive type}.
 	 *   See {@link sap.ui.model.odata.type} for more information.
 	 * @returns {string}
 	 *   The parsed value
@@ -248,24 +261,26 @@ sap.ui.define([
 	 * @public
 	 * @since 1.37.0
 	 */
-	TimeOfDay.prototype.parseValue = function (sValue, sSourceType) {
+	TimeOfDay.prototype.parseValue = function (vValue, sSourceType) {
 		var oDate;
 
-		if (sValue === "" || sValue === null) {
+		if (vValue === "" || vValue === null) {
 			return null;
 		}
 
-		if (this.getPrimitiveType(sSourceType) !== "string") {
-			throw new ParseException("Don't know how to parse " + this.getName() + " from "
-				+ sSourceType);
+		switch (this.getPrimitiveType(sSourceType)) {
+			case "object":
+				return this.getModelFormat().format(vValue, false);
+			case "string":
+				oDate = getUiFormat(this).parse(vValue);
+				if (!oDate) {
+					throw new ParseException(getErrorMessage(this));
+				}
+				return this.getModelFormat().format(oDate);
+			default:
+				throw new ParseException("Don't know how to parse " + this.getName() + " from "
+					+ sSourceType);
 		}
-
-		oDate = getUiFormat(this).parse(sValue);
-		if (!oDate) {
-			throw new ParseException(getErrorMessage(this));
-		}
-
-		return getModelFormat(this).format(oDate);
 	};
 
 	/**
@@ -273,7 +288,6 @@ sap.ui.define([
 	 *
 	 * @param {string} sValue
 	 *   The value to be validated
-	 * @returns {void}
 	 * @throws {sap.ui.model.ValidateException}
 	 *   If the value is not valid
 	 *
@@ -305,5 +319,3 @@ sap.ui.define([
 
 	return TimeOfDay;
 });
-
-

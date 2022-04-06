@@ -1,12 +1,11 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.ux3.Exact.
 sap.ui.define([
-    'jquery.sap.global',
     'sap/ui/commons/Button',
     'sap/ui/commons/Menu',
     'sap/ui/commons/SearchField',
@@ -16,10 +15,10 @@ sap.ui.define([
     './ExactAttribute',
     './ExactBrowser',
     './library',
-    "./ExactRenderer"
+    './ExactRenderer',
+    'sap/ui/commons/library'
 ],
 	function(
-	    jQuery,
 		Button,
 		Menu,
 		SearchField,
@@ -29,9 +28,15 @@ sap.ui.define([
 		ExactAttribute,
 		ExactBrowser,
 		library,
-		ExactRenderer
+		ExactRenderer,
+		commonsLibrary
 	) {
 	"use strict";
+
+
+
+	// shortcut for sap.ui.commons.TextViewDesign
+	var TextViewDesign = commonsLibrary.TextViewDesign;
 
 
 
@@ -47,7 +52,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -59,6 +64,7 @@ sap.ui.define([
 	 */
 	var Exact = Control.extend("sap.ui.ux3.Exact", /** @lends sap.ui.ux3.Exact.prototype */ { metadata : {
 
+		deprecated: true,
 		library : "sap.ui.ux3",
 		properties : {
 
@@ -127,14 +133,6 @@ sap.ui.define([
 
 
 
-
-
-
-
-
-
-	(function() {
-
 	/**
 	 * Does the setup when the Exact is created.
 	 * @private
@@ -167,7 +165,7 @@ sap.ui.define([
 		this._resultArea = new ExactArea(this.getId() + "-resultArea");
 		this.addAggregation("controls", this._resultArea);
 
-		this._resultText = new TextView(this.getId() + "-resultAreaTitle", {design: sap.ui.commons.TextViewDesign.Bold});
+		this._resultText = new TextView(this.getId() + "-resultAreaTitle", {design: TextViewDesign.Bold});
 		this._resultText.addStyleClass("sapUiUx3ExactViewTitle");
 		this.addAggregation("controls", this._resultText);
 
@@ -240,8 +238,6 @@ sap.ui.define([
 	};
 
 
-	}());
-
 	return Exact;
 
-}, /* bExport= */ true);
+});

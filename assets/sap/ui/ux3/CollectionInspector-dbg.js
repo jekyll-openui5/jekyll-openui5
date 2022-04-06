@@ -1,18 +1,21 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.ux3.CollectionInspector.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/ui/thirdparty/jquery',
     'sap/ui/core/Control',
     'sap/ui/core/delegate/ItemNavigation',
     './library',
-    "./CollectionInspectorRenderer"
+    './CollectionInspectorRenderer',
+    'sap/ui/commons/ToggleButton',
+    'sap/ui/commons/SegmentedButton',
+    'sap/ui/commons/Button'
 ],
-	function(jQuery, Control, ItemNavigation, library, CollectionInspectorRenderer) {
+	function(jQuery, Control, ItemNavigation, library, CollectionInspectorRenderer, ToggleButton, SegmentedButton, Button) {
 	"use strict";
 
 
@@ -26,7 +29,7 @@ sap.ui.define([
 	 * @class
 	 * CollectionInspector
 	 * @extends sap.ui.core.Control
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -37,6 +40,7 @@ sap.ui.define([
 	 */
 	var CollectionInspector = Control.extend("sap.ui.ux3.CollectionInspector", /** @lends sap.ui.ux3.CollectionInspector.prototype */ { metadata : {
 
+		deprecated: true,
 		library : "sap.ui.ux3",
 		properties : {
 
@@ -104,7 +108,7 @@ sap.ui.define([
 			this.addDelegate(this._oItemNavigation);
 		}
 
-		var oToggleButton = new sap.ui.commons.ToggleButton(this.getId() + "-toggleButton");
+		var oToggleButton = new ToggleButton(this.getId() + "-toggleButton");
 		oToggleButton.setParent(this);
 		oToggleButton.setTooltip("This button opens and closes the sidebar");
 		oToggleButton.attachPress(function() {
@@ -116,7 +120,7 @@ sap.ui.define([
 		});
 		this._oToggleButton = oToggleButton;
 
-		var oCollectionSelector = new sap.ui.commons.SegmentedButton(this.getId() + "-selector");
+		var oCollectionSelector = new SegmentedButton(this.getId() + "-selector");
 
 		oCollectionSelector.attachSelect(function(oEvent) {
 			var iCollectionIndex = this.indexOfButton(sap.ui.getCore().byId(this.getSelectedButton()));
@@ -130,7 +134,7 @@ sap.ui.define([
 
 		this._oCollectionSelector = oCollectionSelector;
 
-		var oEditButton = new sap.ui.commons.Button();
+		var oEditButton = new Button();
 		oEditButton.addStyleClass("sapUiUx3EditCollectionButton");
 		oEditButton.setText("Collection");
 		oEditButton.setTooltip("This button opens an edit dialog for the current collection");
@@ -198,7 +202,7 @@ sap.ui.define([
 		var oTarget = oEvent.target;
 		if (jQuery(oTarget).hasClass("sapUiUx3CICollectionListItem")) {
 			var oSelectedCollection = sap.ui.getCore().byId(this.getSelectedCollection());
-			if (jQuery.inArray(oTarget.id,oSelectedCollection.getSelectedItems()) >= 0) {
+			if (oSelectedCollection.getSelectedItems().indexOf(oTarget.id) >= 0) {
 				oSelectedCollection.removeSelectedItem(oTarget.id);
 			} else {
 				oSelectedCollection.addSelectedItem(oTarget.id);
@@ -359,11 +363,11 @@ sap.ui.define([
 	 *             a negative value of <code>iIndex</code>, the collection is inserted at position 0; for a value
 	 *             greater than the current size of the aggregation, the collection is inserted at
 	 *             the last position
-	 * @return {sap.ui.ux3.CollectionInspector} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	CollectionInspector.prototype.insertCollection = function(oCollection, iIndex) {
-		var oButton = new sap.ui.commons.Button();
+		var oButton = new Button();
 		oButton.setText(oCollection.getTitle());
 		oCollection.attachEvent('_titleChanged', function(oEvent) {
 			oButton.setText(oEvent.getParameter("newTitle"));
@@ -385,11 +389,11 @@ sap.ui.define([
 	 *
 	 * @param {sap.ui.ux3.Collection}
 	 *            oCollection the collection to add; if empty, nothing is inserted
-	 * @return {sap.ui.ux3.CollectionInspector} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	CollectionInspector.prototype.addCollection = function(oCollection) {
-		var oButton = new sap.ui.commons.Button();
+		var oButton = new Button();
 		oButton.setText(oCollection.getTitle());
 		oCollection.attachEvent('_titleChanged', function(oEvent) {
 			oButton.setText(oEvent.getParameter("newTitle"));
@@ -443,7 +447,7 @@ sap.ui.define([
 
 	/**
 	 * Destroys the collection aggregation
-	 * @return {sap.ui.ux3.CollectionInspector} this to allow method chaining
+	 * @return {this} this to allow method chaining
 	 * @public
 	 */
 	CollectionInspector.prototype.destroyCollections = function() {
@@ -467,6 +471,7 @@ sap.ui.define([
 		}
 		this.rerenderSidebar();
 		this.refreshSelectionHighlighting();
+		return this;
 	};
 
 	/**
@@ -479,12 +484,13 @@ sap.ui.define([
 	 *             a negative value of <code>iIndex</code>, the content is inserted at position 0; for a value
 	 *             greater than the current size of the aggregation, the content is inserted at
 	 *             the last position
-	 * @return {sap.ui.ux3.CollectionInspector} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	CollectionInspector.prototype.insertContent = function(oContent, iIndex) {
 		this.insertAggregation("content",oContent,iIndex,true);
 		this.rerenderContent();
+		return this;
 	};
 
 	/**
@@ -493,12 +499,13 @@ sap.ui.define([
 	 *
 	 * @param {sap.ui.core.Control}
 	 *            oContent the content to add; if empty, nothing is inserted
-	 * @return {sap.ui.ux3.CollectionInspector} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	CollectionInspector.prototype.addContent = function(oContent) {
 		this.addAggregation("content",oContent,true);
 		this.rerenderContent();
+		return this;
 	};
 
 	/**
@@ -509,8 +516,9 @@ sap.ui.define([
 	 * @public
 	 */
 	CollectionInspector.prototype.removeContent = function(vContent) {
-		this.removeAggregation("content",vContent,true);
+		var vResult = this.removeAggregation("content",vContent,true);
 		this.rerenderContent();
+		return vResult;
 	};
 
 	/**
@@ -520,19 +528,21 @@ sap.ui.define([
 	 * @public
 	 */
 	CollectionInspector.prototype.removeAllContent = function() {
-		this.removeAllAggregation("content",true);
+		var vResult = this.removeAllAggregation("content",true);
 		this.rerenderContent();
+		return vResult;
 	};
 
 	/**
 	 * Destroys all the content in the aggregation
 	 * named <code>content</code>.
-	 * @return {sap.ui.ux3.CollectionInspector} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	CollectionInspector.prototype.destroyContent = function() {
 		this.destroyAggregation("content",true);
 		this.rerenderContent();
+		return this;
 	};
 
 	/**
@@ -602,8 +612,8 @@ sap.ui.define([
 		} else {
 			aSelectedItems = [];
 		}
-		jQuery.each(aItems, function(iIndex, oItem) {
-			if (jQuery.inArray(oItem.id,aSelectedItems) >= 0) {
+		aItems.each(function(iIndex, oItem) {
+			if (aSelectedItems.indexOf(oItem.id) >= 0) {
 				jQuery(oItem).addClass("sapUiUx3CICollectionListItemSelected");
 				jQuery(oItem).attr("aria-selected",true);
 			} else {
@@ -624,4 +634,4 @@ sap.ui.define([
 
 	return CollectionInspector;
 
-}, /* bExport= */ true);
+});

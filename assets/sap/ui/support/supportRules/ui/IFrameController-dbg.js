@@ -1,13 +1,13 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
 	"jquery.sap.global",
 	"sap/ui/base/ManagedObject",
-	"sap/ui/support/supportRules/WindowCommunicationBus",
+	"sap/ui/support/supportRules/CommunicationBus",
 	"sap/ui/support/supportRules/WCBChannels",
 	"sap/ui/support/supportRules/Constants"
 ],
@@ -48,6 +48,8 @@ function (jQuery, ManagedObject, CommunicationBus, channelNames, constants) {
 		style.left = "0";
 		style.bottom = "0";
 		style.border = "none";
+		// This fixed a visual glitch with the iframe on chrome see BCP 1870314303
+		style.borderRadius = "1px";
 		style.zIndex = "1001";
 		// style.transition = "width 300ms ease-in-out, height 300ms ease-in-out";
 		style.boxShadow = "1px -10px 42px -4px #888";
@@ -173,16 +175,12 @@ function (jQuery, ManagedObject, CommunicationBus, channelNames, constants) {
 		this._oCore = null;
 	};
 
-	IFrameController.prototype.getFrameOrigin = function () {
-		return sFrameOrigin;
-	};
-
-	IFrameController.prototype.getFrameIdentifier = function () {
-		return sFrameIdentifier;
-	};
-
-	IFrameController.prototype.getFrameUrl = function () {
-		return sFrameUrl;
+	IFrameController.prototype.getCommunicationInfo = function () {
+		return {
+			origin: sFrameOrigin,
+			identifier: sFrameIdentifier,
+			url: sFrameUrl
+		};
 	};
 
 	oIFrameController = new IFrameController();

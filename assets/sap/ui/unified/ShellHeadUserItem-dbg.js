@@ -1,12 +1,17 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.unified.ShellHeadUserItem.
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/Element', 'sap/ui/core/IconPool', './library', 'jquery.sap.encoder'],
-	function(jQuery, Element, IconPool, library /*, jQueryEncoder*/) {
+sap.ui.define([
+	'sap/ui/core/Element',
+	'sap/ui/core/IconPool',
+	'./library',
+	"sap/base/security/encodeXML"
+],
+	function(Element, IconPool, library, encodeXML) {
 	"use strict";
 
 
@@ -22,7 +27,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Element', 'sap/ui/core/IconPool
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -34,6 +39,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Element', 'sap/ui/core/IconPool
 	var ShellHeadUserItem = Element.extend("sap.ui.unified.ShellHeadUserItem", /** @lends sap.ui.unified.ShellHeadUserItem.prototype */ { metadata : {
 
 		library : "sap.ui.unified",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -93,17 +99,17 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Element', 'sap/ui/core/IconPool
 		var $Ico = this.$("img");
 		var sImage = this.getImage();
 		if (!sImage) {
-			$Ico.html("").css("style", "").css("display", "none");
+			$Ico.html("").attr("style", "").css("display", "none");
 		} else if (IconPool.isIconURI(sImage)) {
 			var oIconInfo = IconPool.getIconInfo(sImage);
-			$Ico.html("").css("style", "");
+			$Ico.html("").attr("style", "");
 			if (oIconInfo) {
 				$Ico.text(oIconInfo.content).attr("role", "presentation").attr("aria-label", oIconInfo.text || oIconInfo.name).css("font-family", "'" + oIconInfo.fontFamily + "'");
 			}
 		} else {
 			var $Image = this.$("img-inner");
 			if ($Image.length == 0 || $Image.attr("src") != sImage) {
-				$Ico.css("style", "").attr("aria-label", null).html("<img role='presentation' id='" + this.getId() + "-img-inner' src='" + jQuery.sap.encodeHTML(sImage) + "'/>");
+				$Ico.attr("style", "").attr("aria-label", null).html("<img role='presentation' id='" + this.getId() + "-img-inner' src='" + encodeXML(sImage) + "'>");
 			}
 		}
 	};

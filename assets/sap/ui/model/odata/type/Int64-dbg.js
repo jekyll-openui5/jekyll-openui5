@@ -1,13 +1,19 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(['jquery.sap.global', 'sap/ui/model/odata/type/ODataType',
-               'sap/ui/model/FormatException', 'sap/ui/model/ParseException',
-               'sap/ui/core/format/NumberFormat', 'sap/ui/model/ValidateException'],
-	function(jQuery, ODataType, FormatException, ParseException, NumberFormat, ValidateException) {
+sap.ui.define([
+	"sap/base/Log",
+	"sap/base/util/extend",
+	"sap/ui/core/format/NumberFormat",
+	"sap/ui/model/FormatException",
+	"sap/ui/model/ParseException",
+	"sap/ui/model/ValidateException",
+	"sap/ui/model/odata/type/ODataType"
+], function (Log, extend, NumberFormat, FormatException, ParseException, ValidateException,
+		ODataType) {
 	"use strict";
 
 	var rInteger = /^[-+]?(\d+)$/, // user input for an Int64 w/o the sign
@@ -24,7 +30,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/odata/type/ODataType',
 	 * @param {string} sValue
 	 *   value to be checked
 	 * @param {object} oRange
-	 *   the allowed range object with minimum and maximum as <code>string</string>
+	 *   the allowed range object with minimum and maximum as <code>string</code>
 	 * @returns {string}
 	 *   the error text or <code>undefined</code> if the check was successful
 	 */
@@ -62,7 +68,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/odata/type/ODataType',
 		var oFormatOptions;
 
 		if (!oType.oFormat) {
-			oFormatOptions = jQuery.extend({groupingEnabled : true}, oType.oFormatOptions);
+			oFormatOptions = extend({groupingEnabled : true}, oType.oFormatOptions);
 			oFormatOptions.parseAsString = true;
 			oType.oFormat = NumberFormat.getIntegerInstance(oFormatOptions);
 		}
@@ -112,7 +118,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/odata/type/ODataType',
 			if (vNullable === false || vNullable === "false") {
 				oType.oConstraints = {nullable : false};
 			} else if (vNullable !== undefined && vNullable !== true && vNullable !== "true") {
-				jQuery.sap.log.warning("Illegal nullable: " + vNullable, null, oType.getName());
+				Log.warning("Illegal nullable: " + vNullable, null, oType.getName());
 			}
 		}
 		oType._handleLocalizationChange();
@@ -131,7 +137,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/odata/type/ODataType',
 	 * @extends sap.ui.model.odata.type.ODataType
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @alias sap.ui.model.odata.type.Int64
 	 * @param {object} [oFormatOptions]
@@ -171,27 +177,27 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/odata/type/ODataType',
 	 *   exceeds <code>Number.MIN/MAX_SAFE_INTEGER</code>
 	 * @public
 	 */
-	Int64.prototype.formatValue = function(sValue, sTargetType) {
+	Int64.prototype.formatValue = function (sValue, sTargetType) {
 		var sErrorText;
 
 		if (sValue === null || sValue === undefined) {
 			return null;
 		}
 		switch (this.getPrimitiveType(sTargetType)) {
-		case "any":
-			return sValue;
-		case "float":
-		case "int":
-			sErrorText = checkValueRange(this, sValue, oSafeRange);
-			if (sErrorText) {
-				throw new FormatException(sErrorText);
-			}
-			return parseInt(sValue, 10);
-		case "string":
-			return getFormatter(this).format(sValue);
-		default:
-			throw new FormatException("Don't know how to format " + this.getName() + " to "
-				+ sTargetType);
+			case "any":
+				return sValue;
+			case "float":
+			case "int":
+				sErrorText = checkValueRange(this, sValue, oSafeRange);
+				if (sErrorText) {
+					throw new FormatException(sErrorText);
+				}
+				return parseInt(sValue);
+			case "string":
+				return getFormatter(this).format(sValue);
+			default:
+				throw new FormatException("Don't know how to format " + this.getName() + " to "
+					+ sTargetType);
 		}
 	};
 
@@ -233,29 +239,29 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/odata/type/ODataType',
 	 *   Int64
 	 * @public
 	 */
-	Int64.prototype.parseValue = function(vValue, sSourceType) {
+	Int64.prototype.parseValue = function (vValue, sSourceType) {
 		var sResult;
 
 		if (vValue === null || vValue === "") {
 			return null;
 		}
 		switch (this.getPrimitiveType(sSourceType)) {
-		case "string":
-			sResult = getFormatter(this).parse(vValue);
-			if (!sResult) {
-				throw new ParseException(getText("EnterInt"));
-			}
-			break;
-		case "int":
-		case "float":
-			sResult = NumberFormat.getIntegerInstance({
-					maxIntegerDigits : Infinity,
-					groupingEnabled : false
-				}).format(vValue);
-			break;
-		default:
-			throw new ParseException("Don't know how to parse " + this.getName() + " from "
-				+ sSourceType);
+			case "string":
+				sResult = getFormatter(this).parse(vValue);
+				if (!sResult) {
+					throw new ParseException(getText("EnterInt"));
+				}
+				break;
+			case "int":
+			case "float":
+				sResult = NumberFormat.getIntegerInstance({
+						maxIntegerDigits : Infinity,
+						groupingEnabled : false
+					}).format(vValue);
+				break;
+			default:
+				throw new ParseException("Don't know how to parse " + this.getName() + " from "
+					+ sSourceType);
 		}
 		return sResult;
 	};
@@ -266,7 +272,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/odata/type/ODataType',
 	 *
 	 * @param {string} sValue
 	 *   the value to be validated
-	 * @returns {void}
 	 * @throws {sap.ui.model.ValidateException} if the value is not valid
 	 * @public
 	 */

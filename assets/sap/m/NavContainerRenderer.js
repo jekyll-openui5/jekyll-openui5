@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-sap.ui.define([],function(){"use strict";var N={};N.render=function(r,c){c._bRenderingInProgress=true;if(!c.getVisible()){return;}r.write("<div");r.writeControlData(c);r.addClass("sapMNav");if(c.getWidth()){r.addStyle("width",c.getWidth());}var h=c.getHeight();if(h&&h!="100%"){r.addStyle("height",h);}if(this.renderAttributes){this.renderAttributes(r,c);}r.writeClasses();r.writeStyles();var t=c.getTooltip_AsString();if(t){r.writeAttributeEscaped("title",t);}r.write(">");if(this.renderBeforeContent){this.renderBeforeContent(r,c);}var C=c.getCurrentPage();if(C){C.removeStyleClass("sapMNavItemHidden");r.renderControl(C);}r.write("</div>");c._bRenderingInProgress=false;};return N;},true);
+sap.ui.define(["sap/ui/core/InvisibleRenderer"],function(I){"use strict";var N={apiVersion:2};N.render=function(r,c){c._bRenderingInProgress=true;if(!c.getVisible()){I.render(r,c,"div");return false;}var h=c.getHeight(),t=c.getTooltip_AsString(),C=c.getCurrentPage();r.openStart("div",c);r.class("sapMNav");r.style("width",c.getWidth());if(h&&h!="100%"){r.style("height",h);}if(this.renderAttributes){this.renderAttributes(r,c);}if(t){r.attr("title",t);}r.openEnd();if(this.renderBeforeContent){this.renderBeforeContent(r,c);}c.getPages().forEach(function(p){if(p===C){C.removeStyleClass("sapMNavItemHidden");r.renderControl(C);}else{r.cleanupControlWithoutRendering(p);}});r.close("div");c._bRenderingInProgress=false;};return N;},true);

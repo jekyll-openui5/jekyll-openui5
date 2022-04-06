@@ -1,13 +1,17 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define([], function () {
+sap.ui.define([
+	"sap/m/library"
+], function (library) {
 	"use strict";
 
-	var WizardRenderer = {};
+	var WizardRenderer = {
+		apiVersion: 2
+	};
 
 	WizardRenderer.render = function (oRm, oWizard) {
 		this.startWizard(oRm, oWizard);
@@ -19,38 +23,39 @@ sap.ui.define([], function () {
 	WizardRenderer.startWizard = function (oRm, oWizard) {
 		var sWizardLabelText = sap.ui.getCore().getLibraryResourceBundle("sap.m").getText("WIZARD_LABEL");
 
-		oRm.write("<article");
-		oRm.writeControlData(oWizard);
-		oRm.addClass("sapMWizard");
-		oRm.writeClasses();
-		oRm.addStyle("width", oWizard.getWidth());
-		oRm.addStyle("height", oWizard.getHeight());
-		oRm.writeAccessibilityState({
-			"label": sWizardLabelText
-		});
-		oRm.writeStyles();
-		oRm.write(">");
+		oRm.openStart("div", oWizard)
+			.class("sapMWizard")
+			.class("sapMWizardMode" + oWizard.getRenderMode())
+			.class("sapMWizardBg" + oWizard.getBackgroundDesign())
+			.style("width", oWizard.getWidth())
+			.style("height", oWizard.getHeight())
+			.accessibilityState({
+				role: "region",
+				label: sWizardLabelText
+			})
+			.openEnd();
 	};
 
 	WizardRenderer.renderProgressNavigator = function (oRm, oWizard) {
-		oRm.write("<header class='sapMWizardHeader'>");
 		oRm.renderControl(oWizard.getAggregation("_progressNavigator"));
-		oRm.write("</header>");
 	};
 
 	WizardRenderer.renderWizardSteps = function (oRm, oWizard) {
-		oRm.write("<section class='sapMWizardStepContainer'");
-		oRm.writeAttribute("id", oWizard.getId() + "-step-container");
-		oRm.write(">");
+		oRm.openStart("section", oWizard.getId() + "-step-container")
+			.class("sapMWizardStepContainer")
+			.openEnd();
 
-		var aRenderingOrder = this._getStepsRenderingOrder(oWizard);
-		aRenderingOrder.forEach(oRm.renderControl);
+		// Page rendering mode would be handled manually
+		if (oWizard.getRenderMode() === library.WizardRenderMode.Scroll) {
+			this._getStepsRenderingOrder(oWizard)
+				.forEach(oRm.renderControl, oRm);
+		}
 
-		oRm.write("</section>");
+		oRm.close("section");
 	};
 
 	WizardRenderer.endWizard = function (oRm) {
-		oRm.write("</article>");
+		oRm.close("div");
 	};
 
 	/**

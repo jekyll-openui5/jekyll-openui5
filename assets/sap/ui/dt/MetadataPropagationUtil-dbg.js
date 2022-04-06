@@ -1,17 +1,19 @@
 /*
- * ! UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * ! OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides object sap.ui.dt.MetadataPropagationUtil.
 sap.ui.define([
-	'jquery.sap.global',
-	'sap/ui/dt/Util'
+	"sap/ui/dt/Util",
+	"sap/base/util/merge",
+	"sap/base/util/isEmptyObject"
 ],
 function(
-	jQuery,
-	Util
+	Util,
+	merge,
+	isEmptyObject
 ) {
 	"use strict";
 
@@ -20,7 +22,7 @@ function(
 	 *
 	 * @class Functionality to propagate DesignTime and RelevantContainer
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @private
 	 * @static
 	 * @since 1.54
@@ -34,7 +36,7 @@ function(
 			!mAggregationMetadata["propagationInfos"]) {
 			return false;
 		}
-		return jQuery.extend([], mAggregationMetadata["propagationInfos"]);
+		return Object.assign([], mAggregationMetadata["propagationInfos"]);
 	};
 
 	MetadataPropagationUtil._getCurrentRelevantContainerPropagation = function(mElementDtMetadataForAggregation, oElement) {
@@ -81,13 +83,13 @@ function(
 
 	MetadataPropagationUtil._setPropagationInfo = function(mMetadata, mNewPropagationInfo, aPropagationInfoListFromParent) {
 		if (!aPropagationInfoListFromParent &&
-			jQuery.isEmptyObject(mNewPropagationInfo)) {
+			isEmptyObject(mNewPropagationInfo)) {
 			return false;
 		}
 
 		// add propagation array to current aggregation designtime-metadata
-		mMetadata.propagationInfos = aPropagationInfoListFromParent ? aPropagationInfoListFromParent : [];
-		if (!jQuery.isEmptyObject(mNewPropagationInfo)) {
+		mMetadata.propagationInfos = aPropagationInfoListFromParent || [];
+		if (!isEmptyObject(mNewPropagationInfo)) {
 			mMetadata.propagationInfos.push(mNewPropagationInfo);
 		}
 		return mMetadata;
@@ -102,22 +104,23 @@ function(
 	 * @return {object} Returns extended data part of the element designtime metadata.
 	 */
 	MetadataPropagationUtil.propagateMetadataToAggregationOverlay = function(mOriginalMetadata, oElement, mParentAggregationMetadata) {
-		var mNewPropagationInfo, mMetadataFunctionPropagation, mRelevantContainerPropagation,
-			mMetadata = jQuery.extend({}, mOriginalMetadata);
+		var mNewPropagationInfo;
+		var mMetadataFunctionPropagation;
+		var mRelevantContainerPropagation;
+		var mMetadata = Object.assign({}, mOriginalMetadata);
 
 		var aPropagatedRelevantContainersFromParent = MetadataPropagationUtil._getParentPropagationInfo(mParentAggregationMetadata);
 
-		if (mMetadata && !jQuery.isEmptyObject(mMetadata)) {
+		if (mMetadata && !isEmptyObject(mMetadata)) {
 			mRelevantContainerPropagation = MetadataPropagationUtil._getCurrentRelevantContainerPropagation(mMetadata, oElement);
 			mMetadataFunctionPropagation = MetadataPropagationUtil._getCurrentDesigntimePropagation(mMetadata, oElement);
 		}
 
-		if (aPropagatedRelevantContainersFromParent || !jQuery.isEmptyObject(mRelevantContainerPropagation) || !jQuery.isEmptyObject(mMetadataFunctionPropagation)) {
-			mNewPropagationInfo = jQuery.extend(mRelevantContainerPropagation, mMetadataFunctionPropagation);
+		if (aPropagatedRelevantContainersFromParent || !isEmptyObject(mRelevantContainerPropagation) || !isEmptyObject(mMetadataFunctionPropagation)) {
+			mNewPropagationInfo = Object.assign({}, mRelevantContainerPropagation, mMetadataFunctionPropagation);
 			return MetadataPropagationUtil._setPropagationInfo(mMetadata, mNewPropagationInfo, aPropagatedRelevantContainersFromParent);
-		} else {
-			return mMetadata;
 		}
+		return mMetadata;
 	};
 
 	/**
@@ -135,7 +138,7 @@ function(
 			return false;
 		}
 
-		mParentMetadata.propagationInfos.some(function(oPropagatedInfo){
+		mParentMetadata.propagationInfos.some(function(oPropagatedInfo) {
 			if (oPropagatedInfo.relevantContainerFunction &&
 				oPropagatedInfo.relevantContainerFunction(oElement)) {
 				vPropagatedRelevantContainer = oPropagatedInfo.relevantContainerElement;
@@ -143,7 +146,7 @@ function(
 			}
 		});
 
-		return vPropagatedRelevantContainer ? vPropagatedRelevantContainer : false;
+		return vPropagatedRelevantContainer || false;
 	};
 
 	/**
@@ -165,16 +168,15 @@ function(
 		//The highest parent always "wins", so we need to extend starting from the bottom
 		var aRevertedPropagationInfos = mParentMetadata.propagationInfos.slice().reverse();
 
-		vReturnMetadata = aRevertedPropagationInfos.reduce(function(vReturnMetadata, oPropagatedInfo){
+		vReturnMetadata = aRevertedPropagationInfos.reduce(function(vReturnMetadata, oPropagatedInfo) {
 			if (oPropagatedInfo.metadataFunction) {
 				var oCurrentMetadata = oPropagatedInfo.metadataFunction(oElement, oPropagatedInfo.relevantContainerElement);
-				return jQuery.extend(true, vReturnMetadata, oCurrentMetadata);
-			} else {
-				return vReturnMetadata;
+				return merge(vReturnMetadata, oCurrentMetadata);
 			}
+			return vReturnMetadata;
 		}, vReturnMetadata);
 
-		return jQuery.isEmptyObject(vReturnMetadata) ? false : vReturnMetadata;
+		return isEmptyObject(vReturnMetadata) ? false : vReturnMetadata;
 	};
 
 	/**
@@ -193,15 +195,14 @@ function(
 			return mTargetMetadata;
 		}
 
-		var mResultMetadata = jQuery.extend(true, {}, mTargetMetadata);
+		var mResultMetadata = merge({}, mTargetMetadata);
 
 		if (vPropagatedRelevantContainer) {
 			mResultMetadata.relevantContainer = vPropagatedRelevantContainer;
 		}
 
-		if (vPropagatedMetadata){
-
-			if (vPropagatedMetadata.actions === null) {
+		if (vPropagatedMetadata) {
+			if (vPropagatedMetadata.actions === null || vPropagatedMetadata.actions === "not-adaptable") {
 				var mAggregations = oElement.getMetadata().getAllAggregations();
 				var aAggregationNames = Object.keys(mAggregations);
 
@@ -217,11 +218,11 @@ function(
 
 				aAggregationNames.forEach(function(sAggregationName) {
 					if (mResultMetadata.aggregations[sAggregationName] && mResultMetadata.aggregations[sAggregationName].actions) {
-						mResultMetadata.aggregations[sAggregationName].actions = null;
+						mResultMetadata.aggregations[sAggregationName].actions = vPropagatedMetadata.actions;
 					}
 				});
 			}
-			return jQuery.extend(true, mResultMetadata, vPropagatedMetadata);
+			return merge(mResultMetadata, vPropagatedMetadata);
 		}
 		return mResultMetadata;
 	};

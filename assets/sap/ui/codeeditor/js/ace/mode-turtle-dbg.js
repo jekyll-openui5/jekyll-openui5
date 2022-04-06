@@ -1,4 +1,4 @@
-ace.define("ace/mode/turtle_highlight_rules",["require","exports","module","ace/lib/oop","ace/mode/text_highlight_rules"], function(require, exports, module) {
+ace.define("ace/mode/turtle_highlight_rules",[], function(require, exports, module) {
 "use strict";
 
 var oop = require("../lib/oop");
@@ -110,7 +110,7 @@ var TurtleHighlightRules = function() {
             token: "support.type.datatype.xml.schema.turtle",
             regex: /xsd?:[a-z][a-zA-Z]+/
         }]
-    }
+    };
     
     this.normalizeRules();
 };
@@ -119,7 +119,7 @@ TurtleHighlightRules.metaData = {
     fileTypes: ["ttl", "nt"],
     name: "Turtle",
     scopeName: "source.turtle"
-}
+};
 
 
 oop.inherits(TurtleHighlightRules, TextHighlightRules);
@@ -127,7 +127,7 @@ oop.inherits(TurtleHighlightRules, TextHighlightRules);
 exports.TurtleHighlightRules = TurtleHighlightRules;
 });
 
-ace.define("ace/mode/folding/cstyle",["require","exports","module","ace/lib/oop","ace/range","ace/mode/folding/fold_mode"], function(require, exports, module) {
+ace.define("ace/mode/folding/cstyle",[], function(require, exports, module) {
 "use strict";
 
 var oop = require("../../lib/oop");
@@ -148,8 +148,8 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 (function() {
     
-    this.foldingStartMarker = /(\{|\[)[^\}\]]*$|^\s*(\/\*)/;
-    this.foldingStopMarker = /^[^\[\{]*(\}|\])|^[\s\*]*(\*\/)/;
+    this.foldingStartMarker = /([\{\[\(])[^\}\]\)]*$|^\s*(\/\*)/;
+    this.foldingStopMarker = /^[^\[\{\(]*([\}\]\)])|^[\s\*]*(\*\/)/;
     this.singleLineBlockCommentRe= /^\s*(\/\*).*\*\/\s*$/;
     this.tripleStarBlockCommentRe = /^\s*(\/\*\*\*).*\*\/\s*$/;
     this.startRegionRe = /^\s*(\/\*|\/\/)#?region\b/;
@@ -267,7 +267,7 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 });
 
-ace.define("ace/mode/turtle",["require","exports","module","ace/lib/oop","ace/mode/text","ace/mode/turtle_highlight_rules","ace/mode/folding/cstyle"], function(require, exports, module) {
+ace.define("ace/mode/turtle",[], function(require, exports, module) {
 "use strict";
 
 var oop = require("../lib/oop");
@@ -282,8 +282,15 @@ var Mode = function() {
 oop.inherits(Mode, TextMode);
 
 (function() {
-    this.$id = "ace/mode/turtle"
+    this.$id = "ace/mode/turtle";
 }).call(Mode.prototype);
 
 exports.Mode = Mode;
-});
+});                (function() {
+                    ace.require(["ace/mode/turtle"], function(m) {
+                        if (typeof module == "object" && typeof exports == "object" && module) {
+                            module.exports = m;
+                        }
+                    });
+                })();
+            

@@ -1,11 +1,11 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides access to Java-like properties files
-sap.ui.define(['jquery.sap.global', 'sap/ui/Properties'],
+sap.ui.define(['jquery.sap.global', 'sap/base/util/Properties'],
 	function(jQuery, Properties) {
 	"use strict";
 
@@ -51,11 +51,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/Properties'],
 	 * @throws {Error} When the file has syntax issues (e.g. incomplete unicode escapes);
 	 *    in async mode, the error is not thrown but the returned Promise will be rejected
 	 * @SecSink {0|PATH} Parameter is used for future HTTP requests
+	 * @deprecated since 1.58 use {@link module:sap/base/util/Properties.create} instead
 	 * @public
 	 */
-	jQuery.sap.properties = Properties;
+	jQuery.sap.properties = Properties.create;
 
-	// Javadoc for private inner class "Properties" - this list of comments is intentional!
 	/**
 	 * @interface Represents a collection of string properties (key/value pairs).
 	 *
@@ -67,10 +67,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/Properties'],
 	 * {@link #setProperty} to store or change a value for a key and {@link #getKeys}
 	 * can be used to retrieve an array of all keys that are currently stored in the collection.
 	 *
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @since 0.9.0
 	 * @name jQuery.sap.util.Properties
 	 * @public
+	 * @deprecated since 1.58 use {@link module:sap/base/util/Properties} instead
 	 */
 
 	/**

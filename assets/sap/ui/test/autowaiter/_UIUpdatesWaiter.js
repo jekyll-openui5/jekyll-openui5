@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-sap.ui.define(["sap/ui/test/_OpaLogger","sap/ui/test/_opaCorePlugin"],function(_,a){"use strict";var h=_.getLogger("sap.ui.test.autowaiter._UIUpdatesWaiter#hasPending");return{hasPending:function(){var u=a.isUIDirty();if(u){h.debug("The UI needs rerendering");}return u;}};});
+sap.ui.define(["./WaiterBase"],function(W){"use strict";var U=W.extend("sap.ui.test.autowaiter._UIUpdatesWaiter",{hasPending:function(){var u=sap.ui.getCore().getUIDirty();if(u){this._oHasPendingLogger.debug("The UI needs rerendering");}return u;}});return new U();});

@@ -1,18 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.ux3.ExactArea.
 sap.ui.define([
- 'jquery.sap.global',
  'sap/ui/commons/Toolbar',
  'sap/ui/core/Control',
  './library',
- "./ExactAreaRenderer"
+ './ExactAreaRenderer',
+ 'sap/ui/core/Element'
 ],
-	function(jQuery, Toolbar, Control, library, ExactAreaRenderer) {
+	function(Toolbar, Control, library, ExactAreaRenderer, Element) {
 	"use strict";
 
 
@@ -29,7 +29,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -41,6 +41,7 @@ sap.ui.define([
 	 */
 	var ExactArea = Control.extend("sap.ui.ux3.ExactArea", /** @lends sap.ui.ux3.ExactArea.prototype */ { metadata : {
 
+		deprecated: true,
 		library : "sap.ui.ux3",
 		properties : {
 
@@ -65,13 +66,12 @@ sap.ui.define([
 	}});
 
 
-	(function() {
 
 	//*************************************************************
-	//Define a private element to enable titles tin the toolbar
+	//Define a private element to enable titles in the toolbar
 	//*************************************************************
 
-	sap.ui.core.Element.extend("sap.ui.ux3.ExactAreaToolbarTitle", {
+	Element.extend("sap.ui.ux3.ExactAreaToolbarTitle", {
 
 	  metadata: {
 	    interfaces : ["sap.ui.commons.ToolbarItem"],
@@ -84,8 +84,7 @@ sap.ui.define([
 
 	//*************************************************************
 
-	}());
 
 	return ExactArea;
 
-}, /* bExport= */ true);
+});

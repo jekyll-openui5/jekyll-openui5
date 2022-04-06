@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -11,7 +11,14 @@ sap.ui.define([
 	"sap/ui/model/FilterOperator",
 	"sap/ui/fl/support/apps/contentbrowser/lrepConnector/LRepConnector",
 	"sap/ui/fl/support/apps/contentbrowser/utils/DataUtils"
-], function (Controller, UIComponent, Filter, FilterOperator, LRepConnector, DataUtils) {
+], function (
+	Controller,
+	UIComponent,
+	Filter,
+	FilterOperator,
+	LRepConnector,
+	DataUtils
+) {
 	"use strict";
 
 	/**
@@ -20,14 +27,13 @@ sap.ui.define([
 	 * @constructor
 	 * @alias sap.ui.fl.support.apps.contentbrowser.controller.LayerContentMaster
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @experimental Since 1.45
 	 */
 	return Controller.extend("sap.ui.fl.support.apps.contentbrowser.controller.LayerContentMaster", {
-
 		sNamespace: "",
 		sLayer: "",
-		oDataUtils : DataUtils,
+		oDataUtils: DataUtils,
 
 		/**
 		 * Initialize function;
@@ -57,11 +63,11 @@ sap.ui.define([
 
 			LRepConnector.getContent(that.sLayer, that.sNamespace).then(
 				that._onContentReceived.bind(that, oPage),
-				function(){
+				function() {
 					oPage.setBusy(false);
 				}).then(function () {
-					LRepConnector.requestPending = false;
-				});
+				LRepConnector.requestPending = false;
+			});
 		},
 
 		/**
@@ -131,20 +137,20 @@ sap.ui.define([
 
 			this.sNamespace = (this.sNamespace ? this.sNamespace : '/');
 
-				if (sContentFileType) {
-					// show details to a file
-					var mRouteParameters = {
-						"layer": this.sLayer,
-						"namespace": encodeURIComponent(this.sNamespace),
-						"fileName": sContentName,
-						"fileType": sContentFileType
-					};
-					oRouter.navTo("ContentDetails", mRouteParameters);
-				} else {
-					// navigation to a namespace
-					this.sNamespace += sContentName + '/';
-					oRouter.navTo("LayerContentMaster", {"layer": this.sLayer, "namespace": encodeURIComponent(this.sNamespace)});
-				}
+			if (sContentFileType) {
+				// show details to a file
+				var mRouteParameters = {
+					layer: this.sLayer,
+					namespace: encodeURIComponent(this.sNamespace),
+					fileName: sContentName,
+					fileType: sContentFileType
+				};
+				oRouter.navTo("ContentDetails", mRouteParameters);
+			} else {
+				// navigation to a namespace
+				this.sNamespace += sContentName + '/';
+				oRouter.navTo("LayerContentMaster", {layer: this.sLayer, namespace: encodeURIComponent(this.sNamespace)});
+			}
 		},
 
 		/**
@@ -160,7 +166,7 @@ sap.ui.define([
 				var sSplittedNamespace = this.sNamespace.split("/");
 				sSplittedNamespace.splice(-2, 1);
 				var sTargetNamespace = sSplittedNamespace.join("/");
-				oRouter.navTo("LayerContentMaster", {"layer": this.sLayer, "namespace": encodeURIComponent(sTargetNamespace)}, true);
+				oRouter.navTo("LayerContentMaster", {layer: this.sLayer, namespace: encodeURIComponent(sTargetNamespace)}, true);
 			}
 		},
 

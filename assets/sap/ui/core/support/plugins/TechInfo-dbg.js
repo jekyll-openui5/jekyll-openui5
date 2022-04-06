@@ -1,12 +1,20 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides class sap.ui.core.support.plugins.TechInfo (TechInfo support plugin)
-sap.ui.define(['jquery.sap.global', '../Plugin', '../Support', '../ToolsAPI', 'jquery.sap.encoder', 'jquery.sap.script'],
-	function(jQuery, Plugin, Support, ToolsAPI/* , jQuerySap, jQuerySap1 */) {
+sap.ui.define([
+	'sap/base/Log',
+	'sap/base/util/isEmptyObject',
+	'sap/base/util/isPlainObject',
+	'../Plugin',
+	'../Support',
+	'../ToolsAPI',
+	'sap/base/security/encodeXML'
+],
+	function(Log, isEmptyObject, isPlainObject, Plugin, Support, ToolsAPI, encodeXML) {
 	"use strict";
 
 
@@ -15,7 +23,7 @@ sap.ui.define(['jquery.sap.global', '../Plugin', '../Support', '../ToolsAPI', 'j
 		 * @class This class represents the technical info plugin for the support tool functionality of UI5. This class is internal and all its functions must not be used by an application.
 		 *
 		 * @extends sap.ui.core.support.Plugin
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 * @private
 		 * @alias sap.ui.core.support.plugins.TechInfo
 		 */
@@ -103,7 +111,7 @@ sap.ui.define(['jquery.sap.global', '../Plugin', '../Support', '../ToolsAPI', 'j
 			line(html, true, true, "Application", oData.appurl);
 			multiline(html, true, true, "Configuration (bootstrap)", oData.bootconfig);
 			multiline(html, true, true, "Configuration (computed)", oData.config);
-			if (!jQuery.isEmptyObject(oData.libraries)) {
+			if (!isEmptyObject(oData.libraries)) {
 				multiline(html, true, true, "Libraries", oData.libraries);
 			}
 			multiline(html, true, true, "Loaded Libraries", oData.loadedLibraries);
@@ -128,31 +136,31 @@ sap.ui.define(['jquery.sap.global', '../Plugin', '../Support', '../ToolsAPI', 'j
 					"</select>"
 				);
 				buffer.push("<button id='" + that.getId() + "-startE2ETrace' class='sapUiSupportRoundedButton " +
-						(oData["e2e-trace"].isStarted ? " active" : "") + "' style='margin-left: 10px;'>" + (oData["e2e-trace"].isStarted ? "Running..." : "Start") + "</button>");
-				buffer.push("<div style='margin-top:5px'>");
+						(oData["e2e-trace"].isStarted ? " active" : "") + "'>" + (oData["e2e-trace"].isStarted ? "Running..." : "Start") + "</button>");
+				buffer.push("<div class='sapUiSupportTechInfoXMLOutput'>");
 				buffer.push("<label class='sapUiSupportLabel'>XML Output:</label>");
-				buffer.push("<textarea id='" + that.getId() + "-outputE2ETrace' style='width:100%;height:50px;margin-top:5px;resize:none;box-sizing:border-box'></textarea>");
+				buffer.push("<textarea id='" + that.getId() + "-outputE2ETrace'></textarea>");
 				buffer.push("</div>");
 			});
 
 			html.push("</table></div>");
 			this.$().html(html.join(""));
 
-			this.$("tggleDbgSrc").bind("click", function(oEvent) {
+			this.$("tggleDbgSrc").on("click", function(oEvent) {
 				oEvent.preventDefault();
 				Support.getStub().sendEvent(that.getId() + "ToggleDebug", {});
 			});
-			this.$("Refresh").bind("click", function(oEvent) {
+			this.$("Refresh").on("click", function(oEvent) {
 				oEvent.preventDefault();
 				Support.getStub().sendEvent(that.getId() + "Refresh", {});
 			});
 
-			this.$("outputE2ETrace").bind("click", function() {
+			this.$("outputE2ETrace").on("click", function() {
 				this.focus();
 				this.select();
 			});
 
-			this.$("startE2ETrace").bind("click", function() {
+			this.$("startE2ETrace").on("click", function() {
 				if (!that.e2eTraceStarted) {
 					that.e2eLogLevel = that.$("logLevelE2ETrace").val();
 					that.$("startE2ETrace").addClass("active").text("Running...");
@@ -206,6 +214,8 @@ sap.ui.define(['jquery.sap.global', '../Plugin', '../Support', '../ToolsAPI', 'j
 						trace: traceXml
 					});
 				});
+			}, function (oError) {
+				Log.error("Could not load module 'sap/ui/core/support/trace/E2eTraceLib':", oError);
 			});
 
 		};
@@ -285,7 +295,7 @@ sap.ui.define(['jquery.sap.global', '../Plugin', '../Support', '../ToolsAPI', 'j
 
 
 		function encode(any) {
-			return any == null ? "" : jQuery.sap.encodeHTML(String(any));
+			return any == null ? "" : encodeXML(String(any));
 		}
 
 		function line(buffer, right, border, label, content){
@@ -302,14 +312,14 @@ sap.ui.define(['jquery.sap.global', '../Plugin', '../Support', '../ToolsAPI', 'j
 
 		function multiline(buffer, right, border, label, content){
 			line(buffer, right, border, label, function(buffer){
-				buffer.push("<table border='0' cellspacing='0' cellpadding='3' style='width: 100%'>");
+				buffer.push("<table border='0' cellspacing='0' cellpadding='3'>");
 				jQuery.each(content, function(i,v){
 					var val = "";
 					if (v) {
 						if (typeof (v) === "string" || typeof (v) === "string" || typeof (v) === "boolean") {
 							val = v;
-						} else if ((Array.isArray(v) || jQuery.isPlainObject(v)) && window.JSON) {
-							val = window.JSON.stringify(v);
+						} else if (Array.isArray(v) || isPlainObject(v)) {
+							val = JSON.stringify(v);
 						}
 					}
 					line(buffer, false, false, i, "" + val);

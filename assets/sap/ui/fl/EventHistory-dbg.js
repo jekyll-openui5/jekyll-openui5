@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -14,7 +14,10 @@ sap.ui.define(function () {
 	 * @alias sap.ui.fl.EventHistory
 	 * @experimental Since 1.47.0
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
+	 *
+	 * @private
+	 * @ui5-restricted sap.ui.fl.RegistrationDelegator
 	 */
 	var EventHistory = function () {
 	};
@@ -29,8 +32,6 @@ sap.ui.define(function () {
 
 	/**
 	 * Starts listening to the events
-	 *
-	 * @public
 	 */
 	EventHistory.start = function () {
 		EventHistory._aEventIds.forEach(function(sEventId) {
@@ -47,18 +48,23 @@ sap.ui.define(function () {
 	 * @param {string} sChannelId The channel of the event
 	 * @param {string} sEventId The identifier of the event
 	 * @param {map} mParameters The parameter map carried by the event
-	 *
-	 * @public
 	 */
 	EventHistory.saveEvent = function (sChannelId, sEventId, mParameters) {
 		var oEvent = {
-			"channelId": sChannelId,
-			"eventId": sEventId,
-			"parameters": mParameters
+			channelId: sChannelId,
+			eventId: sEventId,
+			parameters: mParameters.getId() //we only need the id. In unified.shell sap.ui.getCore().byId(vControl); will be used.
 		};
 
 		if (EventHistory._oHistory[sEventId]) {
-			EventHistory._oHistory[sEventId].push(oEvent);
+			var bExists = EventHistory._oHistory[sEventId].some(function(oObject) {
+				return (oObject.channelId === oEvent.channelId &&
+					oObject.eventId === oEvent.eventId &&
+					oObject.parameters === oEvent.parameters);
+			});
+			if (!bExists) {
+				EventHistory._oHistory[sEventId].push(oEvent);
+			}
 		}
 	};
 
@@ -68,8 +74,6 @@ sap.ui.define(function () {
 	 * @param {string} sEventId The identifier of the event
 	 *
 	 * @return {array} List of events
-	 *
-	 * @public
 	 */
 	EventHistory.getHistoryAndStop = function (sEventId) {
 		sap.ui.getCore().getEventBus().unsubscribe("sap.ui", sEventId, EventHistory.saveEvent);

@@ -1,19 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.Link.
 sap.ui.define([
-	'jquery.sap.global',
 	'./library',
 	'sap/ui/core/Control',
 	'sap/ui/core/EnabledPropagator',
 	'sap/ui/core/LabelEnablement',
-	"./LinkRenderer"
+	'./LinkRenderer'
 ],
-	function(jQuery, library, Control, EnabledPropagator, LabelEnablement, LinkRenderer) {
+	function(library, Control, EnabledPropagator, LabelEnablement, LinkRenderer) {
 	"use strict";
 
 
@@ -32,7 +31,7 @@ sap.ui.define([
 	 * @implements sap.ui.commons.ToolbarItem,sap.ui.commons.FormattedTextViewControl, sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -48,6 +47,7 @@ sap.ui.define([
 			"sap.ui.core.IFormContent"
 		],
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -170,6 +170,7 @@ sap.ui.define([
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
+	 * @returns {object} The accessibility info
 	 * @protected
 	 */
 	Link.prototype.getAccessibilityInfo = function() {
@@ -184,4 +185,4 @@ sap.ui.define([
 
 	return Link;
 
-}, /* bExport= */ true);
+});

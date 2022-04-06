@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -12,25 +12,25 @@
  */
 
 // Provides class sap.m.semantic.Segment
-sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata'], function(jQuery, Metadata) {
+sap.ui.define(['sap/ui/base/Object', "sap/base/Log"], function(BaseObject, Log) {
 	"use strict";
 
 	/**
 	 * Constructor for an sap.m.semantic.Segment.
 	 *
 	 * @class Abstraction for a segment in a SegmentedContainer
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @private
 	 * @since 1.30.0
 	 * @alias sap.m.semantic.Segment
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */
 
-	var Segment = Metadata.createClass("sap.m.semantic.Segment", {
+	var Segment = BaseObject.extend("sap.m.semantic.Segment", {
 
 		constructor : function(aContent, oContainer, sContainerAggregationName, fnSortFunction) {
 			if (!oContainer) {
-				jQuery.sap.log.error("missing argumment: constructor expects a container reference", this);
+				Log.error("missing argumment: constructor expects a container reference", this);
 				return;
 			}
 
@@ -40,6 +40,10 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata'], function(jQuery, Me
 			this._oContainer = oContainer;
 			this._sContainerAggregationName = sContainerAggregationName;
 			this._fnSortFunction = fnSortFunction;
+		},
+
+		getInterface: function() {
+			return this; // no facade
 		}
 
 	});
@@ -56,12 +60,12 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata'], function(jQuery, Me
 
 	Segment.prototype.getContent = function () {
 
-		return this._aContent;
+		return this._aContent.slice();
 	};
 
 	Segment.prototype.indexOfContent = function (oControl) {
 
-		return jQuery.inArray( oControl, this._aContent );
+		return this._aContent.indexOf(oControl);
 	};
 
 	Segment.prototype.addContent = function (oControl, bSuppressInvalidate) {
@@ -99,7 +103,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata'], function(jQuery, Me
 
 	Segment.prototype.removeContent = function (oControl, bSuppressInvalidate) {
 
-		var iLocalIndex = jQuery.inArray(oControl, this._aContent),
+		var iLocalIndex = this._aContent.indexOf(oControl),
 			sAggregationMethod  = "remove" + fnCapitalize(this._sContainerAggregationName);
 
 		if (iLocalIndex > -1) {
@@ -164,4 +168,4 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/Metadata'], function(jQuery, Me
 
 	return Segment;
 
-}, /* bExport= */ false);
+});

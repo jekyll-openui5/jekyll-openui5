@@ -1,19 +1,14 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 /**
  * Initialization Code and shared classes of library sap.tnt.
  */
-sap.ui.define([
-		"jquery.sap.global",
-		"sap/ui/base/DataType",
-		"sap/ui/core/library",
-		"sap/m/library"
-	],
-	function (jQuery, DataType) {
+sap.ui.define(["sap/ui/core/library", "sap/m/library"],
+	function() {
 	"use strict";
 
 	/**
@@ -22,33 +17,39 @@ sap.ui.define([
 	 * @namespace
 	 * @name sap.tnt
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
+	 * @since 1.36
 	 * @public
 	 */
 
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name : "sap.tnt",
-		version: "1.56.5",
+		version: "1.96.7",
 		dependencies : ["sap.ui.core", "sap.m"],
+		designtime: "sap/tnt/designtime/library.designtime",
 		types: [
-			"sap.tnt.RenderMode",
-			"sap.tnt.BoxContainerLayoutConfiguration"
+			"sap.tnt.RenderMode"
 		],
-		interfaces: [],
+		interfaces: [
+			"sap.tnt.IToolHeader"
+		],
 		controls: [
 			"sap.tnt.NavigationList",
 			"sap.tnt.ToolHeaderUtilitySeparator",
 			"sap.tnt.ToolHeader",
 			"sap.tnt.SideNavigation",
 			"sap.tnt.ToolPage",
-			"sap.tnt.InfoLabel",
-			"sap.tnt.BoxContainer",
-			"sap.tnt.Box"
+			"sap.tnt.InfoLabel"
 		],
 		elements: [
 			"sap.tnt.NavigationListItem"
-		]
+		],
+		extensions: {
+			flChangeHandlers: {
+				"sap.tnt.NavigationListItem": "sap/tnt/flexibility/NavigationListItem"
+			}
+		}
 	});
 
 	/**
@@ -72,13 +73,15 @@ sap.ui.define([
 		Loose: "Loose"
 	};
 
-	sap.tnt.BoxesPerRowConfig = DataType.createType("sap.tnt.BoxesPerRowConfig", {
-			isValid : function(vValue) {
-				return /^(([Xx][Ll](?:[1-9]|1[0-2]))? ?([Ll](?:[1-9]|1[0-2]))? ?([Mm](?:[1-9]|1[0-2]))? ?([Ss](?:[1-9]|1[0-2]))?)$/.test(vValue);
-			}
-		},
-		DataType.getType("string")
-	);
+	/**
+	 * Interface for controls suitable for the <code>header</code> aggregation of {@link sap.tnt.ToolPage}.
+	 *
+	 * @since 1.68
+	 * @name sap.tnt.IToolHeader
+	 * @public
+	 * @interface
+	 * @ui5-metamodel This interface also will be described in the UI5 (legacy) designtime metamodel
+	 */
 
 	return sap.tnt;
 

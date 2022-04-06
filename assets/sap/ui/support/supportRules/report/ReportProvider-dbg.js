@@ -1,26 +1,18 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 /**
  * Creates a report from data.
  */
-sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/support/supportRules/report/Archiver',
-	'sap/ui/support/supportRules/report/IssueRenderer'], function(jQuery, Handlebars, Archiver, IssueRenderer) {
+sap.ui.define(['jquery.sap.global', 'sap/ui/support/supportRules/report/Archiver',
+	'sap/ui/support/supportRules/report/IssueRenderer'], function(jQuery, Archiver, IssueRenderer) {
 	'use strict';
 
 	// Private fields
 	var resourcesBaseUrl = jQuery.sap.getResourcePath('sap/ui/support/supportRules/report/resources');
-	var resources = [
-		{ url: resourcesBaseUrl + '/ReportTemplate.html', type: 'template' },
-		{ url: resourcesBaseUrl + '/styles.css', type: 'css' },
-		{ url: resourcesBaseUrl + '/filter.css', type: 'css' },
-		{ url: resourcesBaseUrl + '/collapseExpand.css', type: 'css' },
-		{ url: resourcesBaseUrl + '/filter.js', type: 'js' },
-		{ url: resourcesBaseUrl + '/collapseExpand.js', type: 'js' }
-	];
 
 	/*
 	 * Functions taken from core.support.plugins.TechInfo.js
@@ -30,7 +22,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 			buffer.push("<tr><td ", right ? "align='right' " : "", "valign='top'>", "<label class='sapUiSupportLabel'>", jQuery.sap.escapeHTML(label || ""), "</label></td><td",
 					border ? " class='sapUiSupportTechInfoBorder'" : "", ">");
 			var ctnt = content;
-			if (jQuery.isFunction(content)) {
+			if (typeof content === "function") {
 				ctnt = content(buffer);
 			}
 			buffer.push(jQuery.sap.escapeHTML(ctnt || ""));
@@ -45,8 +37,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 					if (v) {
 						if (typeof (v) === "string" || typeof (v) === "string" || typeof (v) === "boolean") {
 							val = v;
-						} else if ((jQuery.isArray(v) || jQuery.isPlainObject(v)) && window.JSON) {
-							val = window.JSON.stringify(v);
+						} else if (Array.isArray(v) || jQuery.isPlainObject(v)) {
+							val = JSON.stringify(v);
 						}
 					}
 					that.line(buffer, false, false, i, "" + val);
@@ -63,19 +55,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 	function getResource(resource) {
 		return jQuery.ajax({
 			type: 'GET',
-			url: resource.url,
+			url: resourcesBaseUrl + "/" + resource,
 			dataType: 'text'
 		}).then(function (text) {
-			return { content: text, type: resource.type };
+			return text;
 		});
-	}
-
-	function getResources() {
-		var deferreds = [];
-		for (var i = 0; i < resources.length; i++) {
-			deferreds.push(getResource(resources[i]));
-		}
-		return jQuery.when.apply(jQuery, deferreds);
 	}
 
 	/*
@@ -85,7 +69,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 		var content = '';
 
 		if (!technicalInfo) {
-			return new Handlebars.SafeString(content);
+			return content;
 		}
 
 		try {
@@ -141,7 +125,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 			jQuery.sap.log.warning('There was a problem extracting technical info.');
 		}
 
-		return new Handlebars.SafeString(content);
+		return content;
 	}
 
 	function getComponentPart(value) {
@@ -157,7 +141,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 		var content = '';
 
 		if (!appInfo) {
-			return new Handlebars.SafeString(content);
+			return content;
 		}
 
 		content += '<table class="sapUiTable"><tr><th>Component ID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Application version</th><th>Description</th><th>BCP Component</th></tr>';
@@ -186,7 +170,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 			content = '';
 		}
 
-		return new Handlebars.SafeString(content);
+		return content;
 	}
 
 	function getGlobalScope(displaySettings) {
@@ -228,7 +212,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 		var content = '';
 
 		try {
-			var scopeType = scope.executionScope._getType();
+			var scopeType = scope.executionScope.getType();
 			var scopeDisplaySettings = scope.scopeDisplaySettings.executionScopes[scopeType];
 			var scopeDisplayTitle = scope.scopeDisplaySettings.executionScopeTitle;
 			content += '<div class="sapUiSupportLabel">' + scopeDisplayTitle + ': </div>';
@@ -249,14 +233,14 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 			content = '';
 		}
 
-		return new Handlebars.SafeString(content);
+		return content;
 	}
 
 	function getRules(groups) {
 		var content = '';
 
 		if (!groups) {
-			return new Handlebars.SafeString(content);
+			return content;
 		}
 
 		try {
@@ -274,16 +258,16 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 				}
 
 				var groupIssueCountElement = groups[group].selected ? ' (' + groups[group].issueCount + ' issues)' : '';
-				var checkedGroup = '<span class="checked" style="' + (groups[group].selected ? '' : 'visibility: hidden;') + '"> &#10004; </span>';
+				var checkedGroup = '<span class="' + (groups[group].selected ? 'checked' : 'unchecked') + '"></span>';
 				content += '<tbody><tr><td colspan="100" ';
 				content += 'class="expandable-control ' + expandedClass + '" data-expandableElement="section-selected-rules-group' + groupNumber + '">' + checkedGroup;
-				content += '<span class="sapUiSupportLabel expandable-title"> ' + group + groupIssueCountElement + '</span>';
+				content += '<span class="sapUiSupportLabel expandable-title">' + group + groupIssueCountElement + '</span>';
 				content += '</td></tr></tbody>';
 				var rulesTable = '';
 
 				for (var rule in rules) {
 					var issueCountElement = rules[rule].selected ? ' (' + rules[rule].issueCount + ' issues)' : '';
-					var checked = '<span class="checked" style="' + (rules[rule].selected ? '' : 'visibility: hidden;') + '"> &#10004; </span>';
+					var checked = '<span class="' + (rules[rule].selected ? 'checked' : 'unchecked') + '"></span>';
 					rulesTable += '<tr>';
 					rulesTable += '<td>' + checked + rules[rule].title + issueCountElement + '</td>';
 					rulesTable += '<td>' + rules[rule].description + '</td>';
@@ -302,96 +286,73 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 			content = '';
 		}
 
-		return new Handlebars.SafeString(content);
+		return content;
 	}
 
-	function getResourcesHtml(resources, type) {
-		var content = '';
-
-		if (type !== 'script' && type !== 'style') {
-			return content;
-		}
-
-		for (var i = 0; i < resources.length; i++) {
-			switch (type) {
-				case 'script': content += '<script>' + resources[i] + '</script>\n'; break;
-				case 'style': content += '<style type="text/css">' + resources[i] + '</style>\n'; break;
-			}
-		}
-
-		return new Handlebars.SafeString(content);
+	function getIssues(issues) {
+		return IssueRenderer.render(issues, true);
 	}
 
-	Handlebars.registerHelper('getTechnicalInformation', function (technicalInfo) {
-		return getTechnicalInformation(technicalInfo);
-	});
-	Handlebars.registerHelper('getRules', function (rules) {
-		return getRules(rules);
-	});
-	Handlebars.registerHelper('getIssues', function (issues) {
-		return new Handlebars.SafeString(IssueRenderer.render(issues, true));
-	});
-	Handlebars.registerHelper('getAppInfo', function (appInfo) {
-		return getAppInfo(appInfo);
-	});
-	Handlebars.registerHelper('getScope', function (scope) {
-		return getScope(scope);
-	});
-	Handlebars.registerHelper('getScripts', function (scripts) {
-		return getResourcesHtml(scripts, 'script');
-	});
-	Handlebars.registerHelper('getStyles', function (styles) {
-		return getResourcesHtml(styles, 'style');
-	});
+	function getRulePreset(oRulePreset) {
+		if (!oRulePreset) {
+			return "none";
+		}
+
+		return "<strong>" + oRulePreset.title + "/" + oRulePreset.id + "</strong>";
+	}
 
 	// Public functions
 
 	/**
 	 * Creates an html string containing the whole report.
 	 * @param {Object} oData - the data required to create a report
-	 * @returns {String}
+	 * @param {String} [sBaseUrl] - the base path to javascript and css resources
+	 * @returns {String} the complete html.
 	 */
-	function getReportHtml(oData) {
-		return getResources().then(function () {
-			var styles = [],
-				scripts = [],
-				html = '',
-				i,
-				template = {},
-				reportContext = {};
+	function getReportHtml(oData, sBaseUrl) {
+		if (!sBaseUrl) {
+			sBaseUrl = resourcesBaseUrl + "/";
+		}
 
-			for (i = 0; i < arguments.length; i++) {
-				switch (arguments[i].type) {
-					case 'template': html = arguments[i].content; break;
-					case 'css': styles.push(arguments[i].content); break;
-					case 'js': scripts.push(arguments[i].content); break;
-				}
-			}
-
-			template = Handlebars.compile(html);
-
-			reportContext = {
-				technicalInfo: oData.technical,
-				issues: oData.issues,
-				appInfo: oData.application,
-				rules: oData.rules,
-				metadata: {
-					title: oData.name + ' Analysis Results',
-					title_TechnicalInfo: 'Technical Information',
-					title_Issues: 'Issues',
-					title_AppInfo: 'Application Information',
-					title_SelectedRules: 'Available and (<span class="checked">&#10004;</span>) Executed Rules',
-					timestamp: new Date(),
-					scope: oData.scope,
-					analysisDuration: oData.analysisDuration,
-					analysisDurationTitle: oData.analysisDurationTitle,
-					styles: styles,
-					scripts: scripts
-				}
+		return getResource("ReportTemplate.html").then(function(sTemplate) {
+			var oContext = {
+				baseUrl: sBaseUrl,
+				technicalInfo: getTechnicalInformation(oData.technical),
+				issues: getIssues(oData.issues),
+				appInfo: getAppInfo(oData.application),
+				rules: getRules(oData.rules),
+				rulePreset: getRulePreset(oData.rulePreset),
+				metadataTitle: oData.name + ' Analysis Results',
+				metadataTitleTechnicalInfo: 'Technical Information',
+				metadataTitleIssues: 'Issues',
+				metadataTitleAppInfo: 'Application Information',
+				metadataTitleSelectedRules: 'Available and (<span class="checked"></span>) Selected Rules',
+				metadataTimestamp: new Date(),
+				metadataScope: getScope(oData.scope),
+				metadataAnalysisDuration: oData.analysisDuration,
+				metadataAnalysisDurationTitle: oData.analysisDurationTitle
 			};
 
-			return template(reportContext);
+			return replacePlaceholders(sTemplate, oContext);
 		});
+	}
+
+	/**
+	 * Replace any placeholder like {{placeholder}} with the corresponding value from oContext.
+	 * @param {String} sTemplate the string template containing the placeholders.
+	 * @param {Object} oContext the object containing the values for the placeholders.
+	 * @returns {String} the processed template.
+	 */
+	function replacePlaceholders(sTemplate, oContext) {
+		var sPlaceholder,
+			sValue;
+
+		for (sPlaceholder in oContext) {
+			sValue = oContext[sPlaceholder];
+			sTemplate = sTemplate.replace(new RegExp("\{\{" + sPlaceholder + "\}\}", "ig"), sValue);
+		}
+
+		return sTemplate;
 	}
 
 	/**
@@ -399,16 +360,36 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 	 * @param {Object} oData - the data required to create a report
 	 */
 	function downloadReportZip(oData) {
-		this.getReportHtml(oData).done(function (html) {
-			var report = '<!DOCTYPE HTML><html><head><title>Report</title></head><body><div id="sap-report-content">' + html + '</div></body></html>';
-			var issues = { 'issues': oData.issues };
-			var appInfos = { 'appInfos': oData.application };
-			var technicalInfo = { 'technicalInfo': oData.technical };
-			var archiver = new Archiver();
+		var aPromises = [
+			this.getReportHtml(oData, "./"),
+			getResource("styles.css"),
+			getResource("index.js"),
+			getResource("images/checked.svg"),
+			getResource("images/collapsed.svg"),
+			getResource("images/expanded.svg"),
+			getResource("images/unchecked.svg")
+		];
+
+		Promise.all(aPromises).then(function (resources) {
+			var issues = { 'issues': oData.issues },
+				appInfos = { 'appInfos': oData.application },
+				technicalInfo = { 'technicalInfo': oData.technical },
+				archiver = new Archiver();
+
 			archiver.add('technicalInfo.json', technicalInfo, 'json');
 			archiver.add('issues.json', issues, 'json');
 			archiver.add('appInfos.json', appInfos, 'json');
-			archiver.add('report.html', report);
+			archiver.add('report.html', resources[0]);
+			archiver.add('abap.json', oData.abap, 'json');
+			archiver.add('styles.css', resources[1], 'css');
+			archiver.add('index.js', resources[2], 'js');
+
+
+			archiver.add('images/checked.svg', resources[3], 'svg');
+			archiver.add('images/collapsed.svg', resources[4], 'svg');
+			archiver.add('images/expanded.svg', resources[5], 'svg');
+			archiver.add('images/unchecked.svg', resources[6], 'svg');
+
 			archiver.download("SupportAssistantReport");
 			archiver.clear();
 		});
@@ -421,19 +402,19 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/thirdparty/handlebars', 'sap/ui/supp
 	function openReport(oData) {
 		// Create a hidden anchor. Open window outside of the promise otherwise browsers blocks the window.open.
 		var content = '';
-		var a = jQuery('<a style="display: none;"/>');
+		var a = jQuery('<a class="sapUiHidden"></a>');
 		a.on('click', function () {
 			var reportWindow = window.open('', '_blank');
+			reportWindow.opener = null;
+
 			jQuery(reportWindow.document).ready(function () {
-				// Sometimes document.write overwrites the document html and sometimes it appends to it so we need a wrapper div.
-				if (reportWindow.document.getElementById('sap-report-content')) {
-					reportWindow.document.getElementById('sap-report-content').innerHtml = content;
-				} else {
-					reportWindow.document.write('<div id="sap-report-content">' + content + '</div>');
-				}
-				reportWindow.document.title = 'Report';
+				// make sure everything is cleared before writing the new report
+				reportWindow.document.documentElement.innerHTML = '';
+
+				reportWindow.document.write(content);
 			});
 		});
+
 		jQuery('body').append(a);
 
 		this.getReportHtml(oData).then(function (html) {

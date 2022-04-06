@@ -1,14 +1,29 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides ControllerMetadata
-sap.ui.define(['sap/ui/base/Metadata', 'sap/base/util/extend', 'sap/ui/core/mvc/OverrideExecution'],
-	function(Metadata, extend, OverrideExecution) {
+sap.ui.define([
+	'sap/ui/base/Metadata',
+	'sap/base/util/merge',
+	'sap/ui/core/mvc/OverrideExecution',
+	"sap/base/Log"
+],
+	function(Metadata, merge, OverrideExecution, Log) {
 	"use strict";
 
+	/**
+	 * The controller metadata
+	 *
+	 * @param {string} sClassName Fully qualified name of the described class
+	 * @param {object} oClassInfo Info to construct the class and its metadata from
+	 *
+	 * @alias sap.ui.core.mvc.ControllerMetadata
+	 * @extends sap.ui.base.Metadata
+	 * @private
+	 */
 	var ControllerMetadata = function(sClassName, oClassInfo) {
 		// call super constructor
 		Metadata.apply(this, arguments);
@@ -21,6 +36,7 @@ sap.ui.define(['sap/ui/base/Metadata', 'sap/base/util/extend', 'sap/ui/core/mvc/
 
 	// chain the prototypes
 	ControllerMetadata.prototype = Object.create(Metadata.prototype);
+	ControllerMetadata.prototype.constructor = ControllerMetadata;
 
 	ControllerMetadata.prototype.applySettings = function(oClassInfo) {
 		// property 'override' needs to be handled separately and must not be attached to the prototype
@@ -54,14 +70,14 @@ sap.ui.define(['sap/ui/base/Metadata', 'sap/base/util/extend', 'sap/ui/core/mvc/
 			* If not, we stay compatible and every method prefixed with '-' or 'on' gets private.
 			*/
 			if (bExtendsController && !bDefinesMethods) {
-			   rPrivateCheck = /^_|^on|^init$|^exit$/;
+				rPrivateCheck = /^_|^on|^init$|^exit$/;
 			}
 
 			/*
 			* extend method metadata: make lifecycle hooks public
 			*/
 			if (bExtendsController && bDefinesMethods) {
-			    extend(oStaticInfo.methods, this._defaultLifecycleMethodMetadata);
+				merge(oStaticInfo.methods, this._defaultLifecycleMethodMetadata);
 			}
 		}
 
@@ -76,7 +92,7 @@ sap.ui.define(['sap/ui/base/Metadata', 'sap/base/util/extend', 'sap/ui/core/mvc/
 				if (!n.match(rPrivateCheck)) {
 					//final check
 					if (bExtendsController && this._oParent && this._oParent.isMethodFinal(n)) {
-						jQuery.sap.log.error("Method: '" + n + "' of controller '" + this._oParent.getName() + "' is final and cannot be overridden by controller '" + this.getName() + "'");
+						Log.error("Method: '" + n + "' of controller '" + this._oParent.getName() + "' is final and cannot be overridden by controller '" + this.getName() + "'");
 						delete this._oClass.prototype[n];
 					}
 					// default metadata for methods
@@ -91,7 +107,7 @@ sap.ui.define(['sap/ui/base/Metadata', 'sap/base/util/extend', 'sap/ui/core/mvc/
 		}
 		for (var m in this._mMethods) {
 			if (this.isMethodPublic(m)) {
-			    this._aPublicMethods.push(m);
+				this._aPublicMethods.push(m);
 			}
 		}
 	};
@@ -111,26 +127,26 @@ sap.ui.define(['sap/ui/base/Metadata', 'sap/base/util/extend', 'sap/ui/core/mvc/
 			var mParentMethods = this._oParent._mMethods ? this._oParent._mMethods : {};
 			//allow change of visibility but not the other attributes
 			for (var sMethod in mParentMethods) {
-			if (this._mMethods[sMethod] && !bIsExtension) {
-			var bPublic = this._mMethods[sMethod].public;
-			//copy parent method definition as final/overrideExecution should not be overridden
-			this._mMethods[sMethod] = extend({}, mParentMethods[sMethod]);
-			if (bPublic !== undefined) {
-			this._mMethods[sMethod].public = bPublic;
-			}
-			if (!this.isMethodPublic(sMethod) && this._mMethods[sMethod].public !== mParentMethods[sMethod].public) {
-			//if visibility changed to private delete from public methods
-			this._aAllPublicMethods.splice(this._aAllPublicMethods.indexOf(sMethod), 1);
-			}
-			} else {
-			this._mMethods[sMethod] = mParentMethods[sMethod];
-			}
+				if (this._mMethods[sMethod] && !bIsExtension) {
+					var bPublic = this._mMethods[sMethod].public;
+					//copy parent method definition as final/overrideExecution should not be overridden
+					this._mMethods[sMethod] = merge({}, mParentMethods[sMethod]);
+					if (bPublic !== undefined) {
+						this._mMethods[sMethod].public = bPublic;
+					}
+					if (!this.isMethodPublic(sMethod) && this._mMethods[sMethod].public !== mParentMethods[sMethod].public) {
+						//if visibility changed to private delete from public methods
+						this._aAllPublicMethods.splice(this._aAllPublicMethods.indexOf(sMethod), 1);
+					}
+				} else {
+					this._mMethods[sMethod] = mParentMethods[sMethod];
+				}
 			}
 		}
 
 		//flag each extension as final (but not the class ControllerExtension itself)
 		if (this._oParent && this._oParent.isA("sap.ui.core.mvc.ControllerExtension")) {
-		   this._bFinal = true;
+			this._bFinal = true;
 		}
 	};
 
@@ -175,7 +191,7 @@ sap.ui.define(['sap/ui/base/Metadata', 'sap/base/util/extend', 'sap/ui/core/mvc/
 	/**
 	 * Get all defined methods and their metadata.
 	 *
-	 * @return {map} A map containing all methods (key) and their metadata
+	 * @return {Object<string,object>} A map containing all methods (key) and their metadata
 	 */
 	ControllerMetadata.prototype.getAllMethods = function() {
 		return this._mMethods;
@@ -229,7 +245,7 @@ sap.ui.define(['sap/ui/base/Metadata', 'sap/base/util/extend', 'sap/ui/core/mvc/
 	/**
 	 * Get configuration for extending lifecycle methods.
 	 *
-	 * @return {map} A map containing the lifecycle configuration metadata
+	 * @return {Object<string,object>} A map containing the lifecycle configuration metadata
 	 * @private
 	 */
 	ControllerMetadata.prototype.getLifecycleConfiguration = function() {

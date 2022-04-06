@@ -1,8 +1,8 @@
 /* NOTE: This file was generated as an optimized version of "library.source.less" for the Theme Designer. */
 
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -30,6 +30,10 @@
 	}
 }
 
+.sapUxAPAnchorBar.sapMTB.sapUxAPAnchorBarTranslucent {
+	background: fade(@sapUiObjectHeaderBackground, 60);
+}
+
 .sapContrastPlus {
 	.sapUxAPAnchorBar .sapUxAPAnchorBarButton.sapUxAPAnchorBarButtonSelected .sapMBtnContent,
 	.sapUxAPAnchorBar .sapUxAPAnchorBarButton.sapUxAPAnchorBarButtonSelected .sapMBtnIcon,
@@ -52,7 +56,31 @@
 		background: fade(@sapUiObjectHeaderBackground, 60%);
 	}
 }
+
+.sapContrastPlus.sapUxAPObjectPageHeaderObjectImageContainer .sapUiIcon,
+.sapContrastPlus .sapUxAPObjectPageHeaderObjectImageContainer .sapUiIcon {
+	color: @sapUiBaseText;
+}
 /* END "ObjectPageHeader.less" */
+
+/* START "ObjectPageHeaderContent.less" */
+/* ================================================= */
+/* CSS for control sap.uxap/ObjectPageHeaderContent  */
+/* Belize Plus theme                                 */
+/* ================================================= */
+
+.sapUshellShell {
+	.sapUxAPObjectPageHeaderContentDesign-Light,
+	.sapUxAPObjectPageHeaderContentDesign-Dark {
+		background: fade(@sapUiObjectHeaderBackground, 60%);
+	}
+}
+
+.sapContrastPlus.sapUxAPObjectPageHeaderContent .sapUxAPObjectPageHeaderPlaceholder > .sapUiIcon,
+.sapContrastPlus .sapUxAPObjectPageHeaderContent .sapUxAPObjectPageHeaderPlaceholder > .sapUiIcon {
+	color: @sapUiBaseText;
+}
+/* END "ObjectPageHeaderContent.less" */
 
 /* START "ObjectPageLayout.less" */
 /* ========================================== */
@@ -64,32 +92,59 @@
 /* ======================================== */
 /* Title                                    */
 /* ======================================== */
-.sapUxAPObjectPageLayout.sapUxAPObjectPageLayoutTitleClickEnabled .sapFDynamicPageTitle:hover {
-	background-color: darken(@sapUiObjectHeaderBackground, 3);
-}
-
 .sapUxAPObjectPageLayoutTitleClickEnabled > .sapUxAPObjectPageHeaderStickied > .sapFDynamicPageTitle {
 	box-shadow: @sapUiShadowHeader;
+}
+
+.sapUshellShell {
+	.sapUxAPObjectPageWrapper {
+		background-color: transparent;
+	}
+}
+
+.sapUxAPObjectPageLayout.sapUxAPObjectPageLayoutTitleClickEnabled {
+	&.sapUxAPObjectPageLayoutTitleForceHovered .sapFDynamicPageTitle {
+		.title-hover(@sapUiObjectHeaderBackground);
+	}
+
+	&.sapUxAPObjectPageLayoutTitleForceHovered .sapFDynamicPageTitle.sapFDynamicPageTitleTranslucent {
+		.title-hover(fade(@sapUiObjectHeaderBackground, 60%));
+	}
+
+	&.sapUxAPObjectPageLayoutTitleForceHovered .sapFDynamicPageTitle.sapFDynamicPageTitleTransparent {
+		.title-hover(transparent);
+	}
+	&.sapUxAPObjectPageLayoutTitleForceHovered .sapFDynamicPageToggleHeaderIndicator .sapMBtnInner.sapMBtnHoverable {
+				background-color: darken(@sapUiObjectHeaderBorderColor, 3);
+	}
 }
 
 /* ======================================== */
 /* Title and Toggle Header Visual Indicator */
 /* ======================================== */
 .sapUxAPObjectPageLayout {
-  &.sapUxAPObjectPageLayoutTitleClickEnabled {
-    .sapFDynamicPageTitle:hover,
-    &.sapUxAPObjectPageLayoutTitleForceHovered .sapFDynamicPageTitle {
-      background-color: darken(@sapUiObjectHeaderBackground, 3);
-    }
 
-    &.sapUxAPObjectPageLayoutTitleForceHovered {
-      .sapFDynamicPageToggleHeaderIndicator {
-        .sapMBtnInner.sapMBtnHoverable {
-          background-color: darken(@sapUiObjectHeaderBorderColor, 3);
-        }
-      }
-    }
-  }
+	// This is needed, because we need more specific selector to override belize styles
+	.sapFDynamicPageTitle.sapFDynamicPageTitle.sapFDynamicPageTitleTranslucent,
+	.sapFDynamicPageHeader.sapFDynamicPageHeader.sapFDynamicPageHeaderTranslucent {
+		background: fade(@sapUiObjectHeaderBackground, 60%);
+	}
+
+	.sapUxAPObjectPageNavigation {
+		background: @sapUiObjectHeaderBackground;
+
+		&.sapUxAPObjectPageNavigationTransparent {
+			background:  transparent;
+		}
+
+		&.sapUxAPObjectPageNavigationTranslucent {
+			background: fade(@sapUiObjectHeaderBackground, 60);
+
+			.sapUxAPAnchorBar.sapMTB.sapUxAPAnchorBarTranslucent  {
+				background: transparent;
+			}
+		}
+	}
 
   // Toggle Header Visual Indicator
   .sapFDynamicPageToggleHeaderIndicator.sapMBtn {
@@ -106,6 +161,7 @@
     }
 
     // active state
+    & > .sapMBtnInner.sapMFocusable.sapMBtnActive,
     &:focus > .sapMBtnInner.sapMFocusable.sapMBtnActive {
       background: @sapUiSelected;
       color: @sapUiButtonActiveBackground;
@@ -116,11 +172,26 @@
 .sapUshellShell {
   .sapUxAPObjectPageLayout {
     &.sapUxAPObjectPageLayoutTitleClickEnabled {
-      .sapFDynamicPageTitle:hover,
       &.sapUxAPObjectPageLayoutTitleForceHovered .sapFDynamicPageTitle {
         background-color: fade(@sapUiObjectHeaderBackground, 75%);
       }
-    }
+	}
+
+	.sapUxAPObjectPageNavigation {
+		background: fade(@sapUiObjectHeaderBackground, 60);
+
+		.sapUxAPAnchorBar.sapMTB.sapUxAPAnchorBar  {
+			background: transparent;
+		}
+
+		&.sapUxAPObjectPageNavigationTransparent {
+			background:  transparent;
+		}
+
+		&.sapUxAPObjectPageNavigationSolid {
+			background: @sapUiObjectHeaderBackground;
+		}
+	}
   }
 }
 /* END "ObjectPageLayout.less" */

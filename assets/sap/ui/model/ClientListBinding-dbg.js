@@ -1,12 +1,30 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
+/*eslint-disable max-len */
 // Provides the JSON model implementation of a list binding
-sap.ui.define(['jquery.sap.global', './ChangeReason', './Filter', './FilterType', './ListBinding', './FilterProcessor', './Sorter', './SorterProcessor'],
-	function(jQuery, ChangeReason, Filter, FilterType, ListBinding, FilterProcessor, Sorter, SorterProcessor) {
+sap.ui.define([
+	'./ChangeReason',
+	'./Filter',
+	'./FilterType',
+	'./ListBinding',
+	'./FilterProcessor',
+	'./Sorter',
+	'./SorterProcessor',
+	"sap/base/util/each"
+],
+	function(
+		ChangeReason,
+		Filter,
+		FilterType,
+		ListBinding,
+		FilterProcessor,
+		Sorter,
+		SorterProcessor,
+		each
+	) {
 	"use strict";
 
 	/**
@@ -35,7 +53,9 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './Filter', './FilterType'
 		constructor : function(oModel, sPath, oContext, aSorters, aFilters, mParameters){
 			ListBinding.apply(this, arguments);
 
+			this.mNormalizeCache = {};
 			this.oModel.checkFilterOperation(this.aApplicationFilters);
+			this.oCombinedFilter = FilterProcessor.combineFilters(this.aFilters, this.aApplicationFilters);
 
 			this.bIgnoreSuspend = false;
 			this.update();
@@ -69,9 +89,9 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './Filter', './FilterType'
 		var iEndIndex = Math.min(iStartIndex + iLength, this.aIndices.length),
 		oContext,
 		aContexts = [],
-		sPrefix = this.oModel.resolve(this.sPath, this.oContext);
+		sPrefix = this.getResolvedPath();
 
-		if (sPrefix && !jQuery.sap.endsWith(sPrefix, "/")) {
+		if (sPrefix && !sPrefix.endsWith("/")) {
 			sPrefix += "/";
 		}
 
@@ -146,7 +166,6 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './Filter', './FilterType'
 		this.bIgnoreSuspend = true;
 
 		this._fireChange({reason: ChangeReason.Sort});
-		// TODO remove this if the sorter event gets removed which is deprecated
 		this._fireSort({sorter: aSorters});
 		this.bIgnoreSuspend = false;
 
@@ -178,11 +197,11 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './Filter', './FilterType'
 	 * When no <code>sFilterType</code> is given, any previously configured application
 	 * filters are cleared and the given filters are used as control filters
 	 *
-	 * @param {sap.ui.model.Filter[]} aFilters Array of filter objects
+	 * @param {sap.ui.model.Filter|sap.ui.model.Filter[]} aFilters Single filter object or an array of filter objects
 	 * @param {sap.ui.model.FilterType} [sFilterType=undefined] Type of the filter which should
 	 *  be adjusted; if no type is given, then any previously configured application filters are
 	 *  cleared and the given filters are used as control filters
-	 * @return {sap.ui.model.ListBinding} returns <code>this</code> to facilitate method chaining
+	 * @returns {this} returns <code>this</code> to facilitate method chaining
 	 * @throws {Error} When one of the filters uses an operator that is not supported by the underlying model implementation
 	 * @public
 	 */
@@ -205,8 +224,10 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './Filter', './FilterType'
 			this.aFilters = aFilters || [];
 			this.aApplicationFilters = [];
 		}
-		aFilters = this.aFilters.concat(this.aApplicationFilters);
-		if (aFilters.length == 0) {
+
+		this.oCombinedFilter = FilterProcessor.combineFilters(this.aFilters, this.aApplicationFilters);
+
+		if (this.aFilters.length === 0 && this.aApplicationFilters.length === 0) {
 			this.iLength = this._getLength();
 		} else {
 			this.applyFilter();
@@ -216,7 +237,6 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './Filter', './FilterType'
 		this.bIgnoreSuspend = true;
 
 		this._fireChange({reason: ChangeReason.Filter});
-		// TODO remove this if the filter event gets removed which is deprecated
 		if (sFilterType == FilterType.Application) {
 			this._fireFilter({filters: this.aApplicationFilters});
 		} else {
@@ -239,16 +259,11 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './Filter', './FilterType'
 	 * @private
 	 */
 	ClientListBinding.prototype.applyFilter = function(){
-		if (!this.aFilters) {
-			return;
-		}
+		var that = this;
 
-		var aFilters = this.aFilters.concat(this.aApplicationFilters),
-			that = this;
-
-		this.aIndices = FilterProcessor.apply(this.aIndices, aFilters, function(vRef, sPath) {
+		this.aIndices = FilterProcessor.apply(this.aIndices, this.oCombinedFilter, function(vRef, sPath) {
 			return that.oModel.getProperty(sPath, that.oList[vRef]);
-		});
+		}, this.mNormalizeCache);
 
 		this.iLength = this.aIndices.length;
 	};
@@ -261,7 +276,7 @@ sap.ui.define(['jquery.sap.global', './ChangeReason', './Filter', './FilterType'
 			oMap = {},
 			sValue,
 			that = this;
-		jQuery.each(this.oList, function(i, oContext) {
+		each(this.oList, function(i, oContext) {
 			sValue = that.oModel.getProperty(sPath, oContext);
 			if (!oMap[sValue]) {
 				oMap[sValue] = true;

@@ -1,11 +1,11 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(["sap/ui/core/Element"],
-	function(Element) {
+sap.ui.define(["sap/ui/core/Element", "sap/base/Log", "sap/base/util/isPlainObject", "sap/ui/thirdparty/jquery"],
+	function(Element, Log, isPlainObject, jQuery) {
 	"use strict";
 
 	/**
@@ -23,7 +23,7 @@ sap.ui.define(["sap/ui/core/Element"],
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @protected
@@ -76,11 +76,11 @@ sap.ui.define(["sap/ui/core/Element"],
 	SelectionDetailsItemLine.prototype._getValueToRender = function() {
 		var sValue = "",
 			oValue = this.getValue();
-		if (jQuery.type(oValue) === "string") {
+		if (typeof oValue === "string" || oValue instanceof String) {
 			sValue = oValue;
-		} else if (jQuery.type(oValue) === "number") {
+		} else if (typeof oValue === "number") {
 			sValue = oValue.toString();
-		} else if (jQuery.isPlainObject(oValue)) {
+		} else if (isPlainObject(oValue)) {
 			if (oValue.day && oValue.day.length > 0) {
 				sValue = oValue.day;
 			}
@@ -88,7 +88,7 @@ sap.ui.define(["sap/ui/core/Element"],
 				sValue = (sValue.length > 0) ? oValue.time + " " + sValue : oValue.time;
 			}
 		} else {
-			jQuery.sap.log.warning("Value '" + oValue + "' is not supported. Expected type is a string, number or a plain object, including date and time properties of type string.");
+			Log.warning("Value '" + oValue + "' is not supported. Expected type is a string, number or a plain object, including date and time properties of type string.");
 		}
 		return sValue;
 	};

@@ -1,16 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.suite.VerticalProgressIndicator.
 sap.ui.define([
- 'jquery.sap.global',
- 'sap/ui/core/Control',
- 'sap/ui/core/EnabledPropagator',
- './library',
- "./VerticalProgressIndicatorRenderer"
+	"sap/ui/thirdparty/jquery",
+	'sap/ui/core/Control',
+	'sap/ui/core/EnabledPropagator',
+	'./library',
+	"./VerticalProgressIndicatorRenderer"
 ],
 	function(
 	 jQuery,
@@ -34,7 +34,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author Svetozar Buzdumovic
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -85,7 +85,7 @@ sap.ui.define([
 	 * A new rendering is not necessary, only the bar will be moved
 	 *
 	 * @param {int} iPercentage
-	 * @return {sap.ui.suite.VerticalProgressIndicator} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	VerticalProgressIndicator.prototype.setPercentage = function(iPercentage) {
@@ -97,11 +97,11 @@ sap.ui.define([
 	  }
 
 	  // get the ProgressBar
-	  this.oBar  = jQuery.sap.domById(this.getId() + '-bar');
+	  this.oBar = this.getDomRef('bar');
 
 	  // get the new Value and calculate Pixels
 	  VerticalPercent = iPercentage;
-	  if (VerticalPercent < 0 || VerticalPercent == Number.NaN) {
+	  if (VerticalPercent < 0) {
 			VerticalPercent = 0;
 	  }
 	  if (VerticalPercent > 100) {
@@ -117,7 +117,7 @@ sap.ui.define([
 
 	  //set the ARIA property
 	  if (!this.oThis) {
-		this.oThis = jQuery.sap.byId(this.getId());
+		this.oThis = this.$();
 		}
 	  this.oThis.attr('aria-valuenow', iPercentage + '%');
 	  return this;

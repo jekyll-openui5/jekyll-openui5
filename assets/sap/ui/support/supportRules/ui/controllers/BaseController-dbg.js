@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -14,27 +14,6 @@ sap.ui.define([
 
 	return Controller.extend("sap.ui.support.supportRules.ui.controllers.BaseController", {
 
-		onPersistedSettingSelect: function() {
-			var oModel = this.getView().getModel();
-
-			if (oModel.getProperty("/persistingSettings")) {
-				storage.createPersistenceCookie(constants.COOKIE_NAME, true);
-
-				oModel.getProperty("/libraries").forEach(function (lib) {
-					if (lib.title == constants.TEMP_RULESETS_NAME) {
-						storage.setRules(lib.rules);
-					}
-				});
-
-				this.persistExecutionScope();
-				SelectionUtils.persistSelection();
-
-			} else {
-				storage.deletePersistenceCookie(constants.COOKIE_NAME);
-				this.deletePersistedData();
-			}
-		},
-
 		persistExecutionScope: function() {
 			var setting = {
 				analyzeContext: this.model.getProperty("/analyzeContext"),
@@ -44,6 +23,22 @@ sap.ui.define([
 
 			storage.setSelectedScopeComponents(scopeComponent);
 			storage.setSelectedContext(setting);
+		},
+
+		/**
+		 * Persist visible columns selection in local storage.
+		 **/
+		persistVisibleColumns: function() {
+			var aVisibleColumnsIds = [],
+			aColumns = SelectionUtils.treeTable.getColumns();
+
+			aColumns.forEach(function (oColumn) {
+				if (oColumn.getVisible()){
+					aVisibleColumnsIds.push(oColumn.sId);
+				}
+			});
+
+			storage.setVisibleColumns(aVisibleColumnsIds);
 		},
 
 		deletePersistedData: function() {

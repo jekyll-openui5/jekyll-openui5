@@ -1,6 +1,10 @@
 {
-  "sEntity" : "Library",
-  "sId" : "sap/ui/core",
-  "sVersion" : "1.56.5",
-  "aFiles" : [ "library", "global" ]
+  "sEntity": "Library",
+  "sId": "sap/ui/core",
+  "sVersion": "1.96.7",
+  "aFiles": [
+    "library",
+    "global",
+    "css_variables"
+  ]
 }

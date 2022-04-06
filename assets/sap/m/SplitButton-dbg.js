@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -13,9 +13,9 @@ sap.ui.define([
 	'sap/ui/core/EnabledPropagator',
 	'sap/ui/core/IconPool',
 	'sap/ui/core/library',
-	'sap/ui/Device',
 	'sap/ui/core/InvisibleText',
-	'./SplitButtonRenderer'
+	'./SplitButtonRenderer',
+	"sap/ui/events/KeyCodes"
 ],
 function(
 	library,
@@ -25,9 +25,9 @@ function(
 	EnabledPropagator,
 	IconPool,
 	coreLibrary,
-	Device,
 	InvisibleText,
-	SplitButtonRenderer
+	SplitButtonRenderer,
+	KeyCodes
 	) {
 		"use strict";
 
@@ -48,11 +48,11 @@ function(
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 *
 		 * @constructor
-		 * @sap-restricted sap.m.MenuButton,sap.ui.richtextEditor.ToolbarWrapper
 		 * @private
+		 * @ui5-restricted sap.m.MenuButton,sap.ui.richtextEditor.ToolbarWrapper
 		 * @alias sap.m.SplitButton
 		 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 		 */
@@ -145,13 +145,6 @@ function(
 
 		EnabledPropagator.call(SplitButton.prototype);
 
-		SplitButton.prototype.exit = function() {
-			if (this._oInvisibleTooltipInfoLabel) {
-				this._oInvisibleTooltipInfoLabel.destroy();
-				this._oInvisibleTooltipInfoLabel = null;
-			}
-		};
-
 		SplitButton.prototype.onAfterRendering = function() {
 			var $textButtonRef = this._getTextButton().$(),
 				$arrowButtonRef = this._getArrowButton().$();
@@ -203,9 +196,6 @@ function(
 					press: this._handleAction.bind(this, false)
 				}).addStyleClass('sapMSBText');
 
-				if (Device.browser.msie) {
-					oCtrl.addStyleClass('sapMSBTextIE');
-				}
 				this.setAggregation("_textButton", oCtrl);
 			}
 
@@ -218,29 +208,14 @@ function(
 			if (!oCtrl) {
 				oCtrl = new Button({
 					icon: "sap-icon://slim-arrow-down",
-					press: this._handleAction.bind(this, true)
+					press: this._handleAction.bind(this, true),
+					tooltip: sap.ui.getCore().getLibraryResourceBundle("sap.m").getText("SPLIT_BUTTON_ARROW_TOOLTIP"),
+					ariaHasPopup: coreLibrary.aria.HasPopup.Menu
 				}).addStyleClass("sapMSBArrow");
 				this.setAggregation("_arrowButton", oCtrl);
 			}
 
 			return oCtrl;
-		};
-
-		/**
-		 * Sets the tooltip for the <code>SplitButton</code>.
-		 * Can either be an instance of a TooltipBase subclass or a simple string.
-		 * @param {sap.ui.core.TooltipBase} vTooltip The tooltip that should be shown.
-		 * @returns {*} this instance
-		 * @public
-		 */
-		SplitButton.prototype.setTooltip = function(vTooltip) {
-			var sTooltip;
-			Control.prototype.setTooltip.apply(this, arguments);
-
-			sTooltip = this.getTooltip_AsString();
-			this.getTooltipInfoLabel(sTooltip);
-
-			return this;
 		};
 
 		SplitButton.prototype.setProperty = function(sPropertyName, oValue, bSuppressInvalidate) {
@@ -276,12 +251,16 @@ function(
 			return sText.charAt(0).toUpperCase() + sText.slice(1);
 		}
 
-		SplitButton.prototype.onsapenter = function(oEvent) {
-			this._getTextButton().firePress();
+		SplitButton.prototype.onkeydown = function(oEvent) {
+			if (oEvent.which === KeyCodes.SPACE) {
+				oEvent.preventDefault();
+			}
+
+			this._getTextButton().onkeydown(oEvent);
 		};
 
-		SplitButton.prototype.onsapspace = function(oEvent) {
-			this._getTextButton().firePress();
+		SplitButton.prototype.onkeyup = function(oEvent) {
+			this._getTextButton().onkeyup(oEvent);
 		};
 
 		SplitButton.prototype.onsapup = function(oEvent) {
@@ -313,17 +292,6 @@ function(
 		SplitButton.prototype.getButtonTypeAriaLabelId = function() {
 			var sButtonType = this._getTextButton().getType();
 			return ButtonRenderer.getButtonTypeAriaLabelId(sButtonType);
-		};
-
-		SplitButton.prototype.getTooltipInfoLabel = function(sTooltip) {
-			if (!this._oInvisibleTooltipInfoLabel) {
-				this._oInvisibleTooltipInfoLabel = new InvisibleText();
-				this._oInvisibleTooltipInfoLabel.toStatic();
-			}
-
-			this._oInvisibleTooltipInfoLabel.setText(sTooltip);
-
-			return this._oInvisibleTooltipInfoLabel;
 		};
 
 		SplitButton.prototype.getTitleAttributeValue = function() {

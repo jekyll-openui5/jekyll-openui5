@@ -1,11 +1,11 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define("sap/ui/fl/support/apps/contentbrowser/utils/DataUtils", ["sap/m/GroupHeaderListItem"],
-	function(GroupHeaderListItem) {
+sap.ui.define(["sap/m/GroupHeaderListItem", "sap/ui/thirdparty/jquery"],
+	function(GroupHeaderListItem, jQuery) {
 		"use strict";
 
 		/**
@@ -14,16 +14,15 @@ sap.ui.define("sap/ui/fl/support/apps/contentbrowser/utils/DataUtils", ["sap/m/G
 		 * @constructor
 		 * @alias sap.ui.fl.support.apps.contentbrowser.utils.DataUtils
 		 * @author SAP SE
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 * @experimental Since 1.45
 		 */
 		var DataUtils = {
-
-			aBlacklist: [{
+			aExcludeList: [{
 				category: "NS",
 				name: "LREP_HOME_CONTENT",
 				ns: "UIF/"
-			},{
+			}, {
 				category: "NS",
 				name: "virtual~",
 				ns: "/"
@@ -46,7 +45,7 @@ sap.ui.define("sap/ui/fl/support/apps/contentbrowser/utils/DataUtils", ["sap/m/G
 				try {
 					oData = JSON.parse(oData);
 					return JSON.stringify(oData, null, '\t');
-				} catch (oError){
+				} catch (oError) {
 					var ErrorUtils = sap.ui.require("sap/ui/fl/support/apps/contentbrowser/utils/ErrorUtils");
 					ErrorUtils.displayError("Error", oError.name, oError.message);
 					return oData;
@@ -73,26 +72,26 @@ sap.ui.define("sap/ui/fl/support/apps/contentbrowser/utils/DataUtils", ["sap/m/G
 			},
 
 			/**
-			 * Verifies if item content is not in the black list.
+			 * Verifies if item content is not in the exclude list.
 			 * @param {Object} oContentItem - content item needs to be verified
-			 * @returns {Boolean} - <code>true</code> if not in the black list
+			 * @returns {boolean} - <code>true</code> if the item is not excluded
 			 * @public
 			 */
-			isNotOnBlacklist: function (oContentItem) {
-				var bNotBlacklisted = true;
-				jQuery.each(this.aBlacklist, function (index, mBlacklistedElement) {
+			isNotExcluded: function (oContentItem) {
+				var bNotExcluded = true;
+				jQuery.each(this.aExcludeList, function (index, mExcludeListElement) {
 					var bAllPropertiesMatched = true;
 
-					jQuery.each(mBlacklistedElement, function (sProperty, sValue) {
+					jQuery.each(mExcludeListElement, function (sProperty, sValue) {
 						bAllPropertiesMatched = bAllPropertiesMatched && oContentItem[sProperty] === sValue;
 					});
 
 					if (bAllPropertiesMatched) {
-						bNotBlacklisted = false;
+						bNotExcluded = false;
 						return false; // break each
 					}
 				});
-				return bNotBlacklisted;
+				return bNotExcluded;
 			},
 
 			/**
@@ -118,7 +117,7 @@ sap.ui.define("sap/ui/fl/support/apps/contentbrowser/utils/DataUtils", ["sap/m/G
 
 			/**
 			 * Title formatter: combines the items namespace, filename and type.
-			 * @param {map} mModelData
+			 * @param {object} mModelData
 			 * @param {string} mModelData.namespace
 			 * @param {string} mModelData.fileName
 			 * @param {string} mModelData.fileType

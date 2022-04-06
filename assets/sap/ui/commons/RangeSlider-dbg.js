@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.RangeSlider.
-sap.ui.define(['jquery.sap.global', './Slider', './library', "./RangeSliderRenderer"],
-	function(jQuery, Slider, library, RangeSliderRenderer) {
+sap.ui.define(['./Slider', './library', './RangeSliderRenderer'],
+	function(Slider, library, RangeSliderRenderer) {
 	"use strict";
 
 
@@ -22,7 +22,7 @@ sap.ui.define(['jquery.sap.global', './Slider', './library', "./RangeSliderRende
 	 * @extends sap.ui.commons.Slider
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -34,6 +34,7 @@ sap.ui.define(['jquery.sap.global', './Slider', './library', "./RangeSliderRende
 	var RangeSlider = Slider.extend("sap.ui.commons.RangeSlider", /** @lends sap.ui.commons.RangeSlider.prototype */ { metadata : {
 
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -46,9 +47,6 @@ sap.ui.define(['jquery.sap.global', './Slider', './library', "./RangeSliderRende
 		}
 	}});
 
-	///**
-	// * This file defines the control behavior.
-	// */
 	RangeSlider.prototype.onAfterRendering = function() {
 
 		this.oGrip2 = this.getDomRef("grip2");
@@ -278,7 +276,7 @@ sap.ui.define(['jquery.sap.global', './Slider', './library', "./RangeSliderRende
 	 * value A new rendering is not necessary, only the grip must be moved.
 	 *
 	 * @param {float} fValue
-	 * @return {sap.ui.commons.Slider} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	RangeSlider.prototype.setValue = function(fValue) {
@@ -334,7 +332,7 @@ sap.ui.define(['jquery.sap.global', './Slider', './library', "./RangeSliderRende
 	 * value A new rendering is not necessary, only the grip must be moved.
 	 *
 	 * @param {float} fValue
-	 * @return {sap.ui.commons.Slider} <code>this</code> to allow method chaining
+	 * @return {this} <code>this</code> to allow method chaining
 	 * @public
 	 */
 	RangeSlider.prototype.setValue2 = function(fValue) {
@@ -651,4 +649,4 @@ sap.ui.define(['jquery.sap.global', './Slider', './library', "./RangeSliderRende
 
 	return RangeSlider;
 
-}, /* bExport= */ true);
+});

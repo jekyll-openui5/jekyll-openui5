@@ -1,24 +1,30 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.m.ObjectListItem.
 sap.ui.define([
+	'sap/ui/base/ManagedObjectObserver',
 	'./ListItemBase',
 	'./library',
 	'sap/ui/core/IconPool',
 	'sap/m/ObjectNumber',
 	'sap/ui/core/library',
+	'./ObjectMarker',
+	'./Text',
 	'./ObjectListItemRenderer'
 ],
 function(
+	ManagedObjectObserver,
 	ListItemBase,
 	library,
 	IconPool,
 	ObjectNumber,
 	coreLibrary,
+	ObjectMarker,
+	Text,
 	ObjectListItemRenderer
 	) {
 		"use strict";
@@ -53,7 +59,7 @@ function(
 		 *
 		 * <b>Note:</b> The control must only be used in the context of a list.
 		 * @extends sap.m.ListItemBase
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 *
 		 * @constructor
 		 * @public
@@ -200,7 +206,8 @@ function(
 				 */
 				_objectNumber: {type: "sap.m.ObjectNumber", multiple: false, visibility: "hidden"}
 			},
-			designtime: "sap/m/designtime/ObjectListItem.designtime"
+			designtime: "sap/m/designtime/ObjectListItem.designtime",
+			dnd: { draggable: true, droppable: true }
 		}});
 
 		/**
@@ -209,6 +216,9 @@ function(
 		 */
 		ObjectListItem.prototype.init = function (oEvent) {
 			this._generateObjectNumber();
+
+			this._observerObjectItemChanges = this._observerObjectItemChanges.bind(this);
+			this._oItemsObservers = {};
 		};
 
 		/**
@@ -287,7 +297,81 @@ function(
 		 */
 		ObjectListItem.prototype._hasBottomContent = function() {
 
-			return (this._hasAttributes() || this._hasStatus() || this.getShowMarkers() || this.getMarkLocked() || this.getMarkers().length > 0);
+			return (this._hasAttributes() || this._hasStatus() || this.getShowMarkers() || this.getMarkLocked() || this._getVisibleMarkers().length > 0);
+		};
+
+		/**
+		 * @private
+		 * @returns {Array} The visible attributes of the control
+		 */
+		ObjectListItem.prototype._getVisibleAttributes = function() {
+
+			var aAllAttributes = this.getAttributes();
+			var aVisibleAttributes = [];
+
+			for (var i = 0; i < aAllAttributes.length; i++) {
+				if (aAllAttributes[i].getVisible()) {
+					aVisibleAttributes.push(aAllAttributes[i]);
+				}
+			}
+
+			return aVisibleAttributes;
+		};
+
+		ObjectListItem.prototype.addAttribute = function(oObject) {
+			this._startObservingItem(oObject);
+
+			return ListItemBase.prototype.addAggregation.call(this, "attributes", oObject);
+		};
+
+		ObjectListItem.prototype.insertAttribute = function(oObject, iIndex) {
+			this._startObservingItem(oObject);
+
+			return ListItemBase.prototype.insertAggregation.call(this, "attributes", oObject, iIndex);
+		};
+
+		ObjectListItem.prototype.removeAttribute = function(vObject) {
+			var oObject = ListItemBase.prototype.removeAggregation.call(this, "attributes", vObject);
+
+			this._stopObservingItem(oObject);
+
+			return oObject;
+		};
+
+		ObjectListItem.prototype.removeAllAttributes = function() {
+			var aItems = ListItemBase.prototype.removeAllAggregation.call(this, "attributes");
+
+			for (var i = 0; i < aItems.length; i++) {
+				this._stopObservingItem(aItems[i]);
+			}
+
+			return aItems;
+		};
+
+		ObjectListItem.prototype.destroyAttributes = function() {
+			this.getAttributes().forEach(function (oAttribute) {
+				this._stopObservingItem(oAttribute);
+			}, this);
+
+			return ListItemBase.prototype.destroyAggregation.call(this, "attributes");
+		};
+
+		/**
+		 * @private
+		 * @returns {Array} The visible markers of the control
+		 */
+		ObjectListItem.prototype._getVisibleMarkers = function() {
+
+			var aAllMarkers = this.getMarkers();
+			var aVisibleMarkers = [];
+
+			for (var i = 0; i < aAllMarkers.length; i++) {
+				if (aAllMarkers[i].getVisible()) {
+					aVisibleMarkers.push(aAllMarkers[i]);
+				}
+			}
+
+			return aVisibleMarkers;
 		};
 
 		/**
@@ -332,7 +416,7 @@ function(
 		ObjectListItem.prototype._activeHandlingInheritor = function() {
 			var sActiveSrc = this.getActiveIcon();
 
-			if (!!this._oImageControl  && !!sActiveSrc) {
+			if (this._oImageControl && sActiveSrc) {
 				this._oImageControl.setSrc(sActiveSrc);
 			}
 		};
@@ -344,7 +428,7 @@ function(
 		 */
 		ObjectListItem.prototype._inactiveHandlingInheritor = function() {
 			var sSrc = this.getIcon();
-			if (!!this._oImageControl) {
+			if (this._oImageControl) {
 				this._oImageControl.setSrc(sSrc);
 			}
 		};
@@ -353,7 +437,7 @@ function(
 		 * Sets the <code>number</code> property of the control.
 		 * @param {string} sNumber <code>Number</code> showed in <code>ObjectListItem</code>
 		 * @override
-		 * @returns {sap.m.ObjectListItem} this pointer for chaining
+		 * @returns {this} this pointer for chaining
 		 */
 		ObjectListItem.prototype.setNumber = function (sNumber) {
 			//Do not rerender the whole control ObjectListItem control
@@ -368,7 +452,7 @@ function(
 		 * Sets the <code>numberUnit</code> property of the control.
 		 * @param {string} sNumberUnit <code>NumberUnit</code> showed in <code>ObjectListItem</code>
 		 * @override
-		 * @returns {sap.m.ObjectListItem} this pointer for chaining
+		 * @returns {this} this pointer for chaining
 		 */
 		ObjectListItem.prototype.setNumberUnit = function (sNumberUnit) {
 			//Do not rerender the whole control but only ObjectNumber control
@@ -383,7 +467,7 @@ function(
 		 * Sets the <code>numberTextDirection</code> property of the control.
 		 * @param {sap.ui.core.TextDirection} oTextDirection The text direction of the internal <code>ObjectNumber</code>
 		 * @override
-		 * @returns {sap.m.ObjectListItem} this pointer for chaining
+		 * @returns {this} this pointer for chaining
 		 */
 		ObjectListItem.prototype.setNumberTextDirection = function (oTextDirection) {
 			//Do not rerender the whole control but only ObjectNumber control
@@ -398,7 +482,7 @@ function(
 		 * Sets the <code>numberState</code> property of the control.
 		 * @param {sap.ui.core.ValueState} oValueState The <code>valueState</code> of the internal <code>ObjectNumber</code>
 		 * @override
-		 * @returns {sap.m.ObjectListItem} this pointer for chaining
+		 * @returns {this} this pointer for chaining
 		 */
 		ObjectListItem.prototype.setNumberState = function (oValueState) {
 			//Do not rerender the whole control but only ObjectNumber control
@@ -414,7 +498,7 @@ function(
 		 * @override
 		 * @public
 		 * @param {boolean} bMarked the new value
-		 * @returns {sap.m.ObjectListItem} this pointer for chaining
+		 * @returns {this} this pointer for chaining
 		 */
 		ObjectListItem.prototype.setMarkFavorite = function (bMarked) {
 			return this._setOldMarkers(ObjectMarkerType.Favorite, bMarked);
@@ -425,7 +509,7 @@ function(
 		 * @override
 		 * @public
 		 * @param {boolean} bMarked the new value
-		 * @returns {sap.m.ObjectListItem} this pointer for chaining
+		 * @returns {this} this pointer for chaining
 		 */
 		ObjectListItem.prototype.setMarkFlagged = function (bMarked) {
 			return this._setOldMarkers(ObjectMarkerType.Flagged, bMarked);
@@ -436,7 +520,7 @@ function(
 		 * @override
 		 * @public
 		 * @param {boolean} bMarked the new value
-		 * @returns {sap.m.ObjectListItem} this pointer for chaining
+		 * @returns {this} this pointer for chaining
 		 */
 		ObjectListItem.prototype.setMarkLocked = function (bMarked) {
 			return this._setOldMarkers(ObjectMarkerType.Locked, bMarked);
@@ -447,7 +531,7 @@ function(
 		 * @override
 		 * @public
 		 * @param {boolean} bMarked the new value
-		 * @returns {sap.m.ObjectListItem} this pointer for chaining
+		 * @returns {this} this pointer for chaining
 		 */
 		ObjectListItem.prototype.setShowMarkers = function (bMarked) {
 			var sMarkerType;
@@ -468,11 +552,73 @@ function(
 			return this;
 		};
 
+		ObjectListItem.prototype.addMarker = function(oObject) {
+			this._startObservingItem(oObject);
+
+			return ListItemBase.prototype.addAggregation.call(this, "markers", oObject);
+		};
+
+		ObjectListItem.prototype.insertMarker = function(oObject, iIndex) {
+			this._startObservingItem(oObject);
+
+			return ListItemBase.prototype.insertAggregation.call(this, "markers", oObject, iIndex);
+		};
+
+		ObjectListItem.prototype.removeMarker = function(vObject) {
+			var oObject = ListItemBase.prototype.removeAggregation.call(this, "markers", vObject);
+
+			this._stopObservingItem(oObject);
+
+			return oObject;
+		};
+
+		ObjectListItem.prototype.removeAllMarkers = function() {
+			var aItems = ListItemBase.prototype.removeAllAggregation.call(this, "markers");
+
+			for (var i = 0; i < aItems.length; i++) {
+				this._stopObservingItem(aItems[i]);
+			}
+
+			return aItems;
+		};
+
+		ObjectListItem.prototype.destroyMarkers = function() {
+			this.getMarkers().forEach(function (oMarker) {
+				this._stopObservingItem(oMarker);
+			}, this);
+
+			return ListItemBase.prototype.destroyAggregation.call(this, "markers");
+		};
+
+		ObjectListItem.prototype._observerObjectItemChanges = function (oChanges) {
+			if (oChanges.current !== oChanges.old) {
+				this.invalidate();
+			}
+		};
+
+		ObjectListItem.prototype._startObservingItem = function (oItem) {
+			var oObserver = new ManagedObjectObserver(this._observerObjectItemChanges);
+			this._oItemsObservers[oItem.getId()] = oObserver;
+
+			oObserver.observe(oItem, { properties: true });
+
+			return this;
+		};
+
+		ObjectListItem.prototype._stopObservingItem = function (oItem) {
+			var sItemId = oItem.getId();
+
+			this._oItemsObservers[sItemId].disconnect();
+			delete this._oItemsObservers[sItemId];
+
+			return this;
+		};
+
 		/**
 		 * @private
 		 * @param {string} markerType the type of the marker which should be created to updated
 		 * @param {boolean} bMarked the new value
-		 * @returns {sap.m.ObjectListItem} this pointer for chaining
+		 * @returns {this} this pointer for chaining
 		 */
 		ObjectListItem.prototype._setOldMarkers = function (markerType, bMarked) {
 			var aAllMarkers = this.getMarkers();
@@ -499,7 +645,7 @@ function(
 			}
 
 			if (!bHasMarker) {
-				this.insertAggregation("markers", new sap.m.ObjectMarker({
+				this.insertAggregation("markers", new ObjectMarker({
 					id: this.getId() + oIds[markerType],
 					type: markerType,
 					visible: bMarked
@@ -512,12 +658,12 @@ function(
 
 		/**
 		 * @private
-		 * @returns {sap.m.ObjectListItem} Title text control
+		 * @returns {sap.m.Text} Title text control
 		 */
 		ObjectListItem.prototype._getTitleText = function() {
 
 			if (!this._oTitleText) {
-				this._oTitleText = new sap.m.Text(this.getId() + "-titleText", {
+				this._oTitleText = new Text(this.getId() + "-titleText", {
 					maxLines: 2
 				});
 

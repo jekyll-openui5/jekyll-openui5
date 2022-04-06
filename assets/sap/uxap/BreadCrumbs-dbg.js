@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -16,9 +16,11 @@ sap.ui.define([
     "sap/ui/Device",
     "./library",
     "sap/ui/core/InvisibleText",
-    "./BreadCrumbsRenderer"
+    "sap/ui/util/openWindow",
+    "./BreadCrumbsRenderer",
+    "sap/ui/thirdparty/jquery"
 ], function(
-    Link,
+	Link,
 	Select,
 	Control,
 	ResizeHandler,
@@ -28,7 +30,9 @@ sap.ui.define([
 	Device,
 	library,
 	InvisibleText,
-	BreadCrumbsRenderer
+	openWindow,
+	BreadCrumbsRenderer,
+	jQuery
 ) {
 	"use strict";
 
@@ -104,7 +108,7 @@ sap.ui.define([
 	BreadCrumbs.PAGEUP_AND_PAGEDOWN_JUMP_SIZE = 5;
 
 	BreadCrumbs.prototype.init = function () {
-		this._iREMSize = parseInt(jQuery("body").css("font-size"), 10);
+		this._iREMSize = parseInt(jQuery("body").css("font-size"));
 		this._iContainerMaxHeight = this._iREMSize * 2;
 	};
 
@@ -241,7 +245,7 @@ sap.ui.define([
 			if (sLinkHref) {
 				sLinkTarget = oControl.getTarget();
 				if (sLinkTarget) {
-					window.open(sLinkHref, sLinkTarget);
+					openWindow(sLinkHref, sLinkTarget);
 				} else {
 					window.location.href = sLinkHref;
 				}
@@ -397,7 +401,7 @@ sap.ui.define([
 	BreadCrumbs.prototype._getAriaLabelledBy = function () {
 		if (!this._oAriaLabelledBy) {
 			BreadCrumbs.prototype._oAriaLabelledBy = new InvisibleText({
-				text: library.i18nModel.getResourceBundle().getText("BREADCRUMB_TRAIL_LABEL")
+				text: sap.ui.getCore().getLibraryResourceBundle("sap.uxap").getText("BREADCRUMB_TRAIL_LABEL")
 			}).toStatic();
 		}
 
@@ -450,7 +454,7 @@ sap.ui.define([
 			aNavigationDomRefs = [];
 
 		aItemsToNavigate.forEach(function (oItem) {
-			oItem.$().attr("tabIndex", "-1");
+			oItem.$().attr("tabindex", "-1");
 			aNavigationDomRefs.push(oItem.getDomRef());
 		});
 

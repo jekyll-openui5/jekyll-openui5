@@ -1,11 +1,11 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
-	'sap/ui/rta/command/BaseCommand',
-	'sap/ui/fl/Utils'
+	"sap/ui/rta/command/BaseCommand",
+	"sap/ui/fl/Utils"
 ], function(
 	BaseCommand,
 	FlUtils
@@ -19,7 +19,7 @@ sap.ui.define([
 	 * @extends sap.ui.rta.command.BaseCommand
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @private
@@ -29,16 +29,16 @@ sap.ui.define([
 	 *               changed in future.
 	 */
 	var CompositeCommand = BaseCommand.extend("sap.ui.rta.command.CompositeCommand", {
-		metadata : {
-			library : "sap.ui.rta",
-			properties : {},
-			aggregations : {
-				commands : {
-					type : "sap.ui.rta.command.BaseCommand",
-					multiple : true
+		metadata: {
+			library: "sap.ui.rta",
+			properties: {},
+			aggregations: {
+				commands: {
+					type: "sap.ui.rta.command.BaseCommand",
+					multiple: true
 				}
 			},
-			events : {}
+			events: {}
 		}
 	});
 
@@ -49,7 +49,7 @@ sap.ui.define([
 	 */
 	CompositeCommand.prototype.execute = function() {
 		var aPromises = [];
-		this._forEachCommand(function(oCommand){
+		this._forEachCommand(function(oCommand) {
 			aPromises.push(oCommand.execute.bind(oCommand));
 		});
 		return FlUtils.execPromiseQueueSequentially(aPromises, true)
@@ -74,7 +74,7 @@ sap.ui.define([
 
 	CompositeCommand.prototype.undo = function() {
 		var aPromises = [];
-		this._forEachCommandInReverseOrder(function(oCommand){
+		this._forEachCommandInReverseOrder(function(oCommand) {
 			aPromises.push(oCommand.undo.bind(oCommand));
 		});
 		return FlUtils.execPromiseQueueSequentially(aPromises);
@@ -93,14 +93,17 @@ sap.ui.define([
 	};
 
 	CompositeCommand.prototype._addCompositeIdToChange = function(oCommand) {
+		if (!this._sCompositeId) {
+			this._sCompositeId = FlUtils.createDefaultFileName("composite");
+		}
 		if (oCommand.getPreparedChange && oCommand.getPreparedChange()) {
 			var oChangeDefinition = oCommand.getPreparedChange().getDefinition();
 			if (!oChangeDefinition.support.compositeCommand) {
-				if (!this._sCompositeId) {
-					this._sCompositeId = FlUtils.createDefaultFileName("composite");
-				}
 				oChangeDefinition.support.compositeCommand = this._sCompositeId;
 			}
+		} else if (oCommand.setCompositeId) {
+			// relevant for app descriptor commands
+			oCommand.setCompositeId(this._sCompositeId);
 		}
 	};
 
@@ -128,5 +131,4 @@ sap.ui.define([
 	};
 
 	return CompositeCommand;
-
-}, /* bExport= */true);
+});

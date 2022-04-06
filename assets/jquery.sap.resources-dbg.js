@@ -1,14 +1,14 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides access to Java-like resource bundles in properties file format
 sap.ui.define([
-	'sap/ui/Resources',
+	'sap/base/i18n/ResourceBundle',
 	'jquery.sap.global'
-], function(Resources, jQuery) {
+], function(ResourceBundle, jQuery) {
 	"use strict";
 
 	/**
@@ -28,8 +28,44 @@ sap.ui.define([
 	 *     Note: Fallback bundles loaded by {@link #getText} are always loaded synchronously.
 	 * @returns {jQuery.sap.util.ResourceBundle|Promise} A new resource bundle or a Promise on that bundle (in asynchronous case)
 	 * @SecSink {0|PATH} Parameter is used for future HTTP requests
+	 * @deprecated since 1.58. Use {@link module:sap/base/i18n/ResourceBundle} instead.
 	 */
-	jQuery.sap.resources = Resources;
+	jQuery.sap.resources = function() {
+		// Do not directly assign new API to jQuery.sap.resources
+		// as "isBundle" and "_getFallbackLocales" would get assigned to
+		// the new API aswell (e.g. ResourceBundle.create.isBundle)
+		return ResourceBundle.create.apply(ResourceBundle, arguments);
+	};
+
+	/**
+	 * Checks if the given object is an instance of {@link jQuery.sap.util.ResourceBundle}.
+	 *
+	 * @param {jQuery.sap.util.ResourceBundle} oBundle object to check
+	 * @returns {boolean} true, if the object is a {@link jQuery.sap.util.ResourceBundle}
+	 * @public
+	 * @function
+	 * @name jQuery.sap.resources.isBundle
+	 * @deprecated since 1.58. Use the instanceof operator together with the class {@link module:sap/base/i18n/ResourceBundle} instead.
+	 */
+	jQuery.sap.resources.isBundle = function (oBundle) {
+		return oBundle instanceof ResourceBundle;
+	};
+
+	/**
+	 * Determine sequence of fallback locales, starting from the given locale and
+	 * optionally taking the list of supported locales into account.
+	 *
+	 * Callers can use the result to limit requests to a set of existing locales.
+	 *
+	 * @param {string} sLocale Locale to start the fallback sequence with, should be a BCP47 language tag
+	 * @param {string[]} [aSupportedLocales] List of supported locales (in JDK legacy syntax, e.g. zh_CN, iw)
+	 * @returns {string[]} Sequence of fallback locales in JDK legacy syntax, decreasing priority
+	 *
+	 * @private
+	 * @ui5-restricted sap.fiori, sap.support launchpad
+	 * @deprecated since 1.58. Use {@link module:sap/base/i18n/ResourceBundle._getFallbackLocales} instead.
+	 */
+	jQuery.sap.resources._getFallbackLocales = ResourceBundle._getFallbackLocales;
 
 	/**
 	 * @interface  Contains locale-specific texts.
@@ -63,10 +99,11 @@ sap.ui.define([
 	 * Exception: Fallback for "zh_HK" is "zh_TW" before zh.
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @since 0.9.0
 	 * @name jQuery.sap.util.ResourceBundle
 	 * @public
+	 * @deprecated since 1.58 use {@link module:sap/base/i18n/ResourceBundle} instead
 	 */
 
 	/**
@@ -75,7 +112,7 @@ sap.ui.define([
 	 * The text is searched in this resource bundle according to the fallback chain described in
 	 * {@link jQuery.sap.util.ResourceBundle}. If no text could be found, the key itself is used as text.
 	 *
-	 * If the second parameter<code>aArgs</code> is given, then any placeholder of the form "{<i>n</i>}"
+	 * If the second parameter <code>aArgs</code> is given, then any placeholder of the form "{<i>n</i>}"
 	 * (with <i>n</i> being an integer) is replaced by the corresponding value from <code>aArgs</code>
 	 * with index <i>n</i>.  Note: This replacement is applied to the key if no text could be found.
 	 * For more details on the replacement mechanism refer to {@link jQuery.sap.formatMessage}.
@@ -109,16 +146,6 @@ sap.ui.define([
 	 * @function
 	 * @name jQuery.sap.util.ResourceBundle#hasText
 	 * @public
-	 */
-
-	/**
-	 * Checks if the given object is an instance of {@link jQuery.sap.util.ResourceBundle}
-	 *
-	 * @param {jQuery.sap.util.ResourceBundle} oBundle object to check
-	 * @returns {boolean} true, if the object is a {@link jQuery.sap.util.ResourceBundle}
-	 * @public
-	 * @function
-	 * @name jQuery.sap.resources.isBundle
 	 */
 
 	return jQuery;

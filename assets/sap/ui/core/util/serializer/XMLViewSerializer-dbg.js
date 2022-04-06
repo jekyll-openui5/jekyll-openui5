@@ -1,6 +1,6 @@
 /*
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -20,10 +20,10 @@ sap.ui.define(['sap/ui/base/EventProvider', './Serializer', './delegate/XML', 's
 	 * @class XMLViewSerializer class.
 	 * @extends sap.ui.base.EventProvider
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @alias sap.ui.core.util.serializer.XMLViewSerializer
 	 * @private
-	 * @sap-restricted sap.watt com.sap.webide
+	 * @ui5-restricted sap.watt, com.sap.webide
 	 */
 	var XMLViewSerializer = EventProvider.extend("sap.ui.core.util.serializer.XMLViewSerializer", /** @lends sap.ui.core.util.serializer.XMLViewSerializer.prototype */
 	{

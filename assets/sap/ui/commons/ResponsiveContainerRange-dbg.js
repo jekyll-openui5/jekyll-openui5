@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.ResponsiveContainerRange.
-sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Element'],
-	function(jQuery, library, Element) {
+sap.ui.define(['./library', 'sap/ui/core/Element'],
+	function(library, Element) {
 	"use strict";
 
 
@@ -22,7 +22,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Element'],
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -33,6 +33,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Element'],
 	var ResponsiveContainerRange = Element.extend("sap.ui.commons.ResponsiveContainerRange", /** @lends sap.ui.commons.ResponsiveContainerRange.prototype */ { metadata : {
 
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -63,4 +64,4 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Element'],
 
 	return ResponsiveContainerRange;
 
-}, /* bExport= */ true);
+});

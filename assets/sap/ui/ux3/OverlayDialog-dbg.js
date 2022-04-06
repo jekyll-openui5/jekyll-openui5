@@ -1,18 +1,20 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.ux3.OverlayDialog.
 sap.ui.define([
-    'jquery.sap.global',
     'sap/ui/core/IntervalTrigger',
     './Overlay',
     './library',
-    "./OverlayDialogRenderer"
+    './OverlayDialogRenderer',
+    'sap/base/Log',
+    // jQuery Plugin 'lastFocusableDomRef'
+	'sap/ui/dom/jquery/Focusable'
 ],
-	function(jQuery, IntervalTrigger, Overlay, library, OverlayDialogRenderer) {
+	function(IntervalTrigger, Overlay, library, OverlayDialogRenderer, Log) {
 	"use strict";
 
 	/**
@@ -24,7 +26,7 @@ sap.ui.define([
 	 * @class
 	 * Dialog implementation based on the Overlay. If used in a Shell it leaves the Tool-Palette, Pane-Bar and Header-Items accessible.
 	 * @extends sap.ui.ux3.Overlay
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -34,6 +36,7 @@ sap.ui.define([
 	 */
 	var OverlayDialog = Overlay.extend("sap.ui.ux3.OverlayDialog", /** @lends sap.ui.ux3.OverlayDialog.prototype */ {
 		metadata: {
+			deprecated: true,
 			library: "sap.ui.ux3",
 			properties: {
 				/**
@@ -71,11 +74,14 @@ sap.ui.define([
 	 * @private
 	 */
 	OverlayDialog.prototype._setFocusLast = function() {
+	    // jQuery Plugin "lastFocusableDomRef"
 		var oFocus = this.$("content").lastFocusableDomRef();
 		if (!oFocus && this.getCloseButtonVisible()) {
 			oFocus = this.getDomRef("close");
 		}
-		jQuery.sap.focus(oFocus);
+		if (oFocus) {
+			oFocus.focus();
+		}
 	};
 
 	/**
@@ -84,10 +90,14 @@ sap.ui.define([
 	 * @private
 	 */
 	OverlayDialog.prototype._setFocusFirst = function() {
+		var oFocus;
 		if (this.getCloseButtonVisible()) {
-			jQuery.sap.focus(this.getDomRef("close"));
+			oFocus = this.getDomRef("close");
 		} else {
-			jQuery.sap.focus(this.$("content").firstFocusableDomRef());
+			oFocus = this.$("content").firstFocusableDomRef();
+		}
+		if ( oFocus ) {
+			oFocus.focus();
 		}
 	};
 
@@ -95,11 +105,12 @@ sap.ui.define([
 	 * This Method is not supported for the OverlayDialog.
 	 *
 	 * @param {boolean} bVisible
+	 * @returns {this} Returns <code>this</code> to allow method chaining
 	 * @public
 	 */
 	OverlayDialog.prototype.setOpenButtonVisible = function(bVisible) {
-		jQuery.sap.log.warning("OverlayDialog does not support an openButton.");
-		return undefined;
+		Log.warning("OverlayDialog does not support an openButton.");
+		return this;
 	};
 
 	/**
@@ -228,4 +239,4 @@ sap.ui.define([
 	};
 
 	return OverlayDialog;
-}, /* bExport= */ true);
+});

@@ -1,12 +1,14 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.layout.form.ColumnContainerData.
-sap.ui.define(['sap/ui/core/LayoutData', 'sap/ui/layout/library'],
-	function(LayoutData, library) {
+sap.ui.define([
+	'sap/ui/core/LayoutData',
+	'sap/ui/layout/library'
+	], function(LayoutData, library) {
 	"use strict";
 
 	/**
@@ -24,11 +26,11 @@ sap.ui.define(['sap/ui/core/LayoutData', 'sap/ui/layout/library'],
 	 * @extends sap.ui.core.LayoutData
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
-	 * @since 1.54.0
+	 * @since 1.56.0
 	 * @alias sap.ui.layout.form.ColumnContainerData
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */

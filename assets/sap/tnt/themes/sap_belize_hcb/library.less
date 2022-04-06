@@ -1,8 +1,8 @@
 /* NOTE: This file was generated as an optimized version of "library.source.less" for the Theme Designer. */
 
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -18,33 +18,29 @@
 /* ================================= */
 
 
-.sapTntInfoLabel {
+/* ==========================================================================
+   Variables and mixins
+   ========================================================================== */
+
+@_sap_tnt_InfoLabel_LineHeightDisplayOnly: 0.875rem;
+
+
+.sapTntInfoLabel,
+.sapTntInfoLabel.sapTntInfoLabelDisplayOnly {
 	background-color: @sapUiGroupContentBackground;
 	border: 1px solid @sapUiGroupContentBorderColor;
-	line-height: 85%;
-
-	.sapTntInfoLabelInner{
-		line-height: 1rem;
-	}
-}
-
-/* ==========================================================================
-   InfoLabel Display Only
-   ========================================================================== */
-   .sapTntInfoLabel.sapTntInfoLabelDisplayOnly .sapTntInfoLabelInner {
-		line-height: 0.875rem;
 }
 
 /* ==========================================================================
    InfoLabel No Text
    ========================================================================== */
-   .sapTntInfoLabel.sapTntInfoLabelNoText {
+.sapTntInfoLabel.sapTntInfoLabelNoText:not(.sapTntInfoLabelWithIcon) {
 	padding: 0 0.5rem;
 
-		&.sapTntInfoLabelDisplayOnly{
-			padding: 0 0.4375rem;
-		}
-   }
+	&.sapTntInfoLabelDisplayOnly{
+		padding: 0 0.4375rem;
+	}
+}
 /* END "InfoLabel.less" */
 
 /* START "NavigationList.less" */
@@ -53,16 +49,25 @@
 /* Belize High Contrast Black theme        */
 /* ======================================= */
 
-.sapTntNavLI li:focus::before,
-.sapTntNavLIItem:focus::before {
-	border: 0.125rem dotted @sapUiContentFocusColor;
+@_sap_tnt_NavigationList_ItemFocusBorder: 0.125rem dotted @sapUiContentFocusColor;
+@_sap_tnt_NavigationList_SelectedItemBorderColor: transparent;
+@_sap_tnt_NavigationList_Collapsed_SelectedGroupBorderColor: @sapUiListSelectionBorderColor;
+/* END "NavigationList.less" */
+
+/* START "ToolHeader.less" */
+/* =================================== */
+/* CSS for control sap.tnt/ToolHeader  */
+/* Belize HCB theme                   */
+/* =================================== */
+
+@_sap_tnt_ToolHeader_AvatarBackground: @sapUiAccent6;
+@_sap_tnt_ToolHeader_AvatarColor: @sapUiBaseColor;
+
+.sapTntToolHeader .sapMMenuBtn.sapMMenuBtnRegular .sapMBtnDisabled .sapMBtnInner::after {
+	color: inherit;
 }
 
-html[data-sap-ui-browser^="ie"].sap-desktop,
-html[data-sap-ui-browser^="ed"].sap-desktop {
-	.sapTntNavLI li:focus::before,
-	.sapTntNavLIItem:focus::before {
-		border: 0.125rem dashed @sapUiContentFocusColor;
-	}
+.sapTntToolHeader .sapMITH.sapMITBTextOnly .sapMITHEndOverflow {
+	margin-top: 0;
 }
-/* END "NavigationList.less" */
+/* END "ToolHeader.less" */

@@ -1,26 +1,27 @@
-
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
-    "jquery.sap.global",
     "sap/ui/core/InvisibleText",
     "sap/base/Log",
     "./Slider",
     "./SliderTooltip",
     "./SliderUtilities",
-    "./RangeSliderRenderer"
+    "./RangeSliderRenderer",
+    "sap/ui/thirdparty/jquery",
+    "sap/ui/events/KeyCodes"
 ],
     function(
-    jQuery,
-    InvisibleText,
-    log,
-    Slider,
-    SliderTooltip,
-    SliderUtilities,
-    RangeSliderRenderer
+        InvisibleText,
+        log,
+        Slider,
+        SliderTooltip,
+        SliderUtilities,
+        RangeSliderRenderer,
+        jQuery,
+        KeyCodes
     ) {
         "use strict";
 
@@ -50,13 +51,13 @@ sap.ui.define([
          * @extends sap.m.Slider
          *
          * @author SAP SE
-         * @version 1.56.5
+         * @version 1.96.7
          *
          * @constructor
          * @public
          * @since 1.38
          * @alias sap.m.RangeSlider
-		 * @see {@link fiori:https://experience.sap.com/fiori-design-web/range-slider/ Range Slider}
+         * @see {@link fiori:https://experience.sap.com/fiori-design-web/range-slider/ Range Slider}
          * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
          */
         var RangeSlider = Slider.extend("sap.m.RangeSlider", /** @lends sap.m.RangeSlider.prototype */ {
@@ -90,8 +91,6 @@ sap.ui.define([
             // As max, min, range, value and value2 are dependent on each other,
             // we should be sure that at the first run they are set  properly and then to be validated.
             this._bInitialRangeChecks = true;
-
-            this._bRTL = sap.ui.getCore().getConfiguration().getRTL();
 
             // the initial focus range which should be used
             this._aInitialFocusRange = this.getRange();
@@ -133,6 +132,7 @@ sap.ui.define([
         };
 
         RangeSlider.prototype.exit = function () {
+            Slider.prototype.exit.apply(this, arguments);
             this._oResourceBundle = null;
             this._aInitialFocusRange = null;
             this._liveChangeLastValue = null;
@@ -146,6 +146,8 @@ sap.ui.define([
         };
 
         RangeSlider.prototype.onBeforeRendering = function () {
+            this._bRTL = sap.ui.getCore().getConfiguration().getRTL();
+
             var aRange = this.getRange();
 
             if (this.getShowAdvancedTooltip()) {
@@ -265,9 +267,9 @@ sap.ui.define([
         /**
          * Gets a handle corresponding to a tooltip
          * @param {sap.m.SliderTooltipBase} oTooltip Slider/Range slider tooltip
-         * @sap-restricted sap.m.SliderTooltipContainer.js
          * @returns {HTMLElement} The handle, from which the tooltip is responsible.
          * @private
+         * @ui5-restricted sap.m.SliderTooltipContainer.js
          */
         RangeSlider.prototype._getHandleForTooltip = function (oTooltip) {
             var oHandle = oTooltip === this._mHandleTooltip.start.tooltip ?
@@ -307,8 +309,8 @@ sap.ui.define([
                 sCssClass = this.getRenderer().CSS_CLASS,
                 oFormInput = this.getDomRef("input");
 
-            if (!!this.getName()) {
-                oFormInput.setAttribute(oHandle.getAttribute("data-range-val"), aRange[iIndex]);
+            if (this.getName()) {
+                oFormInput.setAttribute(oHandle.getAttribute("data-range-val"), this.toFixed(aRange[iIndex], this._iDecimalPrecision));
                 oFormInput.setAttribute("value", this.getValue());
             }
 
@@ -328,24 +330,31 @@ sap.ui.define([
 
             // ARIA updates. Delay the update to prevent multiple updates- for example holding the arrow key.
             // We need only the latest state
-            jQuery.sap.clearDelayedCall(this._ariaUpdateDelay[iIndex]);
-            this._ariaUpdateDelay[iIndex] = jQuery.sap.delayedCall(100, this, "_updateHandleAria", [oHandle, sValue]);
+            clearTimeout(this._ariaUpdateDelay[iIndex]);
+            this._ariaUpdateDelay[iIndex] = setTimeout(this["_updateHandleAria"].bind(this, oHandle, sValue), 100);
         };
 
         RangeSlider.prototype._updateHandleAria = function (oHandle, sValue) {
             var aRange = this.getRange(),
                 oProgressHandle = this.getDomRef("progress"),
                 fNormalizedValue = this.toFixed(sValue, this._iDecimalPrecision),
-                sScaleLabel = this._formatValueByCustomElement(fNormalizedValue);
+                sScaleLabel = this._formatValueByCustomElement(fNormalizedValue),
+                firstValue = this.getValue(),
+                secondValue = this.getValue2(),
+                iValueNow = Math.abs(secondValue - firstValue);
+
+
+            aRange[0] = this.toFixed(aRange[0], this._iDecimalPrecision);
+            aRange[1] = this.toFixed(aRange[1], this._iDecimalPrecision);
 
             this._updateHandlesAriaLabels();
 
             this._updateHandleAriaAttributeValues(oHandle, sValue, sScaleLabel);
 
             if (oProgressHandle) {
-                oProgressHandle.setAttribute("aria-valuenow", aRange.join("-"));
                 oProgressHandle.setAttribute("aria-valuetext",
                     this._oResourceBundle.getText('RANGE_SLIDER_RANGE_ANNOUNCEMENT', aRange.map(this._formatValueByCustomElement, this)));
+                oProgressHandle.setAttribute("aria-valuenow", iValueNow);
             }
         };
 
@@ -372,6 +381,25 @@ sap.ui.define([
                 }
 
                 this._mHandleTooltip.bAriaHandlesSwapped = !this._mHandleTooltip.bAriaHandlesSwapped;
+            }
+        };
+
+        /**
+         * Adds aria-controls attribute, when the tooltips are rendered.
+         *
+         * @private
+         */
+        RangeSlider.prototype._setAriaControls = function () {
+            if (!this.getShowAdvancedTooltip()) {
+                return;
+            }
+
+            if (!this._mHandleTooltip.start.handle.getAttribute('aria-controls') && this._mHandleTooltip.start.tooltip) {
+                this._mHandleTooltip.start.handle.setAttribute('aria-controls', this._mHandleTooltip.start.tooltip.getId());
+            }
+
+            if (!this._mHandleTooltip.end.handle.getAttribute('aria-controls') && this._mHandleTooltip.end.tooltip) {
+                this._mHandleTooltip.end.handle.setAttribute('aria-controls', this._mHandleTooltip.end.tooltip.getId());
             }
         };
 
@@ -421,13 +449,13 @@ sap.ui.define([
         };
 
         /**
-		 * Gets the tooltips that should be shown.
-		 * Returns custom tooltips if provided and more than 1 else default tooltips
-		 *
-		 * @protected
+         * Gets the tooltips that should be shown.
+         * Returns custom tooltips if provided and more than 1 else default tooltips
+         *
+         * @protected
          * @override
-		 * @returns {sap.m.SliderTooltipBase[]} SliderTooltipBase instances.
-		 */
+         * @returns {sap.m.SliderTooltipBase[]} SliderTooltipBase instances.
+         */
         RangeSlider.prototype.getUsedTooltips = function () {
             var aCustomTooltips = this.getCustomTooltips(),
                 aDefaultTooltips = this.getAggregation("_defaultTooltips") || [];
@@ -450,8 +478,8 @@ sap.ui.define([
          *
          * @param {string} oTooltip Tooltip to be changed
          * @param {float} fValue New value of the RangeSlider
-         * @sap-restricted sap.m.SliderTooltipBase
          * @private
+         * @ui5-restricted sap.m.SliderTooltipBase
          */
         RangeSlider.prototype.updateTooltipsPositionAndState = function (oTooltip, fValue) {
             var oHandle, oActiveTooltip,
@@ -637,8 +665,9 @@ sap.ui.define([
         RangeSlider.prototype.ontouchstart = function (oEvent) {
             var oTouch = oEvent.targetTouches[0],
                 CSS_CLASS = this.getRenderer().CSS_CLASS,
-                sEventNamespace = "." + CSS_CLASS,
-                fValue, aHandles, aRange, iHandleIndex, fHandlesDistance, oFocusItem;
+                sEventNamespace = "." + CSS_CLASS, fMinValue, fMaxValue,
+                fValue, aHandles, aRange, iHandleIndex, fHandlesDistance, oFocusItem,
+                fTotalNumberOfValues, fPercentOfHandle, fHandleValue, fHandleHalfWidth;
 
             if (!this.getEnabled()) {
                 return;
@@ -669,12 +698,28 @@ sap.ui.define([
                 return Math.abs(fAccumulation - oHandle.offsetLeft);
             }, 0);
 
+            fMinValue = Math.min.apply(Math, aRange);
+            fMaxValue = Math.max.apply(Math, aRange);
+
+            // half width of a handle (both are equal)
+            fHandleHalfWidth = this.$("handle1").outerWidth() / 2;
+            // total number of possible values
+            fTotalNumberOfValues = Math.abs(this.getMin()) + Math.abs(this.getMax());
+            // percents that half a handle takes from the width of the scale
+            fPercentOfHandle = ((fHandleHalfWidth * 100) / this.$("inner").outerWidth());
+            // number of values that takes half a handle
+            fHandleValue = (fPercentOfHandle / 100) * fTotalNumberOfValues;
+
             // if the click is outside the range or distance between handles is below the threshold - update the closest slider handle
-            if (fValue < Math.min.apply(Math, aRange) || fValue > Math.max.apply(Math, aRange) || fHandlesDistance <= SliderUtilities.CONSTANTS.RANGE_MOVEMENT_THRESHOLD) {
+            if (fValue < fMinValue ||
+                fValue < fMinValue + fHandleValue ||
+                fValue > fMaxValue ||
+                fValue > (fMaxValue - fHandleValue) ||
+                fHandlesDistance <= SliderUtilities.CONSTANTS.RANGE_MOVEMENT_THRESHOLD) {
                 aHandles = [this.getClosestHandleDomRef(oTouch)];
                 this._updateHandle(aHandles[0], fValue);
                 // _updateHandle would update the range and the check for change event fire would fail in _ontouchend
-                this._fireChangeAndLiveChange({range: this.getRange()});
+                this.fireLiveChange({range: aRange});
             } else if (iHandleIndex !== -1) { // Determine if the press event is on certain handle
                 aHandles = [this.getDomRef(iHandleIndex === 0 ? "handle1" : "handle2")];
             }
@@ -694,7 +739,7 @@ sap.ui.define([
             });
 
             oFocusItem = aHandles.length === 1 ? aHandles[0] : this.getDomRef("progress");
-            jQuery.sap.delayedCall(0, oFocusItem, "focus");
+            setTimeout(oFocusItem["focus"].bind(oFocusItem), 0);
         };
 
         /**
@@ -863,10 +908,11 @@ sap.ui.define([
             if (this.getShowAdvancedTooltip()) {
                 oTooltipsContainer.show(this);
                 this._adjustTooltipsContainer();
+                this._setAriaControls();
             }
 
             // remember the initial focus range so when esc key is pressed we can return to it
-            if (!(document.activeElement === this.getFocusDomRef())) {
+            if (document.activeElement !== this.getFocusDomRef()) {
                 this._aInitialFocusRange = this.getRange();
             }
         };
@@ -905,7 +951,8 @@ sap.ui.define([
             if (fRangeMax + fOffset > fMax) {
                 fOffset = iOffsetSign * (Math.abs(fMax) - Math.abs(fRangeMax));
             } else if (fRangeMin + fOffset < fMin) {
-                fOffset = iOffsetSign * (Math.abs(fRangeMin) - Math.abs(fMin));
+                fOffset = Math.abs(fRangeMin) - Math.abs(fMin);
+                fOffset = fOffset < 0 ? fOffset : iOffsetSign * fOffset;
             }
 
             aHandles.map(function (oCurHandle) {
@@ -923,6 +970,10 @@ sap.ui.define([
 
             if (bF2Pressed && bShowAdvancedTooltips && bFocusableTooltip && bTargetIsHandle) {
                 this._mHandleTooltip[bStartTooltipFocused ? "start" : "end"].tooltip.focus();
+            }
+
+            if (oEvent.keyCode === KeyCodes.SPACE) {
+                oEvent.preventDefault();
             }
         };
 

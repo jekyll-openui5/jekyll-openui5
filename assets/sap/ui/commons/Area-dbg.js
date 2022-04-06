@@ -1,11 +1,11 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.Area.
-sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Element'],
+sap.ui.define(['sap/ui/thirdparty/jquery', './library', 'sap/ui/core/Element', 'sap/ui/dom/jquery/control'  /* jQuery Plugin "control" */],
 	function(jQuery, library, Element) {
 	"use strict";
 
@@ -22,7 +22,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Element'],
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -33,6 +33,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Element'],
 	var Area = Element.extend("sap.ui.commons.Area", /** @lends sap.ui.commons.Area.prototype */ { metadata : {
 
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -57,13 +58,6 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Element'],
 		}
 	}});
 
-	///**
-	// * This file defines behavior for the control,
-	// */
-	//sap.ui.dev.Area.prototype.init = function(){
-	//   // do something for initialization...
-	//};
-
 	/**
 	 * Function is called when Link is clicked.
 	 *
@@ -73,6 +67,7 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Element'],
 	Area.prototype.onclick = function(oEvent) {
 
 		// The Element or Control that initiated the event. For example the id of the area if image map is defined for the current image.
+		// jQuery Plugin "control"
 		var oEventSource = jQuery(oEvent.target).control(0);
 
 	    // Fire event on Image Map
@@ -81,4 +76,4 @@ sap.ui.define(['jquery.sap.global', './library', 'sap/ui/core/Element'],
 
 	return Area;
 
-}, /* bExport= */ true);
+});

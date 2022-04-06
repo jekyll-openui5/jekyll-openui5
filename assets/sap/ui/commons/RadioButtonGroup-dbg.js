@@ -1,19 +1,24 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.ui.commons.RadioButtonGroup.
 sap.ui.define([
-    'jquery.sap.global',
+    'sap/base/Log',
     './library',
     'sap/ui/core/Control',
     'sap/ui/core/delegate/ItemNavigation',
-    "./RadioButtonGroupRenderer"
+    './RadioButton',
+    './RadioButtonGroupRenderer',
+    'sap/ui/core/library'
 ],
-	function(jQuery, library, Control, ItemNavigation, RadioButtonGroupRenderer) {
+	function(Log, library, Control, ItemNavigation, RadioButton, RadioButtonGroupRenderer, coreLibrary) {
 	"use strict";
+
+	// shortcut for sap.ui.core.ValueState
+	var ValueState = coreLibrary.ValueState;
 
 	/**
 	 * Constructor for a new RadioButtonGroup.
@@ -30,7 +35,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.core.Control
 	 * @implements sap.ui.core.IFormContent
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
@@ -42,6 +47,7 @@ sap.ui.define([
 
 		interfaces : ["sap.ui.core.IFormContent"],
 		library : "sap.ui.commons",
+		deprecated: true,
 		properties : {
 
 			/**
@@ -63,12 +69,12 @@ sap.ui.define([
 			editable : {type : "boolean", group : "Behavior", defaultValue : true},
 
 			/**
-			 * Тhe value state to be displayed for the RadioButton. Possible values are: sap.ui.core.ValueState.Error,
+			 * The value state to be displayed for the RadioButton. Possible values are: sap.ui.core.ValueState.Error,
 			 * sap.ui.core.ValueState.Warning, sap.ui.core.ValueState.Success and sap.ui.core.ValueState.None.
 			 * Note: Setting this attribute to sap.ui.core.ValueState.Error when the accessibility feature is enabled,
 			 * sets the value of the invalid property for the whole RadioButtonGroup to true.
 			 */
-			valueState : {type : "sap.ui.core.ValueState", group : "Data", defaultValue : sap.ui.core.ValueState.None},
+			valueState : {type : "sap.ui.core.ValueState", group : "Data", defaultValue : ValueState.None},
 
 			/**
 			 * The index of the selected/checked RadioButton.
@@ -136,7 +142,7 @@ sap.ui.define([
 	RadioButtonGroup.prototype.onBeforeRendering = function() {
 		if (this.getSelectedIndex() > this.getItems().length) {
 			// SelectedIndex is > than number of items -> select the first one
-			jQuery.sap.log.warning("Invalid index, set to 0");
+			Log.warning("Invalid index, set to 0");
 			this.setSelectedIndex(0);
 		}
 	};
@@ -213,7 +219,7 @@ sap.ui.define([
 
 		if (iSelectedIndex < 0) {
 			// invalid negative index -> don't change index.
-			jQuery.sap.log.warning("Invalid index, will not be changed");
+			Log.warning("Invalid index, will not be changed");
 			return this;
 		}
 
@@ -366,7 +372,7 @@ sap.ui.define([
 			this.iIDCount++;
 		}
 
-		var oRadioButton = new sap.ui.commons.RadioButton(this.getId() + "-" + this.iIDCount);
+		var oRadioButton = new RadioButton(this.getId() + "-" + this.iIDCount);
 		oRadioButton.setText(oItem.getText());
 		oRadioButton.setTooltip(oItem.getTooltip());
 		if (this.getEnabled()) {
@@ -514,9 +520,9 @@ sap.ui.define([
 		if (iSelectedIndex === undefined && aItems.length > 0) {
 			// if not defined -> select first one
 			this.setSelectedIndex(0);
-		}else if (iSelectedIndex >= 0 && aItems.length == 0) {
+		} else if (iSelectedIndex >= 0 && aItems.length == 0) {
 			this.setSelectedIndex(undefined);
-		}else if (iSelectedIndex >= aItems.length) {
+		} else if (iSelectedIndex >= aItems.length) {
 			// if less items than before -> select last one
 			this.setSelectedIndex(aItems.length - 1);
 		}
@@ -528,7 +534,7 @@ sap.ui.define([
 	 * Creates a new instance of RadioButtonGroup, with the same settings as the RadioButtonGroup
 	 * on which the method is called.
 	 * Event handlers are not cloned.
-	 * @returns {sap.ui.commons.RadioButtonGroup} New instance of RadioButtonGroup
+	 * @returns {this} New instance of RadioButtonGroup
 	 * @public
 	 */
 	RadioButtonGroup.prototype.clone = function(){
@@ -581,6 +587,8 @@ sap.ui.define([
 				this.aRBs[i].setEditable(bEditable);
 			}
 		}
+
+		return this;
 	};
 
 	/*
@@ -597,6 +605,7 @@ sap.ui.define([
 			}
 		}
 
+		return this;
 	};
 
 	/*
@@ -612,6 +621,8 @@ sap.ui.define([
 				this.aRBs[i].setValueState(sValueState);
 			}
 		}
+
+		return this;
 	};
 
 	/*
@@ -683,4 +694,4 @@ sap.ui.define([
 
 	return RadioButtonGroup;
 
-}, /* bExport= */ true);
+});

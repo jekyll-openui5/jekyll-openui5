@@ -1,11 +1,11 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
-sap.ui.define(['jquery.sap.global', './Sorter'],
-	function(jQuery, Sorter) {
+/*eslint-disable max-len */
+sap.ui.define(['./Sorter', "sap/base/util/each"],
+	function(Sorter, each) {
 	"use strict";
 
 	/**
@@ -43,7 +43,7 @@ sap.ui.define(['jquery.sap.global', './Sorter'],
 			aCompareFunctions[j] = oSorter.fnCompare || Sorter.defaultComparator;
 
 			/*eslint-disable no-loop-func */
-			jQuery.each(aData, function(i, vRef) {
+			each(aData, function(i, vRef) {
 				oValue = fnGetValue(vRef, oSorter.sPath);
 				if (typeof oValue == "string") {
 					oValue = oValue.toLocaleUpperCase();
@@ -97,4 +97,3 @@ sap.ui.define(['jquery.sap.global', './Sorter'],
 	return SorterProcessor;
 
 });
-

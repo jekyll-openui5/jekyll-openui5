@@ -1,12 +1,17 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides class sap.ui.core.support.plugins.Performance
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
-	function (jQuery, Plugin) {
+sap.ui.define([
+	"sap/ui/core/Core",
+	"sap/ui/core/support/Plugin",
+	"sap/ui/performance/Measurement",
+	"sap/base/security/encodeXML"
+],
+	function(Core, Plugin, Measurement, encodeXML) {
 		"use strict";
 
 		var _rawdata = [];
@@ -51,7 +56,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 		 * With this plugIn the performance measurements are displayed
 		 *
 		 * @extends sap.ui.core.support.Plugin
-		 * @version 1.56.5
+		 * @version 1.96.7
 		 * @private
 		 * @alias sap.ui.core.support.plugins.Performance
 		 */
@@ -94,7 +99,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 		};
 
 		function initInTools(oSupportStub) {
-			var rm = sap.ui.getCore().createRenderManager();
+			var rm = Core.createRenderManager();
 
 			//create the initial html for the performance tool
 			rm.write(_getPerformanceToolHTML());
@@ -112,7 +117,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 
 		function getPerformanceData(oSupportStub) {
 			//var bActive = jQuery.sap.measure.getActive();
-			var aMeasurements = jQuery.sap.measure.getAllMeasurements(true);
+			var aMeasurements = Measurement.getAllMeasurements(true);
 
 			this._oStub.sendEvent(this.getId() + "SetMeasurements", {"measurements": aMeasurements});
 		}
@@ -147,7 +152,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 		 * @private
 		 */
 		Performance.prototype.onsapUiSupportPerfClear = function (oEvent) {
-			jQuery.sap.measure.clear();
+			Measurement.clear();
 			this._oStub.sendEvent(this.getId() + "SetMeasurements", {"measurements": []});
 		};
 
@@ -158,7 +163,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 		 * @private
 		 */
 		Performance.prototype.onsapUiSupportPerfStart = function (oEvent) {
-			jQuery.sap.measure.start(this.getId() + "-perf", "Measurement by support tool");
+			Measurement.start(this.getId() + "-perf", "Measurement by support tool");
 		};
 
 		/**
@@ -168,7 +173,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 		 * @private
 		 */
 		Performance.prototype.onsapUiSupportPerfEnd = function (oEvent) {
-			jQuery.sap.measure.end(this.getId() + "-perf");
+			Measurement.end(this.getId() + "-perf");
 			getPerformanceData.call(this);
 		};
 
@@ -179,7 +184,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 		 * @private
 		 */
 		Performance.prototype.onsapUiSupportPerfActivate = function (oEvent) {
-			jQuery.sap.measure.setActive(true);
+			Measurement.setActive(true);
 		};
 
 		/* =============================================================================================================
@@ -287,7 +292,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 								'<option value="duration">By Duration</option>' +
 							'</select>' +
 							'<label class="sapUiSupportLabel">Min. Duration:</label>' +
-							'<input id="sapUiSupportPerfHeaderFilterMinDuration" type="number" min="0" value="0" />' +
+							'<input id="sapUiSupportPerfHeaderFilterMinDuration" type="number" min="0" value="0">' +
 							'<label class="sapUiSupportLabel"> ms.</label>' +
 							'<div class="flex-spacer"></div>' +
 							'<div id="categories"></div>' +
@@ -325,6 +330,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 		}
 
 		function _getUID() {
+			// eslint-disable-next-line no-return-assign
 			return 'uID-' + (_getUID.id !== undefined ? ++_getUID.id : _getUID.id = 0);
 		}
 
@@ -345,7 +351,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 
 			window.addEventListener('keydown', _onArrowMove);
 			jQuery("#slideHandle").on('dblclick', _initSlider);
-			jQuery("#sapUiSupportPerfToggleRecordingBtn").click(_handlerTogglePlayButton).attr('data-state', 'Start recording');
+			jQuery("#sapUiSupportPerfToggleRecordingBtn").on("click", _handlerTogglePlayButton).attr('data-state', 'Start recording');
 		}
 
 		/* =============================================================================================================
@@ -415,10 +421,43 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 			return stepsData;
 		}
 
+		/**
+		 * @param {sap.ui.core.RenderManager} rm Render Manager
+		 * @param {Object} step
+		 * @param {string} type - Type is 'duration' or 'time'
+		 * @private
+		 */
+		function _renderSubBarHTML(rm, step, type) {
+			/*
+				step = {
+					time: {
+						_total: 20ms,
+						rendering: 10ms,
+						require: 10ms
+					},
+					duration: {
+						_total: 20ms,
+						rendering: 10ms,
+						require: 10ms
+					}
+				}
+			*/
+
+			Object.keys(step.duration).sort().forEach(function (categoryType) {
+				if (categoryType !== '_total') {
+					var heightInPercent = (step[type][categoryType] / step[type]._total) * 100;
+
+					rm.openStart("div")
+						.class(_getBarClassType(categoryType))
+						.style("height", heightInPercent.toFixed(2) + "%")
+						.openEnd()
+						.close("div");
+				}
+			});
+		}
+
 		function _renderTimelineOverview(data) {
 			var domParent = document.querySelector('#sapUiSupportPerfHeaderTimelineOverview .timeline');
-
-			var HTML = '<ol>';
 			var copiedData = (JSON.parse(JSON.stringify(data)));
 
 			//TODO: optimise this logic to loop only once
@@ -453,68 +492,57 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 			allTimeSum = topSumTimeStep.time._total;
 			allDurationSum = topSumDurationStep.duration._total;
 
-			/**
-			 *
-			 * @param {Object} step
-			 * @param {string} type - Type is 'duration' or 'time'
-			 * @param {string} html - html string to add to
-			 * @private
-			 */
-			function __getSubBarHTML(step, type) {
-				/*
-				 step = {
-				 time: {
-				 _total: 20ms,
-				 rendering: 10ms,
-				 require: 10ms
-				 },
-				 duration: {
-				 _total: 20ms,
-				 rendering: 10ms,
-				 require: 10ms
-				 }
-				 }
-				 */
-				var HTML = '';
+			var rm = Core.createRenderManager();
 
-				Object.keys(step.duration).sort().forEach(function (categoryType) {
-					if (categoryType !== '_total') {
-						var heightInPercent = (step[type][categoryType] / step[type]._total) * 100;
-						HTML += '<div class="' + _getBarClassType(categoryType) + '" style="height: ' + heightInPercent.toFixed(2) + '%;"></div>';
-					}
-				});
-
-				return HTML;
-			}
+			rm.openStart("ol").openEnd();
 
 			stepsData.forEach(function (step) {
 				var stepDurationInPercent = Math.ceil((step.duration._total / allDurationSum) * 100);
 				var stepTimeInPercent = Math.ceil((step.time._total / allTimeSum) * 100);
 
-				var stepDurationInPercentInlineStyle = 'height: ' + stepDurationInPercent + '%;';
+				rm.openStart("li").openEnd();
+
+				rm.openStart("div")
+					.class("bars-wrapper")
+					.attr("title", _getTimelineOverViewBarTitle(step.duration._total, step.time._total))
+					.openEnd();
+
+				rm.openStart("div")
+					.class("duration")
+					.style("height", stepDurationInPercent + "%");
+
 				if (stepDurationInPercent > 0) {
-					stepDurationInPercentInlineStyle += ' min-height: 1px;';
+					rm.style("min-height", "1px");
 				}
 
-				var stepTimeInPercentInlineStyle = 'height: ' + stepTimeInPercent + '%;';
+				rm.openEnd();
+
+				_renderSubBarHTML(rm, step, "duration");
+
+				rm.close("div"); // duration
+
+				rm.openStart("div")
+					.class("time")
+					.style("height", stepTimeInPercent + "%");
+
 				if (stepTimeInPercent > 0) {
-					stepTimeInPercentInlineStyle += ' min-height: 1px;';
+					rm.style("min-height", "1px");
 				}
 
-				HTML += '<li>';
-				HTML += '<div class="bars-wrapper" title="' + _getTimelineOverViewBarTitle(step.duration._total, step.time._total) + '">';
-				HTML += '<div class="duration" style="' + stepDurationInPercentInlineStyle + '">';
-				HTML += __getSubBarHTML(step, 'duration');
-				HTML += '</div>';
-				HTML += '<div class="time" style="' + stepTimeInPercentInlineStyle + '">';
-				HTML += __getSubBarHTML(step, 'time');
-				HTML += '</div>';
-				HTML += '</div></li>';
+				rm.openEnd();
+
+				_renderSubBarHTML(rm, step, "time");
+
+				rm.close("div"); // time
+
+				rm.close("div"); // bars-wrapper
+				rm.close("li");
 			});
 
-			HTML += '</ol>';
+			rm.close("ol");
 
-			domParent.innerHTML = HTML;
+			rm.flush(domParent);
+			rm.destroy();
 		}
 
 		/* =============================================================================================================
@@ -522,8 +550,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 		 ============================================================================================================= */
 
 		function _render() {
-			var HTML = '<ol>';
-			var barInfoHTML = '<ol>';
+			var barRm = Core.createRenderManager();
+			var barInfoRm = Core.createRenderManager();
 
 			//get all data from the filter ui elements
 			var filterOptions = _getFilterOptions();
@@ -532,29 +560,82 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 
 			//no data bar
 			if (data.length === 0) {
-				HTML += '<li class="line nodata" data-uid="' + -1 + '"></li>';
-				barInfoHTML += '<li class="line nodata" data-uid="' + -1 + '"><div class="info line">No data</div></li>';
+				barRm.openStart("li")
+					.class("line")
+					.class("nodata")
+					.attr("data-uid", -1)
+					.openEnd()
+					.close("li");
+
+				barInfoRm.openStart("li")
+					.class("line")
+					.class("nodata")
+					.attr("data-uid", -1)
+					.openEnd();
+
+				barInfoRm.openStart("div")
+					.class("info")
+					.class("line")
+					.openEnd()
+					.text("No data")
+					.close("div");
+
+				barInfoRm.close("li");
 			}
 
 			data.forEach(function (item) {
 				var rawItem = _getBarById(item.uid);
-				HTML += '<li data-uid="' + item.uid + '" class="line" title="' + _getBarTitle(rawItem) + '"' + _getBarDataAttributes(rawItem) + '  >';
-				HTML += '<div class="bar ' + _getBarColor(rawItem.duration) + '" style="width: ' + _calculateBarWidth(item.duration) + ' margin-left: ' + _calculateBarOffset(item, filterOptions.filterByTime.start) + '">';
-				HTML += '<div class="sub-bar ' + _getBarColor(rawItem.time) + '" style="width: ' + _calculateBarWidth(item.time) + '"></div>';
-				HTML += '</div>';
-				HTML += '</li>';
+				barRm.openStart("li")
+					.class("line")
+					.attr("data-uid", item.uid)
+					.attr("title", _getBarTitle(rawItem))
+					.attr("data-item-category", rawItem.categories[0])
+					.openEnd();
+
+				barRm.openStart("div")
+					.class("bar")
+					.class(_getBarColor(rawItem.duration))
+					.style("width", _calculateBarWidth(item.duration))
+					.style("margin-left", _calculateBarOffset(item, filterOptions.filterByTime.start))
+					.openEnd();
+
+				barRm.openStart("div")
+					.class("sub-bar")
+					.class(_getBarColor(rawItem.time))
+					.style("width", _calculateBarWidth(item.time))
+					.openEnd()
+					.close("div");
+
+				barRm.close("div"); // bar
+				barRm.close("li");
 
 				//render bar info ==================================================================================
-				barInfoHTML += '<li data-uid="' + item.uid + '" title="' + _getBarTitle(rawItem) + '" class="line ' + _getBarClassType(rawItem.categories[0]) + '" ' + _getBarDataAttributes(rawItem) + '>';
-				barInfoHTML += '<div class="info line">' + _formatInfo(rawItem) + ' (' + (rawItem.time).toFixed(0) + ' ms)</div>';
-				barInfoHTML += '</li>';
+				barInfoRm.openStart("li")
+					.class("line")
+					.class(_getBarClassType(rawItem.categories[0]))
+					.attr("data-uid", item.uid)
+					.attr("title", _getBarTitle(rawItem))
+					.attr("data-item-category", rawItem.categories[0])
+					.openEnd();
+
+				barInfoRm.openStart("div")
+					.class("line")
+					.class("info")
+					.openEnd()
+					.text(_formatInfo(rawItem) + " (" + (rawItem.time).toFixed(0) + " ms)")
+					.close("div");
+
+				barInfoRm.close("li");
 			});
 
-			HTML += '</ol>';
-			barInfoHTML += '</ol>';
+			barRm.close("ol");
+			barInfoRm.close("ol");
 
-			document.querySelector('#sapUiSupportPerfHeaderTimelineBarWrapper').innerHTML = HTML;
-			document.querySelector('#sapUiSupportPerfHeaderTimelineBarInfoWrapper').innerHTML = barInfoHTML;
+			barRm.flush(document.querySelector("#sapUiSupportPerfHeaderTimelineBarWrapper"));
+			barInfoRm.flush(document.querySelector("#sapUiSupportPerfHeaderTimelineBarInfoWrapper"));
+
+			barRm.destroy();
+			barInfoRm.destroy();
 
 			_createTimelineGrid(filterOptions);
 			_filterByCategory(); // Don't change the order, this is applying css styles on the rendered content
@@ -575,7 +656,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 		}
 
 		function _getBarTitle(bar) {
-			return jQuery.sap.escapeHTML(bar.info + '\nduration: ' + bar.duration.toFixed(2) + ' ms. \ntime: ' + bar.time.toFixed(2) + ' ms. \nstart: ' + bar.start.toFixed(2) + ' ms.\nend: ' + bar.end.toFixed(2) + ' ms.');
+			return bar.info + "\nduration: " + bar.duration.toFixed(2) + " ms. \ntime: " + bar.time.toFixed(2) + " ms. \nstart: " + bar.start.toFixed(2) + " ms.\nend: " + bar.end.toFixed(2) + " ms.";
 		}
 
 		function _formatInfo(bar) {
@@ -585,7 +666,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 			barInfo = barInfo.substring(barInfo.lastIndexOf('sap.m.'), barInfo.length);
 			barInfo = barInfo.replace('Rendering of ', '');
 
-			return jQuery.sap.escapeHTML(barInfo);
+			return barInfo;
 		}
 
 		function _getBarClassType(category) {
@@ -602,7 +683,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 			}
 
 			//escaping is not needed
-			return jQuery.sap.escapeHTML(className);
+			return encodeXML(className);
 		}
 
 		function _getBarColor(time) {
@@ -645,10 +726,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 			});
 
 			return categories;
-		}
-
-		function _getBarDataAttributes(bar) {
-			return 'data-item-category = ' + bar.categories[0];
 		}
 
 		function _lineHover(e) {
@@ -809,8 +886,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 			var allCategories = _getBarCategories(_rawdata);
 
 			allCategories.forEach(function (category) {
-				category = jQuery.sap.escapeHTML(category);
-				categoriesHTML += '<label title="' + category + '"><input class="' + _getBarClassType(category) + '" checked type="checkbox" name="' + category + '" />' + category + '</label>';
+				category = encodeXML(category);
+				categoriesHTML += '<label title="' + category + '"><input class="' + _getBarClassType(category) + '" checked type="checkbox" name="' + category + '">' + category + '</label>';
 			});
 
 			var categoriesDom = document.querySelector('#categories');
@@ -825,7 +902,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 			var gridParent = document.getElementById('sapUiSupportPerfHeaderTimelineBarWrapper');
 			var gridLineNumbers = Math.round(gridParent.offsetWidth / 10);
 			var filteredDuration = filterOptions.filterByTime.end - filterOptions.filterByTime.start;
-			var gridLineStepInTime = parseInt(filteredDuration / gridLineNumbers, 10);
+			var gridLineStepInTime = parseInt(filteredDuration / gridLineNumbers);
 
 			if (document.getElementById('grid')) {
 				document.getElementById('grid').parentNode.removeChild(document.getElementById('grid'));
@@ -840,7 +917,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 				var divForText = document.createElement('div');
 
 				if (i % 5 === 0 || i === 1) {
-					var time = parseInt(filterOptions.filterByTime.start, 10);
+					var time = parseInt(filterOptions.filterByTime.start);
 
 					if (i !== 1) {
 						time += i * gridLineStepInTime;
@@ -881,7 +958,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 			var handleComputedWidth = window.getComputedStyle(_sliderVars.nodes.handle).width;
 			var oldSliderWidth = _sliderVars.sizes.width;
 
-			_sliderVars.sizes.handleWidth = parseInt(handleComputedWidth, 10);
+			_sliderVars.sizes.handleWidth = parseInt(handleComputedWidth);
 			_sliderVars.sizes.width = _sliderVars.nodes.slider.offsetWidth;
 
 			if (_sliderVars.sizes.width !== _sliderVars.sizes.handleWidth) {
@@ -968,7 +1045,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/support/Plugin'],
 		function _updateUI() {
 			var handleComputedWidth = window.getComputedStyle(_sliderVars.nodes.handle).width;
 
-			_sliderVars.sizes.handleWidth = parseInt(handleComputedWidth, 10);
+			_sliderVars.sizes.handleWidth = parseInt(handleComputedWidth);
 			_sliderVars.drag.handleOffsetLeft = _sliderVars.nodes.handle.offsetLeft;
 
 			//var filteredOptions = _getFilterOptions();

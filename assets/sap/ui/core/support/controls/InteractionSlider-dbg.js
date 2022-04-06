@@ -1,13 +1,16 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(['jquery.sap.global', 'sap/ui/base/ManagedObject', 'jquery.sap.keycodes'],
-    function (jQuery, ManagedObject) {
+sap.ui.define(['sap/ui/base/ManagedObject', "sap/ui/events/KeyCodes", "sap/ui/thirdparty/jquery"],
+    function(ManagedObject, KeyCodes, jQuery) {
         'use strict';
         var InteractionSlider = ManagedObject.extend("sap.ui.core.support.controls.InteractionSlider", {
+            metadata: {
+                library: "sap.ui.core"
+            },
             constructor: function () {
                 //this.SIDE_LIST_WIDTH = 250;
                 this.SIDE_LIST_WIDTH = 0;
@@ -121,7 +124,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/ManagedObject', 'jquery.sap.key
 
         InteractionSlider.prototype._calculateSliderSize = function () {
             var oldSliderWidth = this.sizes.width;
-            this.sizes.handleWidth = parseInt(this._getSlideHandleWidth(), 10);
+            this.sizes.handleWidth = parseInt(this._getSlideHandleWidth());
             this.sizes.width = this.nodes.slider.offsetWidth;
 
             if (this.sizes.width !== this.sizes.handleWidth) {
@@ -147,7 +150,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/ManagedObject', 'jquery.sap.key
         };
 
         InteractionSlider.prototype._updateUI = function () {
-            this.sizes.handleWidth = parseInt(this._getSlideHandleWidth(), 10);
+            this.sizes.handleWidth = parseInt(this._getSlideHandleWidth());
             this.drag.handleOffsetLeft = this.nodes.handle.offsetLeft;
         };
 
@@ -165,11 +168,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/ManagedObject', 'jquery.sap.key
             var offsetLeft = 0;
             var STEP = 5;
 
-            if (evt.keyCode != jQuery.sap.KeyCodes.ARROW_LEFT && evt.keyCode != jQuery.sap.KeyCodes.ARROW_RIGHT) {
+            if (evt.keyCode != KeyCodes.ARROW_LEFT && evt.keyCode != KeyCodes.ARROW_RIGHT) {
                 return;
-            } else if (evt.keyCode == jQuery.sap.KeyCodes.ARROW_LEFT) {
+            } else if (evt.keyCode == KeyCodes.ARROW_LEFT) {
                 offsetLeft = -STEP;
-            } else if (evt.keyCode == jQuery.sap.KeyCodes.ARROW_RIGHT) {
+            } else if (evt.keyCode == KeyCodes.ARROW_RIGHT) {
                 offsetLeft = STEP;
             }
             var maxLeftOffset = Math.min((this.drag.handleOffsetLeft + offsetLeft),
@@ -181,7 +184,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/base/ManagedObject', 'jquery.sap.key
         };
 
         InteractionSlider.prototype._onArrowUp = function (evt) {
-            if (evt.keyCode != jQuery.sap.KeyCodes.ARROW_LEFT && evt.keyCode != jQuery.sap.KeyCodes.ARROW_RIGHT) {
+            if (evt.keyCode != KeyCodes.ARROW_LEFT && evt.keyCode != KeyCodes.ARROW_RIGHT) {
                 return;
             }
             this._fireSelectEvent();

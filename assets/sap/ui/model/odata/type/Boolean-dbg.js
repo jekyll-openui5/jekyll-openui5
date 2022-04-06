@@ -1,13 +1,17 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/Core',
-		'sap/ui/model/FormatException', 'sap/ui/model/odata/type/ODataType',
-		'sap/ui/model/ParseException', 'sap/ui/model/ValidateException'],
-	function(jQuery, Core, FormatException, ODataType, ParseException, ValidateException) {
+sap.ui.define([
+	"sap/base/Log",
+	"sap/ui/model/FormatException",
+	"sap/ui/model/ParseException",
+	"sap/ui/model/ValidateException",
+	"sap/ui/model/odata/type/ODataType",
+	"sap/ui/core/Core" //  provides sap.ui.getCore()
+], function (Log, FormatException, ParseException, ValidateException, ODataType) {
 	"use strict";
 
 	/**
@@ -65,7 +69,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Core',
 			if (vNullable === false || vNullable === "false") {
 				oType.oConstraints = {nullable : false};
 			} else if (vNullable !== undefined && vNullable !== true && vNullable !== "true") {
-				jQuery.sap.log.warning("Illegal nullable: " + vNullable, null, oType.getName());
+				Log.warning("Illegal nullable: " + vNullable, null, oType.getName());
 			}
 		}
 	}
@@ -83,7 +87,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Core',
 	 * @extends sap.ui.model.odata.type.ODataType
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @alias sap.ui.model.odata.type.Boolean
 	 * @param {object} [oFormatOptions]
@@ -128,14 +132,14 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Core',
 			return null;
 		}
 		switch (this.getPrimitiveType(sTargetType)) {
-		case "any":
-		case "boolean":
-			return bValue;
-		case "string":
-			return getText(bValue);
-		default:
-			throw new FormatException("Don't know how to format " + this.getName() + " to "
-				+ sTargetType);
+			case "any":
+			case "boolean":
+				return bValue;
+			case "string":
+				return getText(bValue);
+			default:
+				throw new FormatException("Don't know how to format " + this.getName() + " to "
+					+ sTargetType);
 		}
 	};
 
@@ -157,7 +161,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Core',
 	 *   "No" in the current {@link sap.ui.core.Configuration#getLanguage language}.
 	 * @public
 	 */
-	EdmBoolean.prototype.parseValue = function(vValue, sSourceType) {
+	EdmBoolean.prototype.parseValue = function (vValue, sSourceType) {
 		var sValue;
 
 		if (vValue === null || vValue === "") {
@@ -187,7 +191,6 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Core',
 	 *
 	 * @param {boolean} bValue
 	 *   the value to be validated
-	 * @returns {void}
 	 * @throws {sap.ui.model.ValidateException} if the value is not valid
 	 * @public
 	 */

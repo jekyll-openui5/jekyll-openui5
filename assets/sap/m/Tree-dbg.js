@@ -1,26 +1,28 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.m.Tree.
 sap.ui.define([
-	'jquery.sap.global',
 	'./ListBase',
 	'./library',
 	'sap/ui/model/ClientTreeBindingAdapter',
 	'sap/ui/model/TreeBindingCompatibilityAdapter',
-	'./TreeRenderer'
+	'./TreeRenderer',
+	"sap/base/Log",
+	"sap/base/assert"
 ],
 function(
-	jQuery,
 	ListBase,
 	library,
 	ClientTreeBindingAdapter,
 	TreeBindingCompatibilityAdapter,
-	TreeRenderer
-	) {
+	TreeRenderer,
+	Log,
+	assert
+) {
 	"use strict";
 
 
@@ -37,12 +39,13 @@ function(
 	 * @extends sap.m.ListBase
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 *
 	 * @constructor
 	 * @public
 	 * @since 1.42
 	 * @alias sap.m.Tree
+	 * @see {@link fiori:/tree/ Tree}
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */
 	var Tree = ListBase.extend("sap.m.Tree", { metadata : {
@@ -94,7 +97,7 @@ function(
 				// use legacy tree binding adapter
 				TreeBindingCompatibilityAdapter(oBinding, this);
 			} else {
-				jQuery.sap.log.error("TreeBinding is not supported for the " + this);
+				Log.error("TreeBinding is not supported for the " + this);
 			}
 		}
 
@@ -118,6 +121,7 @@ function(
 			var aChildren = oControl.getItems() || [],
 				oContext,
 				oClone;
+
 			if (aChildren.length > aContexts.length) {
 				for (var i = aContexts.length; i < aChildren.length; i++) {
 					oControl.removeItem(aChildren[i]);
@@ -135,6 +139,7 @@ function(
 					oControl.addItem(oClone);
 				}
 			}
+
 		}
 
 		// Context length will be filled by model.
@@ -156,6 +161,23 @@ function(
 		return oResult;
 	};
 
+	Tree.prototype.invalidate = function() {
+		ListBase.prototype.invalidate.apply(this, arguments);
+		this._bInvalidated = true;
+	};
+
+	Tree.prototype.onAfterRendering = function() {
+		ListBase.prototype.onAfterRendering.apply(this, arguments);
+		this._bInvalidated = false;
+	};
+
+	Tree.prototype._updateDeepestLevel = function(oItem) {
+		// for level change action, e.g. expand
+		if (oItem.getLevel() + 1 > this.getDeepestLevel()) {
+			this._iDeepestLevel = oItem.getLevel() + 1;
+		}
+	};
+
 	Tree.prototype.onItemExpanderPressed = function(oItem, bExpand) {
 		var iIndex = this.indexOfItem(oItem);
 		var oBindingInfo = this.getBindingInfo("items");
@@ -165,19 +187,19 @@ function(
 			var bExpandedBeforePress = oItem.getExpanded();
 			var bExpandedAfterPress;
 
+			// make sure when rendering is called, the padding calc uses the correct deepest level
+			this._updateDeepestLevel(oItem);
+
+			var oBinding = this.getBinding("items");
 			if (bExpand == undefined) {
-				this.getBinding("items").toggleIndex(iIndex);
+				oBinding.toggleIndex(iIndex);
 			} else if (bExpand) {
-				this.getBinding("items").expand(iIndex);
+				oBinding.expand(iIndex);
 			} else {
-				this.getBinding("items").collapse(iIndex);
+				oBinding.collapse(iIndex);
 			}
 
-			bExpandedAfterPress = oItem.getExpanded();
-			if (bExpandedAfterPress && (oItem.getLevel() + 1 > this.getDeepestLevel())) {
-				this._iDeepestLevel = oItem.getLevel() + 1;
-			}
-
+			bExpandedAfterPress = oBinding.isExpanded(iIndex);
 			if (bExpandedBeforePress !== bExpandedAfterPress && !oItem.isLeaf()) {
 				this.fireToggleOpenState({
 					itemIndex: iIndex,
@@ -191,50 +213,60 @@ function(
 	/**
 	 * The <code>growing</code> property is not supported for control <code>Tree</code>.
 	 * @public
+	 * @param {boolean} bValue New value for the <code>growing</code> property, ignored.
+	 * @returns {this} Returns <code>this</code> to allow method chaining
 	 * @deprecated As of version 1.46.
 	 */
-	Tree.prototype.setGrowing = function() {
-		jQuery.sap.log.error("Growing feature of " + this + " is not supported!");
+	Tree.prototype.setGrowing = function(bValue) {
+		Log.error("Growing feature of " + this + " is not supported!");
 		return this;
 	};
 
 	/**
 	 * The <code>growingThreshold</code> property is not supported for control <code>Tree</code>.
 	 * @public
+	 * @param {int} iValue New value for the <code>growingThreshold</code> property, ignored.
+	 * @returns {this} Returns <code>this</code> to allow method chaining
 	 * @deprecated As of version 1.46.
 	 */
-	Tree.prototype.setGrowingThreshold = function() {
-		jQuery.sap.log.error("GrowingThreshold of " + this + " is not supported!");
+	Tree.prototype.setGrowingThreshold = function(iValue) {
+		Log.error("GrowingThreshold of " + this + " is not supported!");
 		return this;
 	};
 
 	/**
 	 * The <code>growingTriggerText</code> property is not supported for control <code>Tree</code>.
 	 * @public
+	 * @param {string} sValue New value for the <code>growingTriggerText</code> property, ignored.
+	 * @returns {this} Returns <code>this</code> to allow method chaining
 	 * @deprecated As of version 1.46.
 	 */
-	Tree.prototype.setGrowingTriggerText = function() {
-		jQuery.sap.log.error("GrowingTriggerText of " + this + " is not supported!");
+	Tree.prototype.setGrowingTriggerText = function(sValue) {
+		Log.error("GrowingTriggerText of " + this + " is not supported!");
 		return this;
 	};
 
 	/**
 	 * The <code>growingScrollToLoad</code> property is not supported for control <code>Tree</code>.
 	 * @public
+	 * @param {boolean} bValue New value for the <code>growingScrollToLoad</code> property, ignored.
+	 * @returns {this} Returns <code>this</code> to allow method chaining
 	 * @deprecated As of version 1.46.
 	 */
-	Tree.prototype.setGrowingScrollToLoad = function() {
-		jQuery.sap.log.error("GrowingScrollToLoad of " + this + " is not supported!");
+	Tree.prototype.setGrowingScrollToLoad = function(bValue) {
+		Log.error("GrowingScrollToLoad of " + this + " is not supported!");
 		return this;
 	};
 
 	/**
 	 * The <code>growingDirection</code> property is not supported for control <code>Tree</code>.
 	 * @public
+	 * @param {sap.m.ListGrowingDirection} sValue New value for the <code>growingDirection</code> property, ignored.
+	 * @returns {this} Returns <code>this</code> to allow method chaining
 	 * @deprecated As of version 1.46.
 	 */
-	Tree.prototype.setGrowingDirection = function() {
-		jQuery.sap.log.error("GrowingDirection of " + this + " is not supported!");
+	Tree.prototype.setGrowingDirection = function(sValue) {
+		Log.error("GrowingDirection of " + this + " is not supported!");
 		return this;
 	};
 
@@ -251,7 +283,7 @@ function(
 	 *      }
 	 *   });
 	 * </pre>
-	 * @return {sap.m.Tree} A reference to the Tree control
+	 * @returns {this} Returns <code>this</code> to allow method chaining
 	 * @public
 	 * @param {int} iLevel The level to which the data is expanded
 	 * @since 1.48.0
@@ -259,7 +291,7 @@ function(
 	Tree.prototype.expandToLevel = function (iLevel) {
 		var oBinding = this.getBinding("items");
 
-		jQuery.sap.assert(oBinding && oBinding.expandToLevel, "Tree.expandToLevel is not supported with your current Binding. Please check if you are running on an ODataModel V2.");
+		assert(oBinding && oBinding.expandToLevel, "Tree.expandToLevel is not supported with your current Binding. Please check if you are running on an ODataModel V2.");
 
 		if (oBinding && oBinding.expandToLevel && oBinding.getNumberOfExpandedLevels) {
 			if (oBinding.getNumberOfExpandedLevels() > iLevel) {
@@ -286,14 +318,14 @@ function(
 	/**
 	 * Collapses all nodes.
 	 *
-	 * @return {sap.m.Tree} A reference to the Tree control
+	 * @returns {this} A reference to the Tree control
 	 * @public
 	 * @since 1.48.0
 	 */
 	Tree.prototype.collapseAll = function () {
 		var oBinding = this.getBinding("items");
 
-		jQuery.sap.assert(oBinding && oBinding.expandToLevel, "Tree.collapseAll is not supported with your current Binding. Please check if you are running on an ODataModel V2.");
+		assert(oBinding && oBinding.expandToLevel, "Tree.collapseAll is not supported with your current Binding. Please check if you are running on an ODataModel V2.");
 
 		if (oBinding) {
 			oBinding.collapseToLevel(0);
@@ -343,9 +375,9 @@ function(
 
 	/**
 	 *
-	 * Expands one or multiple items.
+	 * Expands one or multiple items. Note that items that are hidden at the time of calling this API can't be expanded.
 	 *
-	 * @return {sap.m.Tree} A reference to the Tree control
+	 * @returns {this} A reference to the Tree control
 	 * @public
 	 * @param {int|int[]} vParam The index or indices of the item to be expanded
 	 * @since 1.56.0
@@ -354,12 +386,22 @@ function(
 		var oBinding = this.getBinding("items");
 
 		if (oBinding && oBinding.expand) {
-			var aIndices = this._preExpand(vParam);
-			for (var i = 0; i < aIndices.length - 1; i++) {
-				oBinding.expand(aIndices[i], true);
+			var aIndices = this._preExpand(vParam),
+				oItem;
+			if (aIndices.length > 0) {
+				for (var i = 0; i < aIndices.length - 1; i++) {
+					oItem = this.getItems()[aIndices[i]];
+					this._updateDeepestLevel(oItem);
+					oBinding.expand(aIndices[i], true);
+				}
+
+				oItem = this.getItems()[aIndices[aIndices.length - 1]];
+				this._updateDeepestLevel(oItem);
+
+				// trigger change
+				oBinding.expand(aIndices[aIndices.length - 1], false);
 			}
-			// trigger change
-			oBinding.expand(aIndices[aIndices.length - 1], false);
+
 		}
 
 		return this;
@@ -369,7 +411,7 @@ function(
 	 *
 	 * Collapses one or multiple items.
 	 *
-	 * @return {sap.m.Tree} A reference to the Tree control
+	 * @returns {this} A reference to the Tree control
 	 * @public
 	 * @param {int|int[]} vParam The index or indices of the tree items to be collapsed
 	 * @since 1.56.0
@@ -401,7 +443,7 @@ function(
 		if (oNodeContext.parent) {
 			iSetSize = oNodeContext.parent.children.length;
 		}
-		if (oNodeContext.positionInParent) {
+		if (oNodeContext.positionInParent != undefined) {
 			iPosInset = oNodeContext.positionInParent + 1;
 		}
 
@@ -412,8 +454,23 @@ function(
 	};
 
 	Tree.prototype.onItemLongDragOver = function(oItem) {
-		var iIndex = this.indexOfItem(oItem);
-		this.getBinding("items").expand(iIndex);
+		var iIndex = this.indexOfItem(oItem),
+			oBinding = this.getBinding("items"),
+			oBindingInfo = this.getBindingInfo("items"),
+			oItemContext = oItem && oItem.getBindingContext(oBindingInfo.model);
+
+		// toggleOpenState event should be fired when an item is expand via DnD interaction
+		if (oItem) {
+			this._updateDeepestLevel(oItem);
+			if (!oItem.isLeaf()) {
+				oBinding.expand(iIndex);
+				this.fireToggleOpenState({
+					itemIndex: iIndex,
+					itemContext: oItemContext,
+					expanded: oBinding.isExpanded(iIndex)
+				});
+			}
+		}
 	};
 
 	Tree.prototype.isGrouped = function() {

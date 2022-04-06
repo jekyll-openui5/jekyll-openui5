@@ -1,9 +1,9 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
+/*eslint-disable max-len */
 // Provides enumeration sap.ui.model.OperationMode
 sap.ui.define(function() {
 	"use strict";
@@ -54,7 +54,7 @@ sap.ui.define(function() {
 		 *   </ol>
 		 * </li>
 		 *
-		 * <li>Count Modes <code>Inline</code> or </code>InlineRepeat<code><br>
+		 * <li>Count Modes <code>Inline</code> or <code>InlineRepeat</code><br>
 		 * The initial request tries to fetch as many entries as configured with the <code>threshold</code> parameter,
 		 * without specifying any filters/sorters. In addition, the query parameter <code>$inlinecount</code> is added.
 		 * The binding assumes, that the threshold given by the application can be met, but it adapts its behavior

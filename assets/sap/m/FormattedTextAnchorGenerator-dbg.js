@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -9,13 +9,21 @@
  * This class handles the <code>AnchorGeneration</code> for the <code>FormattedText</code> control.
  */
 
-sap.ui.define(["jquery.sap.global", "sap/ui/base/Metadata", "sap/m/library"], function(jQuery, Metadata, library) {
+sap.ui.define([
+	"sap/ui/base/Object",
+	"sap/m/library",
+	"sap/base/security/URLListValidator"
+], function(BaseObject, library, URLListValidator) {
 	"use strict";
 
 	// shortcut for sap.m.LinkConversion
 	var LinkConversion = library.LinkConversion;
 
-	var AnchorGenerator = Metadata.createClass("sap.m.FormattedTextAnchorGenerator", {});
+	var AnchorGenerator = BaseObject.extend("sap.m.FormattedTextAnchorGenerator", {
+		getInterface: function() {
+			return this; // no facade
+		}
+	});
 
 	var LINK_SEARCH_PATTERN = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;()$]*[-A-Z0-9+&@#\/%=~_|])/gim;
 	var WWW_DETECTION_PATTERN = /(www\.[^\s><]+(\b|$))/gim;
@@ -69,15 +77,15 @@ sap.ui.define(["jquery.sap.global", "sap/ui/base/Metadata", "sap/m/library"], fu
 	};
 
 	/**
-	 * Checks if any of the blacklisted positions coincide with the newly discovered link that's about to be created.
-	 * @param {Array<Object>} aBlackListedPositions
+	 * Checks if any of the excluded positions coincide with the newly discovered link that's about to be created.
+	 * @param {Array<Object>} aExcludedPositions
 	 * @param {object} oCandidateAnchor
 	 * @returns {*}
 	 * @private
 	 */
-	AnchorGenerator._isAllowed = function (aBlackListedPositions, oCandidateAnchor) {
-		return aBlackListedPositions.some(function (oBlackListedPosition) {
-			return AnchorGenerator._isNested(oBlackListedPosition, oCandidateAnchor);
+	AnchorGenerator._isAllowed = function (aExcludedPositions, oCandidateAnchor) {
+		return aExcludedPositions.some(function (oExcludedPosition) {
+			return AnchorGenerator._isNested(oExcludedPosition, oCandidateAnchor);
 		});
 	};
 
@@ -85,16 +93,16 @@ sap.ui.define(["jquery.sap.global", "sap/ui/base/Metadata", "sap/m/library"], fu
 	 * Checks if the necessary preconditions for creating an anchor are met.
 	 * @param {string} sUrlCandidate
 	 * @param {object} oCandidatePosition
-	 * @param {Array<Object>} aBlackListedPositions
+	 * @param {Array<Object>} aExcludedPositions
 	 * @returns {boolean}
 	 * @private
 	 */
-	AnchorGenerator._shouldBeProcessed = function (sUrlCandidate, oCandidatePosition, aBlackListedPositions) {
-		return jQuery.sap.validateUrl(sUrlCandidate) && !AnchorGenerator._isAllowed(aBlackListedPositions, oCandidatePosition);
+	AnchorGenerator._shouldBeProcessed = function (sUrlCandidate, oCandidatePosition, aExcludedPositions) {
+		return URLListValidator.validate(sUrlCandidate) && !AnchorGenerator._isAllowed(aExcludedPositions, oCandidatePosition);
 	};
 
 	/**
-	 * Scans for entities that shouldn't be processed (should be blacklisted).
+	 * Scans for entities that shouldn't be processed (should be excluded).
 	 * @param {regexp} rSearchPattern
 	 * @param {string} sText
 	 * @returns {Array<Object>}
@@ -112,7 +120,7 @@ sap.ui.define(["jquery.sap.global", "sap/ui/base/Metadata", "sap/m/library"], fu
 	};
 
 	/**
-	 * Retrieves the blacklisted entities in the text.
+	 * Retrieves the excluded entities in the text.
 	 * @param {string} sText
 	 * @returns {Array.<{iStartPos: (number), iEndPos: (number)}>}
 	 * @private
@@ -157,4 +165,4 @@ sap.ui.define(["jquery.sap.global", "sap/ui/base/Metadata", "sap/m/library"], fu
 	};
 
 	return AnchorGenerator;
-}, /* bExport= */ false);
+});

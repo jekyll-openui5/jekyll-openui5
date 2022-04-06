@@ -1,12 +1,22 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-
+/*eslint-disable max-len */
 // Provides class sap.ui.model.odata.ODataAnnotations
-sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBinding', 'sap/ui/model/TreeAutoExpandMode', 'sap/ui/model/ChangeReason', 'sap/ui/model/odata/ODataTreeBindingAdapter', 'sap/ui/model/TreeBindingAdapter', 'sap/ui/model/TreeBindingUtils'],
-	function(jQuery, TreeBinding, AnalyticalBinding, TreeAutoExpandMode, ChangeReason, ODataTreeBindingAdapter, TreeBindingAdapter, TreeBindingUtils) {
+sap.ui.define([
+	"./AnalyticalBinding",
+	"sap/base/assert",
+	"sap/base/Log",
+	"sap/base/util/each",
+	"sap/ui/model/ChangeReason",
+	"sap/ui/model/TreeAutoExpandMode",
+	"sap/ui/model/TreeBinding",
+	"sap/ui/model/TreeBindingAdapter",
+	"sap/ui/model/odata/ODataTreeBindingAdapter"
+], function(AnalyticalBinding, assert, Log, each, ChangeReason, TreeAutoExpandMode, TreeBinding,
+		TreeBindingAdapter, ODataTreeBindingAdapter) {
 	"use strict";
 
 	/**
@@ -36,9 +46,10 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 
 		//set the default auto expand mode
 		this.setAutoExpandMode(this.mParameters.autoExpandMode || TreeAutoExpandMode.Bundled);
-	};
+	},
+	sClassName = "sap.ui.model.analytics.AnalyticalTreeBindingAdapter";
 
-	/**
+	/*
 	 * Returns the Root context of our tree, which is actually the context for the Grand Total
 	 * Used by the AnalyticalTable to display the sum row.
 	 */
@@ -48,7 +59,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		}
 	};
 
-	/**
+	/*
 	 * Returns the Root node of our tree, which is actually the context for the Grand Total
 	 * Used by the AnalyticalTable to display the sum row.
 	 */
@@ -58,7 +69,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		}
 	};
 
-	/**
+	/*
 	 * Returns the Root node, which contains the rendering information.
 	 */
 	AnalyticalTreeBindingAdapter.prototype.getGrandTotalContextInfo = function () {
@@ -121,7 +132,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		return this.findNode(iIndex);
 	};
 
-	/**
+	/*
 	 * Checks if the given node can be selected.
 	 * In the AnalyticalTable, only leaf nodes can be selected.
 	 */
@@ -133,12 +144,27 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 	};
 
 	/**
-	 * Retrieves the requested part from the tree.
-	 * @param {int} iStartIndex the first index to be retrieved
-	 * @param {int} iLength the number of entries to be retrieved, starting at iStartIndex
-	 * @param {int} iThreshold the number of additional entries, which will be loaded after (iStartIndex + iLength) as a buffer
+	 * Gets an array of either node objects or contexts for the requested part of the tree.
+	 *
+	 * @param {boolean} bReturnNodes
+	 *   Whether to return node objects or contexts
+	 * @param {number} iStartIndex
+	 *   The index of the first requested node or context
+	 * @param {number} [iLength]
+	 *   The maximum number of returned nodes or contexts; if not given the model's size limit is
+	 *   used; see {@link sap.ui.model.Model#setSizeLimit}
+	 * @param {number} [iThreshold=0]
+	 *   The maximum number of nodes or contexts to read additionally as buffer
+	 * @return {object[]|sap.ui.model.Context[]}
+	 *   The requested tree nodes or contexts
+	 *
+	 * @private
 	 */
-	AnalyticalTreeBindingAdapter.prototype.getContexts = function(iStartIndex, iLength, iThreshold, bReturnNodes) {
+	AnalyticalTreeBindingAdapter.prototype._getContextsOrNodes = function (bReturnNodes,
+			iStartIndex, iLength, iThreshold) {
+		if (!this.isResolved()) {
+			return [];
+		}
 		if (!iLength) {
 			iLength = this.oModel.iSizeLimit;
 		}
@@ -196,7 +222,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 			var that = this;
 
 			//if we have a missing section inside a subtree, we need to reload this subtree
-			jQuery.each(mMissingSections, function (sGroupID, oNode) {
+			each(mMissingSections, function (sGroupID, oNode) {
 				// reset the root of the subtree
 				oNode.magnitude = 0;
 				oNode.numberOfTotals = 0;
@@ -219,12 +245,12 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		}
 	};
 
-	/**
+	/*
 	 * Trigger paging requests in auto expand mode
 	 */
 	AnalyticalTreeBindingAdapter.prototype._autoExpandPaging = function () {
-		jQuery.sap.assert(this._oWatermark, "No watermark was set!");
-		jQuery.sap.assert(this._isRunningInAutoExpand(TreeAutoExpandMode.Bundled), "Optimised AutoExpand Paging can only be used with TreeAutoExpandMode.Bundled!");
+		assert(this._oWatermark, "No watermark was set!");
+		assert(this._isRunningInAutoExpand(TreeAutoExpandMode.Bundled), "Optimised AutoExpand Paging can only be used with TreeAutoExpandMode.Bundled!");
 		// paging in the autoexpand case
 		var aChildContexts = this.getNodeContexts(this._oWatermark.context, {
 			startIndex: this._oWatermark.startIndex, //this._oWatermark.children.length,
@@ -237,7 +263,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		return aChildContexts;
 	};
 
-	/**
+	/*
 	 * This hook is called after all children of a node are matched.
 	 * Used to insert sum row nodes (if any).
 	 * @param {object} oNode the node which is currently matched (and whose children have already been matched)
@@ -257,7 +283,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		}
 	};
 
-	/**
+	/*
 	 * This hook is called after all children of "oNode" have been mapped.
 	 * Used to also map on sum nodes (if any).
 	 * @param {object} oNode the node which will be mapped again
@@ -268,7 +294,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		}
 	};
 
-	/**
+	/*
 	 * Creates a sum node.
 	 * The sum node is later stored inside the tree structure, but is not part of the children array of a node.
 	 * A sum node is a copy of the given node, minus the children and with a relative "positionInParent" to it's children.
@@ -315,7 +341,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		// sanity check for the binding
 		// if aRootContexts is null -> no $select is given, because no dimensions are part of the aggregation-level
 		if (aRootContext == null) {
-			jQuery.sap.log.warning("AnalyticalTreeBindingAdapter: No Dimensions given. An artificial rootContext has be created. Please check your Table/Service definition for dimension columns!");
+			Log.warning("AnalyticalTreeBindingAdapter: No Dimensions given. An artificial rootContext has be created. Please check your Table/Service definition for dimension columns!");
 		} else {
 			// if aRootContexts is empty [] -> request sent and everything is ok
 			oRootContext = aRootContext[0];
@@ -355,7 +381,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 
 	};
 
-	/**
+	/*
 	 * (Re-)Loads the child contexts for the given node "oNode".
 	 * This happens recursively for all expanded/autoExpanded child nodes -> the whole subtree starting at "oNode" is created.
 	 * All subsequently loaded child nodes will be added to the children collection of oNode.
@@ -522,7 +548,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		oNode.magnitude += Math.max(iMaxGroupSize || 0, 0);
 
 		if (!iMaxGroupSize && !this._isRunningInAutoExpand(TreeAutoExpandMode.Bundled)) {
-			jQuery.sap.log.warning("AnalyticalTreeBindingAdapter: iMaxGroupSize(" + iMaxGroupSize + ") is undefined for node '" + oNode.groupID + "'!");
+			Log.warning("AnalyticalTreeBindingAdapter: iMaxGroupSize(" + iMaxGroupSize + ") is undefined for node '" + oNode.groupID + "'!");
 		}
 
 		// add up the total number of sum rows (expanded nodes with at least one child)
@@ -551,7 +577,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 
 	};
 
-	/**
+	/*
 	 * Retrieves the group ID for the given node.
 	 * The implementation differs from the ODataTreeBindingAdapter, since the AnalyticalBinding already exposes
 	 * certain convenience functions.
@@ -568,7 +594,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 			// the group id is also appended with the relative parent position
 			if (oNode.level > iMaxLevel) {
 				sGroupID = this._getGroupIdFromContext(oNode.context, iMaxLevel);
-				jQuery.sap.assert(oNode.positionInParent != undefined, "If the node level is greater than the number of grouped columns, the position of the node to its parent must be defined!");
+				assert(oNode.positionInParent != undefined, "If the node level is greater than the number of grouped columns, the position of the node to its parent must be defined!");
 				sGroupID +=  oNode.positionInParent + "/";
 			} else {
 				//this is the best case, the node sits on a higher level than the aggregation level
@@ -578,7 +604,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		return sGroupID;
 	};
 
-	/**
+	/*
 	 * Collapses the given node, either a node instance or an index.
 	 * Overwritten from the ODataTreeBindingAdapter, because of additional analytical logic.
 	 */
@@ -590,7 +616,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 			oNodeStateForCollapsingNode = vParam;
 		} else if (typeof vParam === "number") {
 			oNode = this.findNode(vParam);
-			jQuery.sap.assert(oNode && oNode.nodeState, "AnalyticalTreeBindingAdapter.collapse(" + vParam + "): No node found!");
+			assert(oNode && oNode.nodeState, "AnalyticalTreeBindingAdapter.collapse(" + vParam + "): No node found!");
 			//jump out if no node was found
 			if (!oNode) {
 				return;
@@ -613,7 +639,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 
 			// in case we collapsed a parent(chain) of the watermark node, we have to page, because we can not know how many
 			// nodes will move up after collapsing the subtree. This is important because the watermark node will never be visible
-			if (this._isRunningInAutoExpand(TreeAutoExpandMode.Bundled) && this._oWatermark && jQuery.sap.startsWith(this._oWatermark.groupID, sGroupIDforCollapsingNode)) {
+			if (this._isRunningInAutoExpand(TreeAutoExpandMode.Bundled) && this._oWatermark && (typeof sGroupIDforCollapsingNode == "string" && sGroupIDforCollapsingNode.length > 0 && this._oWatermark.groupID.startsWith(sGroupIDforCollapsingNode))) {
 				// move the watermark node to the parent of the collapsed node, because the auto-expand paging starting point needs to be moved
 				if (oNode && oNode.parent) {
 					this._oWatermark = {
@@ -633,16 +659,16 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 			// Collapse all subsequent child nodes, this is determined by a common groupID prefix, e.g.: "/A100-50/" is the parent of "/A100-50/Finance/"
 			// All expanded nodes which start with 'sGroupIDforCollapsingNode', are basically children of it and also need to be collapsed
 			var that = this;
-			jQuery.each(this._mTreeState.expanded, function (sGroupID, oNodeState) {
-				if (jQuery.sap.startsWith(sGroupID, sGroupIDforCollapsingNode)) {
+			each(this._mTreeState.expanded, function (sGroupID, oNodeState) {
+				if (typeof sGroupIDforCollapsingNode == "string" && sGroupIDforCollapsingNode.length > 0 && sGroupID.startsWith(sGroupIDforCollapsingNode)) {
 					that._updateTreeState({groupID: sGroupID, expanded: false});
 				}
 			});
 
 			var aDeselectedNodeIds = [];
 			// also remove selections from child nodes of the collapsed node
-			jQuery.each(this._mTreeState.selected, function (sGroupID, oNodeState) {
-				if (jQuery.sap.startsWith(sGroupID, sGroupIDforCollapsingNode)) {
+			each(this._mTreeState.selected, function (sGroupID, oNodeState) {
+				if (typeof sGroupIDforCollapsingNode == "string" && sGroupIDforCollapsingNode.length > 0 && sGroupID.startsWith(sGroupIDforCollapsingNode)) {
 					oNodeState.selectAllMode = false;
 					that.setNodeSelection(oNodeState, false);
 					aDeselectedNodeIds.push(sGroupID);
@@ -694,7 +720,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 	 * @return {boolean} true if the node has children, false otherwise
 	 */
 	AnalyticalTreeBindingAdapter.prototype.nodeHasChildren = function(oNode) {
-		jQuery.sap.assert(oNode, "AnalyticalTreeBindingAdapter.nodeHasChildren: No node given!");
+		assert(oNode, "AnalyticalTreeBindingAdapter.nodeHasChildren: No node given!");
 
 		//check if the node has children
 		if (!oNode || !oNode.parent || oNode.nodeState.sum) {
@@ -706,7 +732,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		}
 	};
 
-	/**
+	/*
 	 * Resets the data.
 	 * If mParameters.reason is set to ChangeReason.Sort:
 	 * Expand/Collapse states and the selection is kept in case the reset was triggered from within a sort() call.
@@ -748,7 +774,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 	 */
 	AnalyticalTreeBindingAdapter.prototype.hasTotaledMeasures = function() {
 		var bHasMeasures = false;
-		jQuery.each(this.getMeasureDetails() || [], function(iIndex, oMeasure) {
+		each(this.getMeasureDetails() || [], function(iIndex, oMeasure) {
 			if (oMeasure.analyticalInfo.total) {
 				bHasMeasures = true;
 				return false;
@@ -757,7 +783,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		return bHasMeasures;
 	};
 
-	/**
+	/*
 	 * Returns if the Binding is grouped. This depends on the aggregation level.
 	 * If the aggregation level is 0, the binding essentially holds a list.
 	 */
@@ -765,7 +791,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		return (this.aAggregationLevel.length > 0);
 	};
 
-	/**
+	/*
 	 * Returns if the binding is in auto expand mode. Used to branch paging behavior.
 	 */
 	AnalyticalTreeBindingAdapter.prototype._isRunningInAutoExpand = function (sAutoExpandMode) {
@@ -788,10 +814,20 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 	 */
 	// @see sap.ui.table.AnalyticalTable#_getGroupHeaderMenu
 	AnalyticalTreeBindingAdapter.prototype.setNumberOfExpandedLevels = function(iLevels, bSupressResetData) {
+		var iNumberOfAggregationLevels;
+
 		iLevels = iLevels || 0;
 		if (iLevels < 0) {
-			jQuery.sap.log.warning("AnalyticalTreeBindingAdapter: numberOfExpanded levels was set to 0. Negative values are prohibited.");
+			Log.warning("Number of expanded levels was set to 0. Negative values are prohibited",
+				this, sClassName);
 			iLevels = 0;
+		}
+		iNumberOfAggregationLevels = this.aAggregationLevel.length;
+		if (iLevels > iNumberOfAggregationLevels) {
+			Log.warning("Number of expanded levels was reduced from " + iLevels + " to "
+					+ iNumberOfAggregationLevels + " which is the number of grouped dimensions",
+				this, sClassName);
+			iLevels = iNumberOfAggregationLevels;
 		}
 
 		if (!bSupressResetData) {
@@ -814,7 +850,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/model/TreeBinding', './AnalyticalBin
 		return this.mParameters.numberOfExpandedLevels;
 	};
 
-	/**
+	/*
 	 * Overrides the default from the TBA.
 	 * Returns the maximum number of currently selectable nodes, in this case the total number of leaves.
 	 * @returns {int} Maximum number of currently selectable node

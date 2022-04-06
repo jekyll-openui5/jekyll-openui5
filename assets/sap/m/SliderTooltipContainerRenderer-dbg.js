@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides the default renderer for control sap.m.SliderTooltipContainer
-sap.ui.define(['jquery.sap.global', 'sap/ui/core/Renderer'],
-	function(jQuery, Renderer) {
+sap.ui.define(['sap/ui/core/Renderer'],
+	function(Renderer) {
 	"use strict";
 
 	/**
@@ -15,7 +15,9 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Renderer'],
 	 * @author SAP SE
 	 * @namespace
 	 */
-	var SliderTooltipContainerRenderer = {},
+	var SliderTooltipContainerRenderer = {
+			apiVersion: 2
+		},
 		CONSTANTS = {
 			MAIN_CLASS: "sapMSliderTooltipContainer"
 		};
@@ -23,31 +25,25 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Renderer'],
 	/**
 	 * Renders the HTML for the given control, using the provided {@link sap.ui.core.RenderManager}.
 	 *
-	 * @param {sap.ui.core.RenderManager} rm The RenderManager that can be used for writing to the renderer output buffer
+	 * @param {sap.ui.core.RenderManager} oRm The RenderManager that can be used for writing to the renderer output buffer
 	 * @param {sap.ui.core.Control} oControl An object representation of the control that should be rendered
 	 */
 	SliderTooltipContainerRenderer.render = function(oRm, oControl) {
 		var aTooltips = oControl.getAssociatedTooltipsAsControls();
-		oRm.write("<div");
-		oRm.writeControlData(oControl);
-		oRm.addStyle("width", oControl.getWidth());
-		oRm.writeStyles();
-		oRm.writeClasses();
-		oRm.write(">");
+		oRm.openStart("div", oControl)
+			.style("width", oControl.getWidth())
+			.openEnd();
 
-		oRm.write("<div");
-		oRm.writeAttribute("id", oControl.getId() + "-container");
-		oRm.addStyle("left", "0%");
-		oRm.addStyle("right", "0%");
-		oRm.addClass(CONSTANTS.MAIN_CLASS);
+		oRm.openStart("div", oControl.getId() + "-container")
+			.style("left", "0%")
+			.style("right", "0%")
+			.class(CONSTANTS.MAIN_CLASS);
 
 		if (!oControl.getEnabled()) {
-			oRm.addClass(CONSTANTS.MAIN_CLASS + "Disabled");
+			oRm.class(CONSTANTS.MAIN_CLASS + "Disabled");
 		}
 
-		oRm.writeClasses();
-		oRm.writeStyles();
-		oRm.write(">");
+		oRm.openEnd();
 
 		if (aTooltips && aTooltips.length) {
 			aTooltips.forEach(function(oTooltip) {
@@ -55,8 +51,8 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/core/Renderer'],
 			});
 		}
 
-		oRm.write("</div>");
-		oRm.write("</div>");
+		oRm.close("div")
+			.close("div");
 	};
 
 	return SliderTooltipContainerRenderer;

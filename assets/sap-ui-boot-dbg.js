@@ -1,6 +1,6 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -33,6 +33,11 @@
 		var pending = urls.length,
 			errors = 0;
 
+		if (pending === 0) {
+			callback();
+			return;
+		}
+
 		function listener(e) {
 			pending--;
 			if ( e.type === 'error' ) {
@@ -54,24 +59,17 @@
 		}
 	}
 
-	// cascade 1: polyfills, can all be loaded in parallel
+	// cascade 1: the loader
 	loadScripts([
-		"sap/ui/thirdparty/baseuri.js",
-		"sap/ui/thirdparty/es6-promise.js",
-		"sap/ui/thirdparty/es6-string-methods.js"
+		"ui5loader.js"
 	], function() {
-		// cascade 2: the loader
-		loadScripts([
-			"ui5loader.js"
-		], function() {
-			// cascade 3: the loader configuration script
-			sap.ui.loader.config({
-				async:true
-			});
-			loadScripts([
-				"ui5loader-autoconfig.js"
-			]);
+		// cascade 2: the loader configuration script
+		sap.ui.loader.config({
+			async:true
 		});
+		loadScripts([
+			"ui5loader-autoconfig.js"
+		]);
 	});
 
 }());

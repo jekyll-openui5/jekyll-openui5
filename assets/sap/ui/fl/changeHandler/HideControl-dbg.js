@@ -1,21 +1,25 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	"jquery.sap.global"
+	"sap/base/Log",
+	'sap/ui/fl/changeHandler/JsControlTreeModifier'
 ], function(
-	jQuery
+	Log,
+	JsControlTreeModifier
 ) {
 	"use strict";
+
+	var PROPERTY_NAME = "visible";
 
 	/**
 	 * Change handler for hiding of a control.
 	 * @alias sap.ui.fl.changeHandler.HideControl
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @experimental Since 1.27.0
 	 */
 	var HideControl = {};
@@ -27,16 +31,19 @@ sap.ui.define([
 	 * @param {sap.ui.core.Control} oControl control that matches the change selector for applying the change
 	 * @param {object} mPropertyBag - map of properties
 	 * @param {object} mPropertyBag.modifier - modifier for the controls
-	 * @return {boolean} true - if change could be applied
+	 * @return {Promise} Promise resolving when change is applied
 	 * @public
 	 */
 	HideControl.applyChange = function(oChange, oControl, mPropertyBag) {
-		oChange.setRevertData({
-			originalValue: mPropertyBag.modifier.getVisible(oControl)
-		});
-
-		mPropertyBag.modifier.setVisible(oControl, false);
-		return true;
+		var oModifier = mPropertyBag.modifier;
+		return Promise.resolve()
+			.then(oModifier.getVisible.bind(oModifier, oControl))
+			.then(function(bVisible) {
+				oChange.setRevertData({
+					originalValue: bVisible
+				});
+				oModifier.setVisible(oControl, false);
+			});
 	};
 
 
@@ -47,21 +54,21 @@ sap.ui.define([
 	 * @param {sap.ui.core.Control} oControl control that matches the change selector for applying the change
 	 * @param {object} mPropertyBag	- map of properties
 	 * @param {object} mPropertyBag.modifier - modifier for the controls
-	 * @return {boolean} true - if change has been reverted
+	 * @return {Promise} Promise resolving when change was successfully reverted
 	 * @public
 	 */
 	HideControl.revertChange = function(oChange, oControl, mPropertyBag) {
 		var mRevertData = oChange.getRevertData();
 
-		if (mRevertData) {
-			mPropertyBag.modifier.setVisible(oControl, mRevertData.originalValue);
-			oChange.resetRevertData();
-		} else {
-			jQuery.sap.log.error("Attempt to revert an unapplied change.");
-			return false;
-		}
-
-		return true;
+		return Promise.resolve()
+			.then(function() {
+				if (mRevertData) {
+					mPropertyBag.modifier.setVisible(oControl, mRevertData.originalValue);
+					oChange.resetRevertData();
+				} else {
+					Log.error("Attempt to revert an unapplied change.");
+				}
+			});
 	};
 
 	/**
@@ -71,7 +78,31 @@ sap.ui.define([
 	 * @param {object} oSpecificChangeInfo as an empty object since no additional attributes are required for this operation
 	 * @public
 	 */
-	HideControl.completeChangeContent = function(oChange, oSpecificChangeInfo) {
+	HideControl.completeChangeContent = function() {
+	};
+
+	/**
+	 * Retrieves the condenser-specific information.
+	 *
+	 * @param {sap.ui.fl.Change} oChange - Change object with instructions to be applied on the control map
+	 * @returns {object} - Condenser-specific information
+	 * @public
+	 */
+	HideControl.getCondenserInfo = function(oChange) {
+		return {
+			affectedControl: oChange.getSelector(),
+			classification: sap.ui.fl.condenser.Classification.Reverse,
+			uniqueKey: PROPERTY_NAME
+		};
+	};
+
+	HideControl.getChangeVisualizationInfo = function(oChange, oAppComponent) {
+		var oSelector = oChange.getSelector();
+		var oElement = JsControlTreeModifier.bySelector(oSelector, oAppComponent);
+		return {
+			affectedControls: [oSelector],
+			displayControls: [oElement.getParent().getId()]
+		};
 	};
 
 	return HideControl;

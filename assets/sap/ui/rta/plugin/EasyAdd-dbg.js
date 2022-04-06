@@ -1,15 +1,19 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	'sap/ui/rta/plugin/additionalElements/AdditionalElementsPlugin',
-	'sap/ui/dt/OverlayRegistry'
+	"sap/ui/rta/plugin/additionalElements/AdditionalElementsPlugin",
+	"sap/ui/dt/OverlayRegistry",
+	"sap/m/Button",
+	"sap/ui/thirdparty/jquery"
 ], function(
 	AdditionalElementsPlugin,
-	OverlayRegistry
+	OverlayRegistry,
+	Button,
+	jQuery
 ) {
 	"use strict";
 
@@ -21,15 +25,14 @@ sap.ui.define([
 	 * @class The EasyAdd Plugin adds an Icon to an Overlay, which allows to trigger add operations directly
 	 * @extends sap.ui.rta.plugin.additionalElements.AdditionalElementsPlugin
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.96.7
 	 * @constructor
 	 * @private
 	 * @since 1.48
 	 * @alias sap.ui.rta.plugin.EasyAdd
 	 * @experimental Since 1.48. This class is experimental and provides only limited functionality. Also the API might be changed in future.
 	 */
-	var EasyAdd = AdditionalElementsPlugin.extend("sap.ui.rta.plugin.EasyAdd", /** @lends sap.ui.rta.plugin.EasyAdd.prototype */
-	{
+	var EasyAdd = AdditionalElementsPlugin.extend("sap.ui.rta.plugin.EasyAdd", /** @lends sap.ui.rta.plugin.EasyAdd.prototype */ {
 		metadata: {
 			library: "sap.ui.rta",
 			properties: {},
@@ -56,19 +59,23 @@ sap.ui.define([
 
 		var onAddPressed = function(bOverlayIsSibling, oOverlay, iIndex) {
 			var sControlName;
+			var sAggregationName = "sections";
 			if (bOverlayIsSibling) {
 				sControlName = oOverlay.getDesignTimeMetadata().getName().plural;
 			} else {
-				sControlName = oOverlay.getDesignTimeMetadata().getAggregation("sections").childNames.plural();
+				sControlName = oOverlay.getDesignTimeMetadata().getAggregation(sAggregationName).childNames.plural();
 			}
-			this.showAvailableElements(bOverlayIsSibling, [oOverlay], iIndex, sControlName);
+			// This is needed to trigger the selection of available elements in the showAvailableElements method
+			// Normally, getAllElements is called before showAvailableElements, here this is not the case
+			this.clearCachedElements();
+			this.showAvailableElements(bOverlayIsSibling, sAggregationName, [oOverlay], iIndex, sControlName);
 		}.bind(this);
 
 		var fnAddButton = function(oOverlay, oOverlayDom, bSibling, vControlName, iIndex) {
 			var fnCallback = function(oEvent) {
-				var oOverlay = OverlayRegistry.getOverlay(oEvent.getSource().getId().replace("-AddButton", ""));
+				var oOverlay = OverlayRegistry.getOverlay(oEvent.currentTarget.id.replace("-AddButton", ""));
 				onAddPressed(bSibling, oOverlay, iIndex);
-				oEvent.cancelBubble();
+				oEvent.stopPropagation();
 			};
 			var sControlName = typeof vControlName === "function" ? vControlName() : vControlName;
 			this._addButton(oOverlay, fnCallback, oOverlayDom, sControlName, bSibling);
@@ -116,19 +123,20 @@ sap.ui.define([
 	 * @override
 	 */
 	EasyAdd.prototype._isEditable = function(oOverlay) {
-		var bIsEditable = AdditionalElementsPlugin.prototype._isEditable.apply(this, arguments);
-		if (oOverlay._oAddButton) {
-			var bIsLayout = oOverlay.hasStyleClass("sapUiRtaPersAddTop");
-			var sOverlayIsSibling = bIsLayout ? "asChild" : "asSibling";
-			oOverlay._oAddButton.setEnabled(bIsEditable[sOverlayIsSibling]);
-			if (bIsLayout) {
-				var oLayout = oOverlay.getElement();
-				oLayout.attachEventOnce("onAfterRenderingDOMReady", function() {
-					oLayout.$("sectionsContainer").addClass("sapUiRtaPaddingTop");
-				});
+		return AdditionalElementsPlugin.prototype._isEditable.apply(this, arguments).then(function(bIsEditable) {
+			if (oOverlay._oAddButton) {
+				var bIsLayout = oOverlay.hasStyleClass("sapUiRtaPersAddTop");
+				var sOverlayIsSibling = bIsLayout ? "asChild" : "asSibling";
+				oOverlay._oAddButton.setEnabled(bIsEditable[sOverlayIsSibling]);
+				if (bIsLayout) {
+					var oLayout = oOverlay.getElement();
+					oLayout.attachEventOnce("onAfterRenderingDOMReady", function() {
+						oLayout.$("sectionsContainer").addClass("sapUiRtaPaddingTop");
+					});
+				}
 			}
-		}
-		return bIsEditable;
+			return bIsEditable;
+		});
 	};
 
 	/**
@@ -144,13 +152,15 @@ sap.ui.define([
 		var oTextResources = sap.ui.getCore().getLibraryResourceBundle("sap.ui.rta");
 
 		var sId = oOverlay.getId() + "-AddButton";
-		var oHtmlButtonOuter = jQuery("<div class='sapUiRtaPersAddIconOuter' draggable='true'> </div>");
-		oOverlay._oAddButton = new sap.m.Button(sId, {
+		var oHtmlButtonOuter = jQuery("<div class='sapUiRtaPersAddIconOuter' draggable='true' tabindex='-1'> </div>");
+		oOverlay._oAddButton = new Button(sId, {
 			text: oTextResources.getText("CTX_ADD_ELEMENTS", sControlName),
 			icon: "sap-icon://add",
-			press: fnCallback,
 			enabled: bIsEditable
-		}).placeAt(oHtmlButtonOuter.get(0));
+		})
+			.placeAt(oHtmlButtonOuter.get(0))
+			.attachBrowserEvent('click', fnCallback)
+			.attachBrowserEvent('tap', fnCallback);
 		oOverlayDom.append(oHtmlButtonOuter);
 
 		oHtmlButtonOuter[0].addEventListener("mouseover", function(oEvent) {
@@ -173,6 +183,15 @@ sap.ui.define([
 			}
 		});
 
+		oHtmlButtonOuter[0].addEventListener("click", function(oEvent) {
+			oEvent.stopPropagation();
+		});
+
+		oHtmlButtonOuter[0].addEventListener("contextmenu", function(oEvent) {
+			oEvent.stopPropagation();
+			oEvent.preventDefault();
+		});
+
 		oHtmlButtonOuter[0].addEventListener("dragstart", function(oEvent) {
 			oEvent.stopPropagation();
 			oEvent.preventDefault();
@@ -180,4 +199,4 @@ sap.ui.define([
 	};
 
 	return EasyAdd;
-}, /* bExport= */true);
+});

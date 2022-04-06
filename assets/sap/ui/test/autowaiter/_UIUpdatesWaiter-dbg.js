@@ -1,26 +1,25 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	"sap/ui/test/_OpaLogger",
-	"sap/ui/test/_opaCorePlugin"
-], function (_OpaLogger, _opaCorePlugin) {
+	"./WaiterBase"
+], function (WaiterBase) {
 	"use strict";
 
-	var oHasPendingLogger = _OpaLogger.getLogger("sap.ui.test.autowaiter._UIUpdatesWaiter#hasPending");
-
-	// ensure that timeouts set by control inner updates are not hooked into by _timeoutWaiter
-	// if an update is continuously made by the UI, at some point it will be ignored by this validation
-	return {
+	var UIUpdatesWaiter = WaiterBase.extend("sap.ui.test.autowaiter._UIUpdatesWaiter", {
+		// ensure that timeouts set by control inner updates are not hooked into by _timeoutWaiter
+		// if an update is continuously made by the UI, at some point it will be ignored by this validation
 		hasPending: function () {
-			var bUIDirty = _opaCorePlugin.isUIDirty();
+			var bUIDirty = sap.ui.getCore().getUIDirty();
 			if (bUIDirty) {
-				oHasPendingLogger.debug("The UI needs rerendering");
+				this._oHasPendingLogger.debug("The UI needs rerendering");
 			}
 			return bUIDirty;
 		}
-	};
+	});
+
+	return new UIUpdatesWaiter();
 });
